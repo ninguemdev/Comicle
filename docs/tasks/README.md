@@ -6,7 +6,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 
 | # | Task | Depende de | Status |
 |---|---|---|---|
-| T01 | [Bootstrap do monorepo](./T01-bootstrap-monorepo.md) | — | 🟨 |
+| T01 | [Bootstrap do monorepo](./T01-bootstrap-monorepo.md) | — | ✅ |
 | T02 | [Contratos compartilhados](./T02-contratos-compartilhados.md) | T01 | ⬜ |
 | T03 | [Servidor base](./T03-servidor-base.md) | T02 | ⬜ |
 | T04 | [Persistência](./T04-persistencia.md) | T03 | ⬜ |
