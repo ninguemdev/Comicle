@@ -11,6 +11,7 @@ export * from './events';
 export * from './health';
 export * from './random';
 export * from './schemas/events';
+export * from './schemas/http';
 export * from './schemas/match-settings';
 export * from './schemas/profile';
 export * from './schemas/room-code';
