@@ -5,11 +5,15 @@ import type { Rng } from '@comicle/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config/env';
+import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
+import { GuestSessionStore } from './modules/guest-identity/session-store';
 import type { StoryRepository } from './modules/stories/story-repository';
 import { timeSyncHandlers } from './modules/timing/time-sync.handlers';
 import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
+import { createRequireGuest } from './platform/http/require-guest';
+import { newId, newSessionToken } from './platform/ids';
 import type { SocketHandler } from './platform/realtime/define-handler';
 import {
   DEFAULT_SOCKET_RATE_LIMITS,
@@ -31,11 +35,14 @@ export interface AppDeps {
   /** Handlers on top of the modules' own (tests register test-only events here). */
   extraSocketHandlers?: readonly SocketHandler[];
   socketRateLimits?: SocketRateLimitConfig;
+  /** Where pino writes (tests capture logs here); stdout by default. */
+  logDestination?: { write(line: string): void };
 }
 
 export interface App {
   http: FastifyInstance;
   io: AppSocketServer;
+  guestSessions: GuestSessionStore;
 }
 
 // Never log tokens or images (AGENTS.md, Logs).
@@ -56,6 +63,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
       level: config.LOG_LEVEL,
       redact: REDACTED_PATHS,
       ...(config.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
+      ...(deps.logDestination ? { stream: deps.logDestination } : {}),
     },
     trustProxy: config.TRUST_PROXY,
   });
@@ -67,6 +75,17 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   registerErrorHandler(http);
 
   registerHealthRoute(http, deps.checkDatabase);
+
+  const guestSessions = new GuestSessionStore({
+    clock,
+    scheduler: deps.scheduler,
+    newToken: newSessionToken,
+    newId,
+  });
+  guestSessions.startSweeping();
+  const authenticate = (token: string) => guestSessions.authenticate(token);
+  http.decorateRequest('guestId', '');
+  registerGuestIdentityRoutes(http, guestSessions, createRequireGuest(authenticate));
 
   // Hooks must exist before ready(); the socket server only after it.
   const socketRef: { io?: AppSocketServer } = {};
@@ -85,8 +104,9 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     log: http.log,
     handlers: [...timeSyncHandlers(clock), ...(deps.extraSocketHandlers ?? [])],
     rateLimits: deps.socketRateLimits ?? DEFAULT_SOCKET_RATE_LIMITS,
+    authenticate,
   });
   socketRef.io = io;
 
-  return { http, io };
+  return { http, io, guestSessions };
 }

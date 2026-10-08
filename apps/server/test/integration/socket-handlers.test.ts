@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defineHandler } from '../../src/platform/realtime/define-handler';
 import { DomainError } from '../../src/platform/errors';
 import {
-  connectClient,
+  connectGuest,
   startTestServer,
   type TestClient,
   type TestServer,
@@ -33,7 +33,7 @@ describe('handlers de socket', () => {
 
   async function start(overrides: TestServerOverrides = {}) {
     server = await startTestServer({ extraSocketHandlers: [kickHandler], ...overrides });
-    client = await connectClient(server.url);
+    ({ client } = await connectGuest(server));
     return { server, client };
   }
 

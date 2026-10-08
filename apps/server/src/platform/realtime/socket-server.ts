@@ -4,6 +4,8 @@ import type { FastifyBaseLogger } from 'fastify';
 import { Server } from 'socket.io';
 
 import type { Clock } from '../clock';
+import type { AuthenticateToken } from '../http/require-guest';
+import { createSocketAuthMiddleware } from './auth-middleware';
 import type { SocketHandler } from './define-handler';
 import { SocketRateLimiter, type SocketRateLimitConfig } from './rate-limit';
 import type { AppSocketServer } from './socket-types';
@@ -17,6 +19,7 @@ export interface SocketServerOptions {
   log: FastifyBaseLogger;
   handlers: readonly SocketHandler[];
   rateLimits: SocketRateLimitConfig;
+  authenticate: AuthenticateToken;
 }
 
 /** Socket.IO attached straight to Fastify's HTTP server (no third-party plugin). */
@@ -30,10 +33,12 @@ export function createSocketServer(
     serveClient: false,
   });
 
+  io.use(createSocketAuthMiddleware(options.authenticate));
+
   io.on('connection', (socket) => {
     const connection = {
       socket,
-      log: options.log.child({ socketId: socket.id }),
+      log: options.log.child({ socketId: socket.id, guestId: socket.data.guestId }),
       rateLimiter: new SocketRateLimiter(options.rateLimits, options.clock),
     };
     for (const handler of options.handlers) {
