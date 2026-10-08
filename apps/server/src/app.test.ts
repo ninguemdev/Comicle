@@ -19,6 +19,19 @@ describe('buildApp', () => {
     expect(response.json()).toEqual({ status: 'ok' });
   });
 
+  it('GET /healthz responde 503 quando o banco não responde', async () => {
+    app = await buildApp(
+      createTestDeps({ checkDatabase: () => Promise.reject(new Error('connection refused')) }),
+    );
+
+    const response = await app.http.inject({ method: 'GET', url: '/healthz' });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({
+      error: { code: 'INTERNAL', message: 'Banco de dados indisponível.' },
+    });
+  });
+
   it('aplica os cabeçalhos do helmet e o CORS configurado', async () => {
     app = await buildApp(createTestDeps());
 

@@ -9,7 +9,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T01 | [Bootstrap do monorepo](./T01-bootstrap-monorepo.md) | — | ✅ |
 | T02 | [Contratos compartilhados](./T02-contratos-compartilhados.md) | T01 | ✅ |
 | T03 | [Servidor base](./T03-servidor-base.md) | T02 | ✅ |
-| T04 | [Persistência](./T04-persistencia.md) | T03 | ⬜ |
+| T04 | [Persistência](./T04-persistencia.md) | T03 | ✅ |
 | T05 | [Identidade de convidado](./T05-identidade-convidado.md) | T03 | ⬜ |
 | T06 | [Web base e design system](./T06-web-base.md) | T02 | ⬜ |
 | T07 | [Avatares](./T07-avatares.md) | T06 | ⬜ |

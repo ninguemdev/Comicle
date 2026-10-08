@@ -6,5 +6,8 @@ export default defineConfig({
     include: ['apps/server/**/*.db.test.ts'],
     exclude: [...configDefaults.exclude],
     environment: 'node',
+    globalSetup: ['apps/server/test/support/db-global-setup.ts'],
+    // Every file shares the same database.
+    fileParallelism: false,
   },
 });
