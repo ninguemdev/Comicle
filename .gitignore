@@ -1,0 +1,33 @@
+# Dependências
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# Testes
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Claude Code (preferências pessoais)
+.claude/settings.local.json
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

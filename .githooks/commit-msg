@@ -1,0 +1,40 @@
+#!/bin/sh
+# commit-msg — remove trailers de coautoria/atribuição e valida Conventional Commits.
+# Ativado por `pnpm install` (script prepare) ou `git config core.hooksPath .githooks`.
+
+msg_file="$1"
+tmp_file="${msg_file}.hq-tmp"
+
+# 1. Remove linhas de atribuição (case-insensitive), em qualquer posição da mensagem.
+removed=$(grep -Eic '^[[:space:]]*(co-authored-by|claude-session)[[:space:]]*:|generated with \[?claude code|claude\.com/claude-code|claude\.ai/code/session' "$msg_file")
+if [ "${removed:-0}" -gt 0 ]; then
+  grep -Eiv '^[[:space:]]*(co-authored-by|claude-session)[[:space:]]*:|generated with \[?claude code|claude\.com/claude-code|claude\.ai/code/session' "$msg_file" > "$tmp_file"
+  # Remove linhas em branco sobrando no fim da mensagem.
+  awk '{ lines[NR] = $0 } END { n = NR; while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--; for (i = 1; i <= n; i++) print lines[i] }' "$tmp_file" > "$msg_file"
+  rm -f "$tmp_file"
+  echo "commit-msg: ${removed} linha(s) de coautoria/atribuição removida(s) — este repositório não usa coautoria." >&2
+fi
+
+# 2. Valida a primeira linha não comentada.
+subject=$(grep -v '^#' "$msg_file" | sed -n '/[^[:space:]]/{p;q;}')
+
+case "$subject" in
+  "Merge "* | "Revert "* | "fixup! "* | "squash! "* | "amend! "*) exit 0 ;;
+esac
+
+pattern='^(feat|fix|refactor|test|docs|style|perf|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+'
+
+if ! printf '%s\n' "$subject" | grep -Eq "$pattern"; then
+  echo "commit-msg: a primeira linha deve seguir Conventional Commits, ex.:" >&2
+  echo "  feat(server): adiciona transferência de anfitrião" >&2
+  echo "Recebido: $subject" >&2
+  exit 1
+fi
+
+length=$(printf '%s' "$subject" | wc -m | tr -d ' ')
+if [ "$length" -gt 100 ]; then
+  echo "commit-msg: primeira linha com $length caracteres (máximo 100)." >&2
+  exit 1
+fi
+
+exit 0
