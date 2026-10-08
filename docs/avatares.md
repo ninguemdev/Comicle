@@ -48,10 +48,10 @@ Arquivo único: `packages/shared/src/avatar/catalog.json`. É lido pelo servidor
 
 Regras:
 
-- `id` é único globalmente, em `kebab-case`, prefixado pela categoria (`hat-cowboy`). **Nunca reutilize nem renomeie um `id` publicado** — perfis salvos dependem dele. Para aposentar uma arte, adicione `"retired": true`: ela some da lista de escolha, mas continua renderizando para quem já a usa.
+- `id` é único globalmente, em `kebab-case`, prefixado pela categoria em `kebab-case` (`hat-cowboy`, `face-accessory-glasses`); a pasta da arte usa o mesmo prefixo (`face-accessory/`). **Nunca reutilize nem renomeie um `id` publicado** — perfis salvos dependem dele. Para aposentar uma arte, adicione `"retired": true`: ela some da lista de escolha, mas continua renderizando para quem já a usa.
 - `file` é relativo a `apps/web/public/avatars/`.
 - O padrão de cada categoria obrigatória é a primeira opção não aposentada; o de cada opcional é `null`.
-- `catalog.ts` valida o JSON com Zod ao carregar e exporta tipos e helpers (`isValidAvatar`, `defaultAvatar`, `randomAvatar(rng)`).
+- `catalog.ts` valida o JSON com Zod ao carregar e exporta tipos e helpers (`isValidAvatar`, `defaultAvatar`, `randomAvatar(rng)`, `sanitizeAvatar`, `activeOptions`). O `Rng` é a interface de `@comicle/shared` (D18).
 
 ---
 

@@ -41,7 +41,7 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 ## 2. Identidade do convidado
 
-**R1 — Nickname.** Normalização: `trim`, espaços internos repetidos viram um, remoção de caracteres de controle. Comprimento de 1 a `NICKNAME_MAX_LENGTH` *code points* (`[...s].length`). Nicknames repetidos são permitidos; a identidade interna é o `playerId`.
+**R1 — Nickname.** Normalização: `trim`, espaços internos repetidos viram um, remoção de caracteres de controle. Quebras de linha e tabulações contam como espaço (viram um espaço, não somem). Comprimento de 1 a `NICKNAME_MAX_LENGTH` *code points* (`[...s].length`). Nicknames repetidos são permitidos; a identidade interna é o `playerId`.
 
 **R2 — Avatar.** `AvatarConfig = { head, eyes, mouth, cheeks, hat, faceAccessory }`. `head`, `eyes` e `mouth` são obrigatórios; `cheeks`, `hat` e `faceAccessory` aceitam `null` (nenhum). Cada valor precisa existir no catálogo (`packages/shared/src/avatar/catalog.json`) para a categoria correta. O servidor rejeita IDs desconhecidos (`INVALID_PAYLOAD`). O cliente, ao carregar uma configuração salva com IDs que não existem mais, substitui apenas a categoria inválida pelo padrão.
 
