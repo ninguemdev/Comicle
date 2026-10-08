@@ -1,13 +1,15 @@
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { HEALTH_OK, type HealthResponse, type Rng } from '@comicle/shared';
+import type { Rng } from '@comicle/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config/env';
+import type { StoryRepository } from './modules/stories/story-repository';
 import { timeSyncHandlers } from './modules/timing/time-sync.handlers';
 import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
+import { registerHealthRoute } from './platform/http/health.routes';
 import type { SocketHandler } from './platform/realtime/define-handler';
 import {
   DEFAULT_SOCKET_RATE_LIMITS,
@@ -23,6 +25,9 @@ export interface AppDeps {
   clock: Clock;
   scheduler: Scheduler;
   rng: Rng;
+  storyRepository: StoryRepository;
+  /** Throws when the database is unreachable (`/healthz`). */
+  checkDatabase: () => Promise<void>;
   /** Handlers on top of the modules' own (tests register test-only events here). */
   extraSocketHandlers?: readonly SocketHandler[];
   socketRateLimits?: SocketRateLimitConfig;
@@ -61,7 +66,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   await http.register(rateLimit, { global: false });
   registerErrorHandler(http);
 
-  http.get('/healthz', (): HealthResponse => HEALTH_OK);
+  registerHealthRoute(http, deps.checkDatabase);
 
   // Hooks must exist before ready(); the socket server only after it.
   const socketRef: { io?: AppSocketServer } = {};
