@@ -17,10 +17,10 @@ Fundação do cliente: identidade visual, componentes base, roteamento, configur
 - [ ] Rotas: `/`, `/perfil`, `/sala/:code` (telas placeholder) e página 404 no estilo do jogo.
 - [ ] `lib/storage.ts`: wrapper de `localStorage` que tolera exceções (modo privado) e valida com Zod ao ler.
 - [ ] `lib/http-client.ts`: `fetch` com base URL, `Authorization` e parse de `{ error: { code } }`.
-- [ ] `lib/session.ts`: boot da sessão (R3) — valida token salvo, cria novo se 401, guarda em `hq.session`.
-- [ ] `lib/socket-client.ts`: cliente Socket.IO tipado com `@hq/shared`, `auth.token`, `emitWithAck` com timeout que sempre resolve um `Ack` (timeout → `fail('INTERNAL', …)`), estado de conexão.
+- [ ] `lib/session.ts`: boot da sessão (R3) — valida token salvo, cria novo se 401, guarda em `comicle.session`.
+- [ ] `lib/socket-client.ts`: cliente Socket.IO tipado com `@comicle/shared`, `auth.token`, `emitWithAck` com timeout que sempre resolve um `Ack` (timeout → `fail('INTERNAL', …)`), estado de conexão.
 - [ ] `lib/time-sync.ts`: algoritmo de `protocolo-realtime.md` §6 (função pura de cálculo + agendador).
-- [ ] Stores Zustand: `session-store`, `profile-store` (persistido em `hq.profile`), `room-store` (última `PlayerView`, status de conexão, ações).
+- [ ] Stores Zustand: `session-store`, `profile-store` (persistido em `comicle.profile`), `room-store` (última `PlayerView`, status de conexão, ações).
 - [ ] `strings/pt-BR.ts` com as strings usadas até aqui e mapa `ErrorCode → mensagem`.
 - [ ] `ui/`: `Button`, `Card`, `Dialog`, `Timer`, `ProgressPill`, `SpeechBubble`, `PlayerChip` (aceita avatar como slot até a T07), `Toast`, `ConnectionBanner`.
 - [ ] Página `/dev/ui` (só em `import.meta.env.DEV`) mostrando todos os componentes — ajuda a revisar a identidade visual.

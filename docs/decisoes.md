@@ -4,7 +4,7 @@ Decisões de arquitetura e de produto que não estão explícitas na especifica�
 
 ---
 
-**D1 — Monorepo pnpm sem orquestrador.** `apps/web`, `apps/server`, `packages/shared` com pnpm workspaces e scripts `pnpm -r`. Turborepo/Nx não compensam em três pacotes. *Consequência:* builds sequenciais simples; `@hq/shared` exporta TypeScript puro, consumido pelo Vite e empacotado no servidor pelo tsdown.
+**D1 — Monorepo pnpm sem orquestrador.** `apps/web`, `apps/server`, `packages/shared` com pnpm workspaces e scripts `pnpm -r`. Turborepo/Nx não compensam em três pacotes. *Consequência:* builds sequenciais simples; `@comicle/shared` exporta TypeScript puro, consumido pelo Vite e empacotado no servidor pelo tsdown.
 
 **D2 — Instância única e estado vivo em memória.** A especificação pede baixa complexidade operacional. Um processo Node é a autoridade de todas as salas; não há Redis nem adaptador do Socket.IO. *Consequência:* escala vertical apenas; suficiente para o público de grupos de amigos. Escalar exigirá uma nova decisão.
 
@@ -33,3 +33,7 @@ Decisões de arquitetura e de produto que não estão explícitas na especifica�
 **D14 — Imagens por HTTP autenticado, não pelo socket.** Separar o transporte de imagens permite autorização por quadro (`PanelAccessPolicy`), `no-store` e carregamento paralelo, sem inflar a `PlayerView`.
 
 **D15 — Identificadores em inglês, interface e documentação em pt-BR.** Código e nomes técnicos em inglês (padrão do ecossistema); textos de interface centralizados em `strings/pt-BR.ts` para facilitar tradução futura; documentação e mensagens de commit em português.
+
+**D16 — TypeScript 6.0 em vez do 7.** Na T01 a versão estável mais recente era o TypeScript 7 (compilador nativo), mas o `typescript-eslint` — necessário para as regras type-checked — só aceita `typescript < 6.1`. Decisão: travar `typescript@~6.0`. *Consequência:* lint type-checked funcionando; migrar para o 7 quando o `typescript-eslint` suportá-lo, em PR próprio.
+
+**D17 — Nome do jogo: Comicle.** Substitui o nome provisório "HQ Coletiva". Como o projeto ainda estava na T01, os identificadores derivados do nome também mudaram: pacotes `@comicle/*`, chaves `comicle.session` e `comicle.profile` no `localStorage`, usuário e bancos `comicle`/`comicle_test` no Postgres. *Consequência:* "HQ" continua aparecendo só no sentido de história em quadrinhos (ex.: página de HQ).

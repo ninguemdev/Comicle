@@ -6,7 +6,7 @@ Instruções para agentes de código (Claude Code e outros) trabalhando neste re
 
 Jogo multiplayer de navegador em que grupos de amigos criam **histórias em quadrinhos coletivas**: cada jogador escreve um tema, as histórias circulam em rodadas, cada um desenha um quadro depois de ver (e memorizar) os anteriores, e no fim o anfitrião revela tudo como páginas de HQ. Sem contas, sem pontuação. A v1 tem só o modo **Quadrinhos Colaborativos**.
 
-Nome provisório: **HQ Coletiva** (pacotes `@hq/*`).
+Nome: **Comicle** (pacotes `@comicle/*`).
 
 ## Fontes de verdade
 
@@ -35,7 +35,7 @@ TypeScript estrito · pnpm workspaces · React 19 + Vite + Tailwind 4 + Zustand 
 ```text
 apps/web          cliente React
 apps/server       servidor Fastify + Socket.IO
-packages/shared   tipos, schemas Zod, eventos, constantes, catálogo de avatares (@hq/shared)
+packages/shared   tipos, schemas Zod, eventos, constantes, catálogo de avatares (@comicle/shared)
 e2e/              Playwright
 docs/             especificação, regras, arquitetura, tasks
 ```
@@ -45,7 +45,7 @@ docs/             especificação, regras, arquitetura, tasks
 | Comando | O que faz |
 |---|---|
 | `pnpm install` | Instala e ativa os git hooks (`.githooks/`) |
-| `docker compose up -d` | Sobe o PostgreSQL local (`hq` e `hq_test`) |
+| `docker compose up -d` | Sobe o PostgreSQL local (`comicle` e `comicle_test`) |
 | `pnpm dev` | Web em `:5173` e servidor em `:3000` |
 | `pnpm test` | Testes unitários e de integração (sem banco) |
 | `pnpm test:db` | Testes de repositório contra o Postgres |
@@ -53,7 +53,7 @@ docs/             especificação, regras, arquitetura, tasks
 | `pnpm lint` · `pnpm typecheck` · `pnpm format` | Qualidade |
 | `pnpm db:generate` · `pnpm db:migrate` | Migrações Drizzle |
 | `pnpm avatars:check` | Valida catálogo e artes de avatar |
-| `pnpm --filter @hq/server <script>` | Script de um pacote só |
+| `pnpm --filter @comicle/server <script>` | Script de um pacote só |
 
 Os comandos existem a partir da T01. Antes de dizer que algo funciona, rode-os.
 
@@ -64,10 +64,10 @@ Os comandos existem a partir da T01. Antes de dizer que algo funciona, rode-os.
 3. **Privacidade é responsabilidade do servidor.** `buildPlayerView` e `PanelAccessPolicy` são os únicos lugares que decidem o que alguém vê. Nunca mande dados "escondidos" para o cliente esconder.
 4. **Domínio puro.** Regras de jogo não importam Fastify, Socket.IO, Drizzle, `Date.now()` ou `Math.random()`. Tempo e aleatoriedade são injetados (`Clock`, `Scheduler`, `Rng`).
 5. **Uma fila por sala.** Toda mutação de sala passa por `room.runExclusive`.
-6. **Handlers finos.** Validam com o schema de `@hq/shared`, chamam o serviço, respondem `Ack`. Sem regra de negócio.
-7. **Contratos em um lugar.** Tipos, schemas e eventos compartilhados vivem em `@hq/shared`. Mudou o contrato → atualize `docs/protocolo-realtime.md` no mesmo PR.
+6. **Handlers finos.** Validam com o schema de `@comicle/shared`, chamam o serviço, respondem `Ack`. Sem regra de negócio.
+7. **Contratos em um lugar.** Tipos, schemas e eventos compartilhados vivem em `@comicle/shared`. Mudou o contrato → atualize `docs/protocolo-realtime.md` no mesmo PR.
 8. **Componentes não falam com o socket.** Usam ações das stores.
-9. **Sem números mágicos.** Constantes de regra vêm de `@hq/shared/constants`.
+9. **Sem números mágicos.** Constantes de regra vêm de `@comicle/shared/constants`.
 10. **Simplicidade.** Monólito modular, instância única, sem Redis, filas, microsserviços, GraphQL ou camadas de abstração sem uso real. Dependência nova só com justificativa no PR e entrada em `docs/decisoes.md`.
 
 ## Convenções de código

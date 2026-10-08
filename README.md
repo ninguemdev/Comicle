@@ -1,6 +1,4 @@
-# HQ Coletiva
-
-> Nome provisório.
+# Comicle
 
 Jogo multiplayer de navegador para criar **histórias em quadrinhos coletivas** com os amigos.
 

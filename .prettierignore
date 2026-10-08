@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+dist/
+coverage/
+apps/server/drizzle/
+
+# Hand-written documentation: Prettier would rewrite tables and lists.
+*.md

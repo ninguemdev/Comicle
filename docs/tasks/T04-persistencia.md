@@ -18,14 +18,14 @@ Banco PostgreSQL com Drizzle, migrações versionadas, repositório de conteúdo
 - [ ] Suíte de contrato `story-repository.contract.ts` executada contra as duas implementações (memória em `pnpm test`, Postgres em `pnpm test:db`).
 - [ ] Inicialização chama `deleteAllOpenRooms()` e registra quantas salas foram limpas (R17).
 - [ ] `/healthz` verifica o banco (`select 1`) e responde 503 se indisponível.
-- [ ] Setup de `test:db`: recria o schema em `hq_test` antes da suíte.
+- [ ] Setup de `test:db`: recria o schema em `comicle_test` antes da suíte.
 
 ## Fora do escopo
 - Uso do repositório pelos fluxos de sala/partida (T08, T11, T12).
 
 ## Critérios de aceite
 - [ ] `docker compose up -d && pnpm db:migrate && pnpm dev` funciona do zero.
-- [ ] Nenhum SQL manual fora das migrações geradas (exceto o init do Docker que cria `hq_test`).
+- [ ] Nenhum SQL manual fora das migrações geradas (exceto o init do Docker que cria `comicle_test`).
 - [ ] CI roda `test:db` contra o serviço Postgres e passa.
 
 ## Testes obrigatórios (suíte de contrato)
