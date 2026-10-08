@@ -23,7 +23,6 @@ export const strings = {
   app: {
     title: 'Comicle',
     tagline: 'Histórias em quadrinhos feitas a muitas mãos',
-    underConstruction: 'em construção',
   },
   connection: {
     reconnecting: 'Reconectando…',

@@ -68,6 +68,16 @@ const componentImports = {
   ],
 };
 
+/** Interface text lives in apps/web/src/strings/pt-BR.ts, never as a literal in JSX (interface.md). */
+const literalTextMessage = 'Texto de interface vem de strings/pt-BR.ts (interface.md).';
+const noLiteralText = [
+  { selector: 'JSXText[value=/\\S/]', message: literalTextMessage },
+  {
+    selector: 'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder)$/] > Literal',
+    message: literalTextMessage,
+  },
+];
+
 export default defineConfig(
   globalIgnores(['**/dist/', '**/coverage/', 'apps/server/drizzle/']),
   js.configs.recommended,
@@ -103,8 +113,14 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['apps/web/src/features/**/*.{ts,tsx}', 'apps/web/src/ui/**/*.{ts,tsx}'],
+    files: ['apps/web/src/**/*.{ts,tsx}'],
+    ignores: ['apps/web/src/lib/**', 'apps/web/src/stores/**'],
     rules: { 'no-restricted-imports': ['error', componentImports] },
+  },
+  {
+    files: ['apps/web/src/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: { 'no-restricted-syntax': ['error', ...noLiteralText] },
   },
   prettier,
 );
