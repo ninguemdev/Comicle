@@ -64,7 +64,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │  ├─ web/
 │  │  ├─ public/avatars/<categoria>/<id>.svg
 │  │  └─ src/
-│  │     ├─ main.tsx · app.tsx · router.tsx
+│  │     ├─ main.tsx · app.tsx · router.tsx · app-layout.tsx · boot.ts
 │  │     ├─ config/env.ts            # VITE_* validados com Zod
 │  │     ├─ lib/                     # socket-client, http-client, time-sync, storage
 │  │     ├─ stores/                  # session-store, profile-store, room-store
@@ -125,7 +125,7 @@ Nomes de arquivo em `kebab-case`; componentes React em `PascalCase` dentro de ar
 6. **No cliente**, componentes não falam com o socket diretamente: usam ações das stores (`roomStore.actions.submitTheme(text)`), que chamam `lib/socket-client`.
 7. O cliente **não contém regra de jogo** além de UX (ex.: desabilitar botão). Tudo que importa é decidido no servidor.
 
-As regras 1, 2 e 6 são garantidas com `no-restricted-imports` do próprio ESLint, configurado por diretório no `eslint.config.js` (sem plugin extra).
+As regras 1, 2 e 6 são garantidas com `no-restricted-imports` do próprio ESLint, configurado por diretório no `eslint.config.js` (sem plugin extra). A regra 6 vale para todo `apps/web/src` fora de `lib/` e `stores/`. No mesmo espírito, `no-restricted-syntax` barra texto literal em JSX (texto solto e `aria-label`, `title`, `alt`, `placeholder` com string fixa) fora dos testes: todo texto vem de `strings/pt-BR.ts`.
 
 ---
 
@@ -189,8 +189,9 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 
 ## 5. Cliente em detalhe
 
-- **Boot**: lê `comicle.session`; valida com `GET /api/guest-sessions/me`; se inválido, cria nova. Conecta o socket. Mede o deslocamento de tempo.
-- **Rotas**: `/` (início), `/perfil` (personalização), `/sala/:code` (lobby, partida e apresentação são estados da mesma rota, decididos pela `PlayerView`).
+- **Boot** (`boot.ts`): lê `comicle.session`; valida com `GET /api/guest-sessions/me`; se a resposta for 401, cria nova (outras falhas mantêm o token e mostram a faixa de conexão com "Tentar de novo"). Conecta o socket. Mede o deslocamento de tempo a cada conexão e reconexão. Se o socket recusar o token (`connect_error` `UNAUTHORIZED`), a `room-store` pede sessão nova à `session-store` e reconecta.
+- **Envelope único**: `lib/http-client` e `lib/socket-client` sempre resolvem um `Ack` e nunca rejeitam. Falha de rede, resposta fora do schema e ack sem resposta em 10 s (`ACK_TIMEOUT_MS`) viram `INTERNAL`. O texto exibido vem do mapa `errorMessages` de `strings/pt-BR.ts`, pelo código.
+- **Rotas**: `/` (início), `/perfil` (personalização), `/sala/:code` (lobby, partida e apresentação são estados da mesma rota, decididos pela `PlayerView`), 404 no estilo do jogo para o resto e `/dev/ui` (vitrine do design system) só em desenvolvimento.
 - **`MatchScreen`** escolhe a tela pela `task.kind` e `phase`. Não existe navegação manual entre fases.
 - **Editor de desenho** (`features/drawing/engine/`): classes puras para documento de traços, histórico (desfazer/refazer), suavização e exportação; o componente React só conecta eventos de ponteiro e o canvas. Detalhes em [interface](./interface.md#editor-de-desenho).
 - **Imagens**: `usePanelImage(panelId)` com `fetch` autenticado e `blob:` URLs.

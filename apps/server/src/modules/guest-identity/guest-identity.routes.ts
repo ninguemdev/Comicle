@@ -1,3 +1,4 @@
+import type { GuestSessionCreated, GuestSessionMe } from '@comicle/shared';
 import type { FastifyInstance, preHandlerAsyncHookHandler } from 'fastify';
 
 import type { GuestSessionStore } from './session-store';
@@ -17,11 +18,16 @@ export function registerGuestIdentityRoutes(
     { config: { rateLimit: CREATE_SESSION_RATE_LIMIT } },
     (_request, reply) => {
       const { token, expiresAt } = sessions.create();
-      return reply.status(HTTP_CREATED).send({ token, expiresAt });
+      return reply.status(HTTP_CREATED).send({ token, expiresAt } satisfies GuestSessionCreated);
     },
   );
 
-  http.get('/api/guest-sessions/me', { preHandler: requireGuest }, (request) => ({
-    guestId: request.guestId,
-  }));
+  http.get(
+    '/api/guest-sessions/me',
+    { preHandler: requireGuest },
+    (request) =>
+      ({
+        guestId: request.guestId,
+      }) satisfies GuestSessionMe,
+  );
 }

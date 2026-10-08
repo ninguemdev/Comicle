@@ -1,11 +1,15 @@
-import { strings } from './strings/pt-BR';
+import { useEffect } from 'react';
+import { RouterProvider } from 'react-router/dom';
+
+import { bootAndConnect } from './boot';
+import { createAppRouter } from './router';
+
+const router = createAppRouter();
 
 export function App() {
-  return (
-    <main>
-      <h1>
-        {strings.app.title} — {strings.app.underConstruction}
-      </h1>
-    </main>
-  );
+  useEffect(() => {
+    void bootAndConnect();
+  }, []);
+
+  return <RouterProvider router={router} />;
 }

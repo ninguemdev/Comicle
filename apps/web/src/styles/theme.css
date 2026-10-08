@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+/* Tokens from docs/interface.md §1 ("página de gibi"). */
+@theme {
+  /* Only the game palette: a color outside the tokens is a mistake, not a choice. */
+  --color-*: initial;
+  --color-paper: #fffbf0;
+  --color-ink: #16161d;
+  --color-muted: #5b5b66;
+  --color-pop-yellow: #ffd23f;
+  --color-pop-red: #ef476f;
+  --color-pop-blue: #118ab2;
+  --color-pop-green: #06d6a0;
+
+  --font-display: 'Bangers', 'Impact', system-ui, sans-serif;
+  --font-body: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
+
+  --shadow-pop: 4px 4px 0 var(--color-ink);
+  --shadow-pop-pressed: 1px 1px 0 var(--color-ink);
+
+  --animate-pop: pop 200ms ease-out;
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+    to {
+      opacity: 1;
+      scale: 1;
+    }
+  }
+}
+
+:root {
+  --border-ink: 3px solid var(--color-ink);
+  --gutter-comic: 12px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter-comic: 16px;
+  }
+}
+
+/* Ink outline used by cards, buttons and panels. */
+@utility border-comic {
+  border: var(--border-ink);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-paper);
+    /* Subtle halftone dots, like printed comic paper. */
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--color-ink) 7%, transparent) 1px,
+      transparent 1.5px
+    );
+    background-size: 12px 12px;
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Yellow focus ring against the ink border of every control (interface.md §6). */
+  :focus-visible {
+    outline: 4px solid var(--color-pop-yellow);
+    outline-offset: 0;
+  }
+
+  /* Borderless links get the ink edge from the outline itself. */
+  a:focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 2px;
+    background-color: var(--color-pop-yellow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

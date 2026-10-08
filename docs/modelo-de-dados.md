@@ -6,7 +6,7 @@ O estado vive em dois lugares, com papéis diferentes:
 |---|---|---|
 | **Memória do servidor** | Sessões, salas, membros, presença, fase, prazos, plano de distribuição, rascunhos (autosave), cursor da apresentação | Estado vivo e de alta frequência; um processo único é a autoridade (ver [decisões D2, D3](./decisoes.md)) |
 | **PostgreSQL** | Conteúdo produzido: salas (registro), partidas, temas, histórias e quadros (PNG) | Tira imagens da memória, permite servi-las por HTTP com autorização e garante limpeza por cascata |
-| **Navegador** (`localStorage`) | `comicle.session` (token) e `comicle.profile` (nickname + avatar) | Retorno sem cadastro (R3, R4) |
+| **Navegador** (`localStorage`) | `comicle.session` (`{ token }`) e `comicle.profile` (`{ nickname, avatar }`), em JSON validado com Zod na leitura; valor corrompido é ignorado | Retorno sem cadastro (R3, R4) |
 
 ---
 

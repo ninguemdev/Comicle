@@ -25,7 +25,9 @@ Tokens (Tailwind 4, `@theme` em `apps/web/src/styles/theme.css`):
 | `--shadow-pop` | `4px 4px 0 var(--color-ink)` | botões e cartões (pressionado: `1px 1px`) |
 | `--gutter-comic` | 12px (mobile) / 16px | espaço entre quadros |
 
-Componentes base em `apps/web/src/ui/`: `Button` (primary, secondary, danger, ghost), `Card`, `Dialog` (com foco preso e `Esc`), `Timer`, `ProgressPill` ("3/5 prontos"), `SpeechBubble` (mensagens de estado), `PlayerChip` (avatar + nickname + estado), `Toast`.
+Componentes base em `apps/web/src/ui/`: `Button` (primary, secondary, danger, ghost), `Card`, `Dialog` (com foco preso e `Esc`), `Timer`, `ProgressPill` ("3/5 prontos"), `SpeechBubble` (mensagens de estado), `PlayerChip` (avatar + nickname + estado), `Toast`, `ConnectionBanner` (faixa "Reconectando…") e `Logo`. Em desenvolvimento, a rota `/dev/ui` mostra todos eles; ela não entra no build de produção.
+
+A paleta do Tailwind fica restrita a esses tokens (`--color-*: initial` no `theme.css`): cor nova entra primeiro nesta tabela ([D19](./decisoes.md)). O texto do botão `danger` é `ink`, porque `paper` sobre `pop-red` não atinge contraste AA.
 
 Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A revelação de quadros na apresentação usa um "pop" leve (escala 0.96 → 1).
 
