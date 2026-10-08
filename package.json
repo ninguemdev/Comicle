@@ -1,0 +1,36 @@
+{
+  "name": "hq-coletiva",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "dev": "pnpm --parallel --filter @hq/web --filter @hq/server dev",
+    "build": "pnpm -r build",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
+    "test": "vitest run",
+    "test:db": "vitest run --config vitest.db.config.ts --passWithNoTests",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @hq/server db:generate",
+    "db:migrate": "pnpm --filter @hq/server db:migrate",
+    "avatars:check": "node -e \"console.log('avatars:check disponível na T07')\"",
+    "e2e": "node -e \"console.log('e2e disponível na T20')\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.1",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}
