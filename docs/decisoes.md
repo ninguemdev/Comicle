@@ -33,3 +33,5 @@ Decisões de arquitetura e de produto que não estão explícitas na especifica�
 **D14 — Imagens por HTTP autenticado, não pelo socket.** Separar o transporte de imagens permite autorização por quadro (`PanelAccessPolicy`), `no-store` e carregamento paralelo, sem inflar a `PlayerView`.
 
 **D15 — Identificadores em inglês, interface e documentação em pt-BR.** Código e nomes técnicos em inglês (padrão do ecossistema); textos de interface centralizados em `strings/pt-BR.ts` para facilitar tradução futura; documentação e mensagens de commit em português.
+
+**D16 — TypeScript 6.0 em vez do 7.** Na T01 a versão estável mais recente era o TypeScript 7 (compilador nativo), mas o `typescript-eslint` — necessário para as regras type-checked — só aceita `typescript < 6.1`. Decisão: travar `typescript@~6.0`. *Consequência:* lint type-checked funcionando; migrar para o 7 quando o `typescript-eslint` suportá-lo, em PR próprio.

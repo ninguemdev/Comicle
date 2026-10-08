@@ -35,7 +35,7 @@ Versões: a estável mais recente de cada pacote no momento da T01, travadas pel
 |---|---|---|
 | Runtime | **Node.js 24 LTS** (`.nvmrc`) | LTS ativo |
 | Gerenciador | **pnpm 10** com workspaces (`packageManager` no `package.json` raiz, via Corepack) | Monorepo simples, sem Turborepo/Nx |
-| Linguagem | **TypeScript** `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` | Especificação |
+| Linguagem | **TypeScript 6.0** ([D16](./decisoes.md)) `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` | Especificação |
 | Frontend | **React 19** + **Vite** + **React Router** (modo biblioteca, `createBrowserRouter`) | Especificação |
 | Estado no cliente | **Zustand** | Pouco boilerplate; a `PlayerView` é a única fonte do estado do jogo |
 | Estilo | **Tailwind CSS 4** (configuração CSS-first com `@theme`) | Especificação |
@@ -106,6 +106,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │     ├─ schemas/                    # Zod
 │     └─ avatar/catalog.json + catalog.ts
 ├─ e2e/                              # Playwright
+├─ docker/postgres/init/             # scripts de init do Postgres local (cria hq_test)
 ├─ docs/
 └─ .claude/ · .githooks/ · .github/
 ```
