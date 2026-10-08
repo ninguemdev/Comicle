@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: hq
+      POSTGRES_PASSWORD: hq
+      POSTGRES_DB: hq
+    ports:
+      - '5432:5432'
+    volumes:
+      - hq-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # Queries hq_test over TCP: only passes after the init scripts ran and the real server is up.
+      test: ['CMD-SHELL', 'psql -h 127.0.0.1 -U hq -d hq_test -tAc "select 1"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  hq-postgres-data:
