@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "categories": {
+    "head": {
+      "label": "Cabeça",
+      "required": true,
+      "options": [
+        { "id": "head-round", "label": "Redonda", "file": "head/head-round.svg" },
+        { "id": "head-square", "label": "Quadrada", "file": "head/head-square.svg" }
+      ]
+    },
+    "eyes": {
+      "label": "Olhos",
+      "required": true,
+      "options": [
+        { "id": "eyes-dots", "label": "Pontinhos", "file": "eyes/eyes-dots.svg" },
+        { "id": "eyes-wide", "label": "Arregalados", "file": "eyes/eyes-wide.svg" }
+      ]
+    },
+    "mouth": {
+      "label": "Boca",
+      "required": true,
+      "options": [
+        { "id": "mouth-smile", "label": "Sorriso", "file": "mouth/mouth-smile.svg" },
+        { "id": "mouth-open", "label": "Aberta", "file": "mouth/mouth-open.svg" }
+      ]
+    },
+    "cheeks": {
+      "label": "Bochechas",
+      "required": false,
+      "options": [{ "id": "cheeks-blush", "label": "Coradas", "file": "cheeks/cheeks-blush.svg" }]
+    },
+    "faceAccessory": {
+      "label": "Acessório",
+      "required": false,
+      "options": [
+        {
+          "id": "face-accessory-glasses",
+          "label": "Óculos",
+          "file": "face-accessory/face-accessory-glasses.svg"
+        }
+      ]
+    },
+    "hat": {
+      "label": "Chapéu",
+      "required": false,
+      "options": [{ "id": "hat-cap", "label": "Boné", "file": "hat/hat-cap.svg" }]
+    }
+  }
+}
