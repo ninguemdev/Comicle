@@ -1,7 +1,21 @@
-import { defaultAvatar, playerProfileSchema, type PlayerProfile } from '@comicle/shared';
+import {
+  nicknameSchema,
+  randomAvatar,
+  sanitizeAvatar,
+  type PlayerProfile,
+  type Rng,
+} from '@comicle/shared';
+import { z } from 'zod';
 import { create } from 'zustand';
 
+import { cryptoRng } from '../lib/random';
 import { STORAGE_KEYS, storage as defaultStorage, type SafeStorage } from '../lib/storage';
+
+/** R2: a saved avatar whose IDs left the catalog keeps its valid parts instead of being lost. */
+const storedProfileSchema = z.object({
+  nickname: nicknameSchema,
+  avatar: z.unknown().transform((avatar) => sanitizeAvatar(avatar)),
+});
 
 interface ProfileState {
   /** The nickname stays empty until the player saves one (R4). */
@@ -13,12 +27,12 @@ interface ProfileState {
   };
 }
 
-export function createProfileStore(storage: SafeStorage) {
-  const stored = storage.read(STORAGE_KEYS.profile, playerProfileSchema);
+export function createProfileStore(storage: SafeStorage, rng: Rng) {
+  const stored = storage.read(STORAGE_KEYS.profile, storedProfileSchema);
 
   return create<ProfileState>()((set) => ({
-    // First visit: empty nickname; the random avatar of R4 arrives with the catalog (T07).
-    profile: stored ?? { nickname: '', avatar: defaultAvatar() },
+    // R4: the first visit gets a random avatar and an empty nickname.
+    profile: stored ?? { nickname: '', avatar: randomAvatar(rng) },
     saved: stored !== null,
     actions: {
       save(profile) {
@@ -29,4 +43,4 @@ export function createProfileStore(storage: SafeStorage) {
   }));
 }
 
-export const useProfileStore = createProfileStore(defaultStorage);
+export const useProfileStore = createProfileStore(defaultStorage, cryptoRng);
