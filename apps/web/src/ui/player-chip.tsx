@@ -1,4 +1,5 @@
 import type { AvatarConfig, MemberProgress } from '@comicle/shared';
+import type { ReactNode } from 'react';
 
 import { AvatarRenderer } from '../features/avatar/avatar-renderer';
 import { strings } from '../strings/pt-BR';
@@ -11,6 +12,8 @@ export interface PlayerChipProps {
   isSelf?: boolean;
   connected?: boolean;
   progress?: MemberProgress;
+  /** Extra control at the end, such as the host's kick button. */
+  action?: ReactNode;
 }
 
 function ProgressBadge({ progress }: { progress: MemberProgress }) {
@@ -43,6 +46,7 @@ export function PlayerChip({
   isSelf = false,
   connected = true,
   progress = 'idle',
+  action,
 }: PlayerChipProps) {
   return (
     <div
@@ -73,6 +77,7 @@ export function PlayerChip({
         )}
       </span>
       <ProgressBadge progress={progress} />
+      {action}
     </div>
   );
 }
