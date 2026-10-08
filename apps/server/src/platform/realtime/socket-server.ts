@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 import type { Clock } from '../clock';
 import type { AuthenticateToken } from '../http/require-guest';
 import { createSocketAuthMiddleware } from './auth-middleware';
-import type { SocketHandler } from './define-handler';
+import type { ConnectionContext, SocketHandler } from './define-handler';
 import { SocketRateLimiter, type SocketRateLimitConfig } from './rate-limit';
 import type { AppSocketServer } from './socket-types';
 
@@ -20,6 +20,8 @@ export interface SocketServerOptions {
   handlers: readonly SocketHandler[];
   rateLimits: SocketRateLimitConfig;
   authenticate: AuthenticateToken;
+  /** Called once per connection when it drops; failures are logged. */
+  onDisconnect?: (connection: ConnectionContext) => Promise<void>;
 }
 
 /** Socket.IO attached straight to Fastify's HTTP server (no third-party plugin). */
@@ -43,6 +45,14 @@ export function createSocketServer(
     };
     for (const handler of options.handlers) {
       handler.attach(connection);
+    }
+    const { onDisconnect } = options;
+    if (onDisconnect) {
+      socket.on('disconnect', () => {
+        onDisconnect(connection).catch((error: unknown) => {
+          connection.log.error({ err: error }, 'disconnect handling failed');
+        });
+      });
     }
   });
 
