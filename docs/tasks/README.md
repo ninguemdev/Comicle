@@ -11,7 +11,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T03 | [Servidor base](./T03-servidor-base.md) | T02 | ✅ |
 | T04 | [Persistência](./T04-persistencia.md) | T03 | ✅ |
 | T05 | [Identidade de convidado](./T05-identidade-convidado.md) | T03 | ✅ |
-| T06 | [Web base e design system](./T06-web-base.md) | T02 | 🟨 |
+| T06 | [Web base e design system](./T06-web-base.md) | T02 | ✅ |
 | T07 | [Avatares](./T07-avatares.md) | T06 | ⬜ |
 | T08 | [Salas no servidor](./T08-salas-servidor.md) | T04, T05 | ⬜ |
 | T09 | [Telas de início e lobby](./T09-telas-inicio-lobby.md) | T07, T08 | ⬜ |
