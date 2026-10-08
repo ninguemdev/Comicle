@@ -42,12 +42,12 @@ Versões: a estável mais recente de cada pacote no momento da T01, travadas pel
 | Fontes | **@fontsource** auto-hospedado (Bangers para títulos, Nunito para texto) | Sem dependência de CDN; facilita integração com o site |
 | Backend | **Fastify 5** + `@fastify/cors`, `@fastify/rate-limit`, `@fastify/helmet`, `@fastify/static` (produção) | Especificação |
 | Tempo real | **Socket.IO 4**, anexado a `app.server` (sem plugin de terceiros) | Especificação; reconexão e acks prontos |
-| Validação | **Zod 4**, schemas compartilhados em `@hq/shared` | Um schema valida cliente e servidor |
+| Validação | **Zod 4**, schemas compartilhados em `@comicle/shared` | Um schema valida cliente e servidor |
 | Banco | **PostgreSQL 17** (Docker em dev) + **Drizzle ORM** + `drizzle-kit` + driver `pg` | Tipado, leve, migrações SQL versionadas |
 | Desenho | **Canvas 2D API** + Pointer Events | Especificação |
 | Testes | **Vitest** (unidade e integração), **Testing Library** + jsdom (web), **Playwright** (E2E) | Vitest é da especificação |
 | Qualidade | **ESLint** (flat config, `typescript-eslint` com regras type-checked, `react-hooks`) + **Prettier** | Padrão do ecossistema |
-| Build do servidor | **tsdown** (empacota `@hq/shared` dentro do bundle) | O pacote compartilhado exporta TS puro |
+| Build do servidor | **tsdown** (empacota `@comicle/shared` dentro do bundle) | O pacote compartilhado exporta TS puro |
 | Dev do servidor | **tsx watch** | |
 | Logs | **pino** (embutido no Fastify), `pino-pretty` só em dev | |
 | CI | **GitHub Actions** | |
@@ -106,7 +106,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │     ├─ schemas/                    # Zod
 │     └─ avatar/catalog.json + catalog.ts
 ├─ e2e/                              # Playwright
-├─ docker/postgres/init/             # scripts de init do Postgres local (cria hq_test)
+├─ docker/postgres/init/             # scripts de init do Postgres local (cria comicle_test)
 ├─ docs/
 └─ .claude/ · .githooks/ · .github/
 ```
@@ -119,7 +119,7 @@ Nomes de arquivo em `kebab-case`; componentes React em `PascalCase` dentro de ar
 
 1. **`packages/shared`** não importa nada de `apps/*` nem de bibliotecas de runtime além de Zod.
 2. **Domínio puro** (arquivos sem sufixo `.service`, `.handlers`, `.routes`, `.repository` dentro de `modules/`) não importa Fastify, Socket.IO, Drizzle, `Date.now()` nem `Math.random()`. Tempo e aleatoriedade chegam por parâmetro (`Clock`, `Rng`).
-3. **Handlers** (socket) e **rotas** (HTTP) são finos: validam o payload com o schema de `@hq/shared`, chamam um serviço, convertem o resultado em `Ack`/resposta. Nenhuma regra de jogo neles.
+3. **Handlers** (socket) e **rotas** (HTTP) são finos: validam o payload com o schema de `@comicle/shared`, chamam um serviço, convertem o resultado em `Ack`/resposta. Nenhuma regra de jogo neles.
 4. **Serviços** orquestram: pegam a sala, executam a mutação dentro de `room.runExclusive`, persistem, agendam timers e pedem a publicação das views.
 5. Módulos se comunicam por chamadas diretas a serviços, nunca acessando estruturas internas uns dos outros. Sem barramento de eventos.
 6. **No cliente**, componentes não falam com o socket diretamente: usam ações das stores (`roomStore.actions.submitTheme(text)`), que chamam `lib/socket-client`.
@@ -143,7 +143,7 @@ Cada `Room` tem uma fila assíncrona (`runExclusive(fn)`, encadeamento de promis
 
 - `Clock { now(): number }` — `SystemClock` em produção.
 - `Scheduler { schedule(key, at, fn); cancel(key) }` — um timer por chave (`room:<id>:phase`, `room:<id>:host-transfer`…). Reagendar uma chave cancela a anterior. O callback entra na fila da sala.
-- `GameTimingConfig` agrupa as durações (`themeWritingMs`, `readingMs(roundIndex)`, `drawingMs(settings)`, `roundClosingMs`, graces e TTLs). Produção usa as constantes de `@hq/shared`; testes usam milissegundos.
+- `GameTimingConfig` agrupa as durações (`themeWritingMs`, `readingMs(roundIndex)`, `drawingMs(settings)`, `roundClosingMs`, graces e TTLs). Produção usa as constantes de `@comicle/shared`; testes usam milissegundos.
 - Prazos são instantes absolutos (`phaseDeadlineAt`). Nada conta segundos em loop.
 
 ### Máquina de fases
@@ -187,7 +187,7 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 
 ## 5. Cliente em detalhe
 
-- **Boot**: lê `hq.session`; valida com `GET /api/guest-sessions/me`; se inválido, cria nova. Conecta o socket. Mede o deslocamento de tempo.
+- **Boot**: lê `comicle.session`; valida com `GET /api/guest-sessions/me`; se inválido, cria nova. Conecta o socket. Mede o deslocamento de tempo.
 - **Rotas**: `/` (início), `/perfil` (personalização), `/sala/:code` (lobby, partida e apresentação são estados da mesma rota, decididos pela `PlayerView`).
 - **`MatchScreen`** escolhe a tela pela `task.kind` e `phase`. Não existe navegação manual entre fases.
 - **Editor de desenho** (`features/drawing/engine/`): classes puras para documento de traços, histórico (desfazer/refazer), suavização e exportação; o componente React só conecta eventos de ponteiro e o canvas. Detalhes em [interface](./interface.md#editor-de-desenho).
@@ -203,8 +203,8 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 |---|---|---|
 | `PORT` | `3000` | |
 | `HOST` | `0.0.0.0` | |
-| `DATABASE_URL` | `postgres://hq:hq@localhost:5432/hq` | |
-| `DATABASE_URL_TEST` | `postgres://hq:hq@localhost:5432/hq_test` | testes `*.db.test.ts` |
+| `DATABASE_URL` | `postgres://comicle:comicle@localhost:5432/comicle` | |
+| `DATABASE_URL_TEST` | `postgres://comicle:comicle@localhost:5432/comicle_test` | testes `*.db.test.ts` |
 | `CORS_ORIGINS` | `http://localhost:5173` | lista separada por vírgula |
 | `PUBLIC_BASE_PATH` | `/` | prefixo quando o web é servido pelo servidor |
 | `SERVE_WEB_DIST` | vazio | caminho do build do web para servir estático em produção |

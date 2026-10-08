@@ -18,13 +18,13 @@ Estrutura de workspaces, ferramentas de qualidade, testes, banco local e CI func
 - [x] `pnpm-workspace.yaml` com `apps/*` e `packages/*`.
 - [x] `.nvmrc` (24) já existe — manter.
 - [x] `tsconfig.base.json` com `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `verbatimModuleSyntax`, `moduleResolution: "bundler"`; cada pacote estende.
-- [x] `packages/shared`: `package.json` (`name: "@hq/shared"`, `type: module`, `exports` apontando para `src/index.ts`), `src/index.ts` mínimo.
-- [x] `apps/server`: `name: "@hq/server"`, `tsx watch` em dev, build com tsdown (empacotando `@hq/shared`), `src/main.ts` que sobe um Fastify mínimo com `GET /healthz`.
-- [x] `apps/web`: `name: "@hq/web"`, Vite + React 19 + TS, página "HQ Coletiva — em construção", proxy de `/api` e `/socket.io` (com `ws: true`) para `localhost:3000`, e `server.host: true` para testar pela rede local.
+- [x] `packages/shared`: `package.json` (`name: "@comicle/shared"`, `type: module`, `exports` apontando para `src/index.ts`), `src/index.ts` mínimo.
+- [x] `apps/server`: `name: "@comicle/server"`, `tsx watch` em dev, build com tsdown (empacotando `@comicle/shared`), `src/main.ts` que sobe um Fastify mínimo com `GET /healthz`.
+- [x] `apps/web`: `name: "@comicle/web"`, Vite + React 19 + TS, página "Comicle — em construção", proxy de `/api` e `/socket.io` (com `ws: true`) para `localhost:3000`, e `server.host: true` para testar pela rede local.
 - [x] ESLint flat config na raiz (`typescript-eslint` type-checked, `eslint-plugin-react-hooks`, `eslint-config-prettier`) e esqueleto das regras `no-restricted-imports` de `docs/arquitetura.md` §3.
 - [x] Prettier (`.prettierrc`, `.prettierignore`), aspas simples, ponto e vírgula, largura 100.
 - [x] Vitest com `projects` na raiz (`packages/shared`, `apps/server`, `apps/web` com jsdom); `pnpm test` roda todos; `test:db` roda só `**/*.db.test.ts` (com `--passWithNoTests` até a T04).
-- [x] `docker-compose.yml`: `postgres:17`, usuário/senha/banco `hq`, volume nomeado, script de init criando `hq_test`, healthcheck.
+- [x] `docker-compose.yml`: `postgres:17`, usuário/senha/banco `comicle`, volume nomeado, script de init criando `comicle_test`, healthcheck.
 - [x] `apps/server/.env.example` e `apps/web/.env.example` com as variáveis de `docs/arquitetura.md` §6.
 - [x] `.github/workflows/ci.yml`: em `pull_request` e `push` para `main`; job `check` (install `--frozen-lockfile`, `format:check`, `lint`, `typecheck`, `test`, `build`) e job `db` com serviço Postgres 17 rodando `test:db`. Cache do pnpm.
 - [x] Um teste trivial por pacote para validar o pipeline.
@@ -36,7 +36,7 @@ Estrutura de workspaces, ferramentas de qualidade, testes, banco local e CI func
 - [x] `pnpm install` em clone limpo funciona sem avisos de peer dependency relevantes.
 - [x] `pnpm dev` sobe web em `:5173` e server em `:3000`; a página carrega e `/api/healthz` via proxy responde (ajuste a rota do proxy se preferir `/healthz` direto).
 - [x] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build` passam.
-- [ ] `docker compose up -d` deixa o Postgres saudável com os bancos `hq` e `hq_test`.
+- [ ] `docker compose up -d` deixa o Postgres saudável com os bancos `comicle` e `comicle_test`.
 - [ ] CI verde no PR desta task.
 - [x] `git config core.hooksPath` retorna `.githooks` após `pnpm install`.
 

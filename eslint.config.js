@@ -7,16 +7,22 @@ import tseslint from 'typescript-eslint';
 
 // Dependency rules from docs/arquitetura.md §3, enforced per directory.
 
-/** Rule 1: @hq/shared imports nothing from apps/* and no runtime library other than Zod. */
+/** Rule 1: @comicle/shared imports nothing from apps/* and no runtime library other than Zod. */
 const sharedImports = {
   patterns: [
     {
-      group: ['@hq/web', '@hq/web/*', '@hq/server', '@hq/server/*', '**/apps/**'],
-      message: '@hq/shared não pode importar código de apps/* (arquitetura §3.1).',
+      group: [
+        '@comicle/web',
+        '@comicle/web/*',
+        '@comicle/server',
+        '@comicle/server/*',
+        '**/apps/**',
+      ],
+      message: '@comicle/shared não pode importar código de apps/* (arquitetura §3.1).',
     },
     {
       regex: '^(?!zod(?:/|$)|vitest(?:/|$)|\\.{1,2}/)',
-      message: '@hq/shared só pode depender de Zod em runtime (arquitetura §3.1).',
+      message: '@comicle/shared só pode depender de Zod em runtime (arquitetura §3.1).',
     },
   ],
 };

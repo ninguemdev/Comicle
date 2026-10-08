@@ -3,7 +3,7 @@
 # Ativado por `pnpm install` (script prepare) ou `git config core.hooksPath .githooks`.
 
 msg_file="$1"
-tmp_file="${msg_file}.hq-tmp"
+tmp_file="${msg_file}.comicle-tmp"
 
 # 1. Remove linhas de atribuição (case-insensitive), em qualquer posição da mensagem.
 removed=$(grep -Eic '^[[:space:]]*(co-authored-by|claude-session)[[:space:]]*:|generated with \[?claude code|claude\.com/claude-code|claude\.ai/code/session' "$msg_file")

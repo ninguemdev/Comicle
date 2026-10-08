@@ -1,5 +1,5 @@
 {
-  "name": "hq-coletiva",
+  "name": "comicle",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.34.6",
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
-    "dev": "pnpm --parallel --filter @hq/web --filter @hq/server dev",
+    "dev": "pnpm --parallel --filter @comicle/web --filter @comicle/server dev",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
@@ -16,8 +16,8 @@
     "test:db": "vitest run --config vitest.db.config.ts --passWithNoTests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:generate": "pnpm --filter @hq/server db:generate",
-    "db:migrate": "pnpm --filter @hq/server db:migrate",
+    "db:generate": "pnpm --filter @comicle/server db:generate",
+    "db:migrate": "pnpm --filter @comicle/server db:migrate",
     "avatars:check": "node -e \"console.log('avatars:check disponível na T07')\"",
     "e2e": "node -e \"console.log('e2e disponível na T20')\""
   },

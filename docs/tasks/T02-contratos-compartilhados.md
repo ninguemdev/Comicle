@@ -1,4 +1,4 @@
-# T02 — Contratos compartilhados (`@hq/shared`)
+# T02 — Contratos compartilhados (`@comicle/shared`)
 
 **Depende de:** T01 · **Pacotes:** shared · **Branch:** `task/02-contratos-compartilhados`
 
@@ -27,7 +27,7 @@ Tipos, schemas Zod, constantes, códigos de erro e eventos tipados que cliente e
 ## Critérios de aceite
 - [ ] Nenhuma dependência de runtime além de Zod.
 - [ ] Os tipos de `PlayerView` batem campo a campo com `protocolo-realtime.md` §5.
-- [ ] Web e server conseguem importar `@hq/shared` (smoke test de import em cada um).
+- [ ] Web e server conseguem importar `@comicle/shared` (smoke test de import em cada um).
 
 ## Testes obrigatórios
 - [ ] R1: nickname normalizado; vazio, só espaços e 21 code points rejeitados; emoji conta como 1.

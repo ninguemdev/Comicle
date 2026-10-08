@@ -8,7 +8,7 @@ Revise o trabalho do branch atual como um revisor exigente, sem alterar código 
 2. Veja o diff completo contra `main` (`git diff main...HEAD`) e o log de commits.
 3. Confira, item a item:
    - critérios de aceite e testes obrigatórios da task;
-   - regras de arquitetura de `AGENTS.md` (autoridade do servidor, domínio puro, projeção, fila por sala, handlers finos, contratos em `@hq/shared`, componentes sem socket, sem números mágicos);
+   - regras de arquitetura de `AGENTS.md` (autoridade do servidor, domínio puro, projeção, fila por sala, handlers finos, contratos em `@comicle/shared`, componentes sem socket, sem números mágicos);
    - testes citando `Rnn` para cada regra tocada;
    - textos de interface só em `strings/pt-BR.ts`;
    - documentação atualizada quando regra, contrato ou decisão mudou;

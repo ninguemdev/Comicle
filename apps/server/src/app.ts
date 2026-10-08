@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
 
-import { HEALTH_OK, type HealthResponse } from '@hq/shared';
+import { HEALTH_OK, type HealthResponse } from '@comicle/shared';
 
 export function buildApp(options: FastifyServerOptions = {}): FastifyInstance {
   const app = Fastify(options);

@@ -7,7 +7,7 @@ describe('App', () => {
   it('mostra a página em construção', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'HQ Coletiva — em construção' })).toBeInstanceOf(
+    expect(screen.getByRole('heading', { name: 'Comicle — em construção' })).toBeInstanceOf(
       HTMLHeadingElement,
     );
   });

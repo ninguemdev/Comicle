@@ -35,18 +35,18 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: hq
-          POSTGRES_PASSWORD: hq
-          POSTGRES_DB: hq_test
+          POSTGRES_USER: comicle
+          POSTGRES_PASSWORD: comicle
+          POSTGRES_DB: comicle_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U hq -d hq_test"
+          --health-cmd "pg_isready -U comicle -d comicle_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      DATABASE_URL_TEST: postgres://hq:hq@localhost:5432/hq_test
+      DATABASE_URL_TEST: postgres://comicle:comicle@localhost:5432/comicle_test
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

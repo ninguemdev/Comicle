@@ -47,7 +47,7 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 **R3 — Sessão.** O servidor emite um token opaco (32 bytes aleatórios, base64url) e guarda apenas seu hash SHA-256, em memória. Validade de `GUEST_SESSION_TTL_MS`, renovada a cada uso. Token inválido ou expirado: o cliente cria uma nova sessão silenciosamente e mantém o perfil local.
 
-**R4 — Perfil local.** Nickname e avatar ficam no `localStorage` (`hq.profile`) e são enviados ao criar ou entrar em uma sala. O perfil só pode ser alterado fora de sala ou com a sala no lobby. Primeira visita: avatar aleatório e campo de nickname vazio.
+**R4 — Perfil local.** Nickname e avatar ficam no `localStorage` (`comicle.profile`) e são enviados ao criar ou entrar em uma sala. O perfil só pode ser alterado fora de sala ou com a sala no lobby. Primeira visita: avatar aleatório e campo de nickname vazio.
 
 **R5 — Uma conexão por sessão e sala.** Uma nova conexão da mesma sessão na mesma sala substitui a anterior; a antiga recebe `session:replaced` e é desconectada.
 

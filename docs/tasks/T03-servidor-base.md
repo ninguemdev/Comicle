@@ -17,7 +17,7 @@ Esqueleto do servidor: composição testável, Socket.IO anexado ao Fastify, inf
 - [ ] `platform/realtime/define-handler.ts`: `defineHandler(eventName, handler)` que valida com `clientEventSchemas[eventName]`, chama o handler, responde `Ack`, converte `DomainError` → `fail`, erro desconhecido → `INTERNAL` com log (sem payload no log).
 - [ ] `platform/realtime/rate-limit.ts`: token bucket por socket, configurável por evento; excesso → `RATE_LIMITED`.
 - [ ] `main.ts`: composição real, `listen`, desligamento gracioso em `SIGINT`/`SIGTERM` (fecha Socket.IO, Fastify e, a partir da T04, o banco).
-- [ ] `test/support/`: `FakeClock`, `ManualScheduler` (avança o tempo e dispara timers vencidos), `startTestServer(overrides)` (porta aleatória, retorna URL e `close`) e `connectClient(url, token?)` tipado com os eventos de `@hq/shared`.
+- [ ] `test/support/`: `FakeClock`, `ManualScheduler` (avança o tempo e dispara timers vencidos), `startTestServer(overrides)` (porta aleatória, retorna URL e `close`) e `connectClient(url, token?)` tipado com os eventos de `@comicle/shared`.
 - [ ] Logger pino com `redact` para `authorization`, `token` e `*.png`.
 
 ## Fora do escopo

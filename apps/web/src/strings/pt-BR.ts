@@ -1,6 +1,6 @@
 export const strings = {
   app: {
-    title: 'HQ Coletiva',
+    title: 'Comicle',
     underConstruction: 'em construção',
   },
 } as const;

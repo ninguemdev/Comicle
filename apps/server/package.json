@@ -1,5 +1,5 @@
 {
-  "name": "@hq/server",
+  "name": "@comicle/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "db:migrate": "node -e \"console.log('db:migrate disponível na T04')\""
   },
   "dependencies": {
-    "@hq/shared": "workspace:*",
+    "@comicle/shared": "workspace:*",
     "fastify": "^5.12.5"
   },
   "devDependencies": {
