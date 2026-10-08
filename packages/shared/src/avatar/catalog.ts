@@ -21,8 +21,8 @@ function isRequiredCategory(category: AvatarCategory): category is RequiredAvata
   return requiredCategories.has(category);
 }
 
-/** `faceAccessory` → `face-accessory`. */
-function categoryIdPrefix(category: AvatarCategory): string {
+/** `faceAccessory` → `face-accessory`: prefix of the category's IDs and name of its art folder. */
+export function avatarCategorySlug(category: AvatarCategory): string {
   return category.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
@@ -72,7 +72,7 @@ export const avatarCatalogSchema = z
           message: `${category} precisa de ao menos uma opção ativa`,
         });
       }
-      const prefix = `${categoryIdPrefix(category)}-`;
+      const prefix = `${avatarCategorySlug(category)}-`;
       for (const option of options) {
         if (!option.id.startsWith(prefix)) {
           ctx.addIssue({
@@ -103,9 +103,14 @@ export function activeOptions(category: AvatarCategory): AvatarOption[] {
   return avatarCatalog.categories[category].options.filter((option) => !option.retired);
 }
 
+/** Any option of the category, retired ones included (they still render for saved profiles). */
+export function findAvatarOption(category: AvatarCategory, id: string): AvatarOption | undefined {
+  return avatarCatalog.categories[category].options.find((option) => option.id === id);
+}
+
 /** Retired IDs stay valid so saved profiles keep rendering. */
 export function isValidOptionId(category: AvatarCategory, id: string): boolean {
-  return avatarCatalog.categories[category].options.some((option) => option.id === id);
+  return findAvatarOption(category, id) !== undefined;
 }
 
 function isValidOptional(category: OptionalAvatarCategory, value: unknown): value is string | null {
