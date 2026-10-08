@@ -136,7 +136,7 @@ As regras 1, 2 e 6 são garantidas com `no-restricted-imports` do próprio ESLin
 
 `buildApp({ config, clock, scheduler, rng, storyRepository, checkDatabase, timing })` monta Fastify, Socket.IO, registros e serviços, e devolve `{ http, io }`. `main.ts` cria as dependências reais; testes passam `InMemoryStoryRepository`, relógio controlável e `timing` com durações curtas (via `createTestDeps` / `startTestServer` em `apps/server/test/support/`). Testes também podem passar `extraSocketHandlers` (eventos só de teste) e `socketRateLimits`.
 
-Cada handler de socket passa, nesta ordem, por: rate limit da conexão → validação com o schema do evento → handler → `Ack`.
+Cada handler de socket passa, nesta ordem, por: rate limit da conexão → validação com o schema do evento → handler → `Ack`. A queda de uma conexão chega ao `RoomService` pela opção `onDisconnect` do `createSocketServer`, e os serviços enviam eventos aos sockets pela interface `RoomBroadcaster` (D21).
 
 ### Serialização por sala
 

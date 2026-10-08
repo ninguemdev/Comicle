@@ -71,11 +71,11 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 **R13 — Desconexão no lobby.** O membro aparece como desconectado e é removido após `LOBBY_DISCONNECT_REMOVE_MS` sem retorno.
 
-**R14 — Transferência de anfitrião.** Quando o anfitrião sai (`room:leave`) ou fica desconectado por `HOST_TRANSFER_GRACE_MS`, a função passa ao membro **conectado** com `joinedAt` mais antigo, priorizando participantes da partida em andamento. Se ninguém estiver conectado, a transferência acontece para o primeiro que reconectar. O anfitrião anterior não recupera a função ao voltar.
+**R14 — Transferência de anfitrião.** Quando o anfitrião sai (`room:leave`) ou fica desconectado por `HOST_TRANSFER_GRACE_MS`, a função passa ao membro **conectado** com `joinedAt` mais antigo, priorizando participantes da partida em andamento. Se ninguém estiver conectado, a função fica pendente e passa ao primeiro membro que se conectar; isso inclui o próprio anfitrião, que ainda não a tinha perdido. Se foi o anfitrião que saiu, o membro mais antigo a segura enquanto isso. Depois de transferida, o anfitrião anterior não recupera a função ao voltar ([D21](./decisoes.md)).
 
-**R15 — Sair da sala.** No lobby, o membro é removido. Durante a partida, o participante mantém sua vaga (os quadros que lhe caberiam ficam vazios) e pode voltar pelo link com a mesma sessão.
+**R15 — Sair da sala.** No lobby, o membro é removido; se era o último membro, a sala é encerrada na hora (R16). Durante a partida, o participante mantém sua vaga (os quadros que lhe caberiam ficam vazios) e pode voltar pelo link com a mesma sessão.
 
-**R16 — Encerramento da sala.** A sala é encerrada quando fica sem membros conectados por `EMPTY_ROOM_TTL_MS` ou atinge `ROOM_MAX_AGE_MS`. Ao encerrar, todo o conteúdo é apagado da memória e do banco, e quem ainda estiver conectado recebe `room:removed { reason: 'closed' }`.
+**R16 — Encerramento da sala.** A sala é encerrada quando fica sem membros conectados por `EMPTY_ROOM_TTL_MS`, quando atinge `ROOM_MAX_AGE_MS` ou, imediatamente, quando fica sem nenhum membro (o último saiu ou foi removido pelo R13). Ao encerrar, todo o conteúdo é apagado da memória e do banco, e quem ainda estiver conectado recebe `room:removed { reason: 'closed' }`.
 
 **R17 — Reinício do servidor.** Na v1, o estado vivo das salas existe só em memória: um reinício encerra todas as salas e, na inicialização, o servidor apaga do banco todo conteúdo de salas não encerradas (ver [decisões D3](./decisoes.md)).
 
