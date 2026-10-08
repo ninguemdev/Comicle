@@ -17,8 +17,8 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 
 | Método e rota | Auth | Resposta | Observações |
 |---|---|---|---|
-| `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | Rate limit por IP |
-| `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401` | Usado no boot do cliente para validar o token salvo |
+| `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | `expiresAt` em ms epoch do servidor (renovado a cada uso, R3); rate limit de 10/min por IP → `429 RATE_LIMITED` |
+| `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404` | Pré-checagem antes de entrar; rate limit por IP (proteção contra varredura de códigos) |
 | `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403` · `404` | Consulta `PanelAccessPolicy`; `Cache-Control: private, no-store` |
 | `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` | Último autosave do próprio jogador na rodada de desenho atual (R48) |
@@ -33,7 +33,7 @@ O cliente carrega imagens com `fetch` + `Authorization` e cria `blob:` URLs (hoo
 ## 2. Conexão Socket.IO
 
 - Caminho padrão `/socket.io`, transporte WebSocket com fallback padrão do Socket.IO.
-- Handshake: `io(SERVER_URL, { auth: { token } })`. O middleware valida o token; inválido → erro de conexão `UNAUTHORIZED` e o cliente cria nova sessão.
+- Handshake: `io(SERVER_URL, { auth: { token } })`. O middleware valida (e renova) o token; inválido ou ausente → `connect_error` com `message === 'UNAUTHORIZED'` e `data.code === 'UNAUTHORIZED'`, e o cliente cria nova sessão.
 - `maxHttpBufferSize`: 3 MiB (acomoda `PANEL_MAX_BYTES` + envelope).
 - Um socket participa de no máximo uma sala.
 
