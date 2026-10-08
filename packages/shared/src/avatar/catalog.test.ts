@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AvatarConfig } from '../domain/avatar';
+import { AVATAR_CATEGORIES, type AvatarConfig } from '../domain/avatar';
 import type { Rng } from '../random';
 import { avatarConfigSchema } from '../schemas/profile';
 import catalogJson from './catalog.json' with { type: 'json' };
 import {
   avatarCatalogSchema,
+  avatarCategorySlug,
   defaultAvatar,
+  findAvatarOption,
   isValidAvatar,
   randomAvatar,
   sanitizeAvatar,
@@ -28,14 +30,28 @@ function sequenceRng(start: number): Rng {
 }
 
 describe('catálogo', () => {
-  it('tem as 6 categorias, 2 opções nas obrigatórias e 1 nas opcionais', () => {
+  it('tem as 6 categorias com 4 a 6 opções provisórias cada', () => {
     const { categories } = avatarCatalogSchema.parse(catalogJson);
-    expect(categories.head.options).toHaveLength(2);
-    expect(categories.eyes.options).toHaveLength(2);
-    expect(categories.mouth.options).toHaveLength(2);
-    expect(categories.cheeks.options).toHaveLength(1);
-    expect(categories.faceAccessory.options).toHaveLength(1);
-    expect(categories.hat.options).toHaveLength(1);
+    for (const category of AVATAR_CATEGORIES) {
+      expect(categories[category].options.length, category).toBeGreaterThanOrEqual(4);
+      expect(categories[category].options.length, category).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('pasta e prefixo de cada categoria seguem o nome em kebab-case', () => {
+    expect(AVATAR_CATEGORIES.map(avatarCategorySlug)).toEqual([
+      'head',
+      'cheeks',
+      'eyes',
+      'mouth',
+      'face-accessory',
+      'hat',
+    ]);
+  });
+
+  it('findAvatarOption encontra só opções da categoria pedida', () => {
+    expect(findAvatarOption('hat', 'hat-cap')?.file).toBe('hat/hat-cap.svg');
+    expect(findAvatarOption('head', 'hat-cap')).toBeUndefined();
   });
 
   it('rejeita id duplicado, prefixo errado e "required" divergente do R2', () => {

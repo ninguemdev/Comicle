@@ -53,9 +53,22 @@ export const strings = {
     comingSoon: 'Em breve: crie uma sala e chame os amigos para desenhar.',
     editProfile: 'Editar perfil',
   },
+  avatar: {
+    of: (nickname: string) => `Avatar de ${nickname}`,
+    preview: 'Prévia do seu avatar',
+    parts: 'Partes do avatar',
+    none: 'Nenhum',
+    random: 'Aleatório',
+  },
   profile: {
     title: 'Seu perfil',
-    comingSoon: 'A personalização do avatar chega em breve.',
+    nicknameLabel: 'Apelido',
+    nicknamePlaceholder: 'Como a turma vai te chamar?',
+    nicknameCounter: (length: number, max: number) => `${String(length)}/${String(max)}`,
+    nicknameEmpty: 'Escolha um apelido.',
+    nicknameTooLong: (max: number) => `Use no máximo ${String(max)} caracteres.`,
+    save: 'Salvar',
+    cancel: 'Cancelar',
   },
   room: {
     title: (code: string) => `Sala ${code}`,
@@ -86,6 +99,12 @@ export const strings = {
       players: 'Jogadores',
       toast: 'Aviso',
       connection: 'Faixa de conexão',
+      avatars: 'Avatares',
+    },
+    avatars: {
+      shuffle: 'Sortear outro',
+      sizes: 'Tamanhos: 32, 64, 160 e 256 px',
+      catalog: 'Todas as artes do catálogo',
     },
     buttons: {
       primary: 'Criar sala',

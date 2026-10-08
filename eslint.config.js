@@ -73,7 +73,9 @@ const literalTextMessage = 'Texto de interface vem de strings/pt-BR.ts (interfac
 const noLiteralText = [
   { selector: 'JSXText[value=/\\S/]', message: literalTextMessage },
   {
-    selector: 'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder)$/] > Literal',
+    // An empty alt marks a decorative image; it is not interface text.
+    selector:
+      'JSXAttribute[name.name=/^(aria-label|title|alt|placeholder)$/] > Literal[value=/\\S/]',
     message: literalTextMessage,
   },
 ];

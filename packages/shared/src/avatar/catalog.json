@@ -6,7 +6,10 @@
       "required": true,
       "options": [
         { "id": "head-round", "label": "Redonda", "file": "head/head-round.svg" },
-        { "id": "head-square", "label": "Quadrada", "file": "head/head-square.svg" }
+        { "id": "head-square", "label": "Quadrada", "file": "head/head-square.svg" },
+        { "id": "head-oval", "label": "Oval", "file": "head/head-oval.svg" },
+        { "id": "head-pear", "label": "Pera", "file": "head/head-pear.svg" },
+        { "id": "head-cloud", "label": "Nuvem", "file": "head/head-cloud.svg" }
       ]
     },
     "eyes": {
@@ -14,7 +17,10 @@
       "required": true,
       "options": [
         { "id": "eyes-dots", "label": "Pontinhos", "file": "eyes/eyes-dots.svg" },
-        { "id": "eyes-wide", "label": "Arregalados", "file": "eyes/eyes-wide.svg" }
+        { "id": "eyes-wide", "label": "Arregalados", "file": "eyes/eyes-wide.svg" },
+        { "id": "eyes-sleepy", "label": "Sonolentos", "file": "eyes/eyes-sleepy.svg" },
+        { "id": "eyes-happy", "label": "Felizes", "file": "eyes/eyes-happy.svg" },
+        { "id": "eyes-angry", "label": "Bravos", "file": "eyes/eyes-angry.svg" }
       ]
     },
     "mouth": {
@@ -22,13 +28,22 @@
       "required": true,
       "options": [
         { "id": "mouth-smile", "label": "Sorriso", "file": "mouth/mouth-smile.svg" },
-        { "id": "mouth-open", "label": "Aberta", "file": "mouth/mouth-open.svg" }
+        { "id": "mouth-open", "label": "Aberta", "file": "mouth/mouth-open.svg" },
+        { "id": "mouth-flat", "label": "Séria", "file": "mouth/mouth-flat.svg" },
+        { "id": "mouth-tongue", "label": "Língua de fora", "file": "mouth/mouth-tongue.svg" },
+        { "id": "mouth-teeth", "label": "Dentuça", "file": "mouth/mouth-teeth.svg" }
       ]
     },
     "cheeks": {
       "label": "Bochechas",
       "required": false,
-      "options": [{ "id": "cheeks-blush", "label": "Coradas", "file": "cheeks/cheeks-blush.svg" }]
+      "options": [
+        { "id": "cheeks-blush", "label": "Coradas", "file": "cheeks/cheeks-blush.svg" },
+        { "id": "cheeks-freckles", "label": "Sardas", "file": "cheeks/cheeks-freckles.svg" },
+        { "id": "cheeks-swirls", "label": "Espirais", "file": "cheeks/cheeks-swirls.svg" },
+        { "id": "cheeks-hearts", "label": "Corações", "file": "cheeks/cheeks-hearts.svg" },
+        { "id": "cheeks-stripes", "label": "Riscos", "file": "cheeks/cheeks-stripes.svg" }
+      ]
     },
     "faceAccessory": {
       "label": "Acessório",
@@ -38,13 +53,39 @@
           "id": "face-accessory-glasses",
           "label": "Óculos",
           "file": "face-accessory/face-accessory-glasses.svg"
+        },
+        {
+          "id": "face-accessory-sunglasses",
+          "label": "Óculos escuros",
+          "file": "face-accessory/face-accessory-sunglasses.svg"
+        },
+        {
+          "id": "face-accessory-mustache",
+          "label": "Bigode",
+          "file": "face-accessory/face-accessory-mustache.svg"
+        },
+        {
+          "id": "face-accessory-eyepatch",
+          "label": "Tapa-olho",
+          "file": "face-accessory/face-accessory-eyepatch.svg"
+        },
+        {
+          "id": "face-accessory-monocle",
+          "label": "Monóculo",
+          "file": "face-accessory/face-accessory-monocle.svg"
         }
       ]
     },
     "hat": {
       "label": "Chapéu",
       "required": false,
-      "options": [{ "id": "hat-cap", "label": "Boné", "file": "hat/hat-cap.svg" }]
+      "options": [
+        { "id": "hat-cap", "label": "Boné", "file": "hat/hat-cap.svg" },
+        { "id": "hat-top", "label": "Cartola", "file": "hat/hat-top.svg" },
+        { "id": "hat-beanie", "label": "Gorro", "file": "hat/hat-beanie.svg" },
+        { "id": "hat-crown", "label": "Coroa", "file": "hat/hat-crown.svg" },
+        { "id": "hat-party", "label": "Festa", "file": "hat/hat-party.svg" }
+      ]
     }
   }
 }

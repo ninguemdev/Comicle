@@ -1,5 +1,13 @@
+import {
+  activeOptions,
+  AVATAR_CATEGORIES,
+  avatarCatalog,
+  randomAvatar,
+  type AvatarConfig,
+} from '@comicle/shared';
 import { useState, type ReactNode } from 'react';
 
+import { cryptoRng } from '../../lib/random';
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
@@ -10,10 +18,10 @@ import { ProgressPill } from '../../ui/progress-pill';
 import { SpeechBubble } from '../../ui/speech-bubble';
 import { Timer } from '../../ui/timer';
 import { Toast, type ToastTone } from '../../ui/toast';
+import { AVATAR_SIZES, AvatarRenderer } from '../avatar/avatar-renderer';
 
 const LONG_TIMER_MS = 90_000;
 const SHORT_TIMER_MS = 12_000;
-const PLACEHOLDER_AVATAR_COLORS = ['bg-pop-yellow', 'bg-pop-blue', 'bg-pop-green', 'bg-pop-red'];
 
 const texts = strings.devUi;
 
@@ -26,12 +34,24 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function PlaceholderAvatar({ nickname, index }: { nickname: string; index: number }) {
-  const color = PLACEHOLDER_AVATAR_COLORS[index % PLACEHOLDER_AVATAR_COLORS.length] ?? '';
+/** Every art on top of a plain base (optional layers off), to review new arts in context. */
+function AvatarCatalogGrid({ base }: { base: AvatarConfig }) {
+  const plain: AvatarConfig = { ...base, cheeks: null, faceAccessory: null, hat: null };
   return (
-    <span className={`flex size-full items-center justify-center font-display text-xl ${color}`}>
-      {nickname.slice(0, 1)}
-    </span>
+    <div className="flex w-full flex-col gap-3">
+      <h3 className="font-bold">{texts.avatars.catalog}</h3>
+      {AVATAR_CATEGORIES.map((category) => (
+        <div key={category} className="flex flex-wrap items-end gap-3">
+          <span className="w-24 font-bold">{avatarCatalog.categories[category].label}</span>
+          {activeOptions(category).map((option) => (
+            <figure key={option.id} className="flex flex-col items-center text-xs">
+              <AvatarRenderer avatar={{ ...plain, [category]: option.id }} size={64} />
+              <figcaption>{option.id}</figcaption>
+            </figure>
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -40,6 +60,8 @@ export function DevUiPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [toastTone, setToastTone] = useState<ToastTone | null>(null);
   const [deadlineAt, setDeadlineAt] = useState(() => Date.now() + LONG_TIMER_MS);
+  const [avatar, setAvatar] = useState(() => randomAvatar(cryptoRng));
+  const [playerAvatars] = useState(() => texts.players.map(() => randomAvatar(cryptoRng)));
   const closeDialog = () => {
     setDialogOpen(false);
   };
@@ -131,13 +153,34 @@ export function DevUiPage() {
           <PlayerChip
             key={nickname}
             nickname={nickname}
-            avatar={<PlaceholderAvatar nickname={nickname} index={index} />}
+            avatar={playerAvatars[index] ?? avatar}
             isHost={index === 0}
             isSelf={index === 1}
             connected={index !== 3}
             progress={index === 0 ? 'done' : index === 1 ? 'working' : 'idle'}
           />
         ))}
+      </Section>
+
+      <Section title={texts.sections.avatars}>
+        <div className="flex w-full flex-col gap-3">
+          <p className="text-muted">{texts.avatars.sizes}</p>
+          <div className="flex flex-wrap items-end gap-4">
+            {AVATAR_SIZES.map((size) => (
+              <AvatarRenderer key={size} avatar={avatar} size={size} />
+            ))}
+          </div>
+          <Button
+            variant="secondary"
+            className="self-start"
+            onClick={() => {
+              setAvatar(randomAvatar(cryptoRng));
+            }}
+          >
+            {texts.avatars.shuffle}
+          </Button>
+        </div>
+        <AvatarCatalogGrid base={avatar} />
       </Section>
 
       <Section title={texts.sections.toast}>

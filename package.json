@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "db:generate": "pnpm --filter @comicle/server db:generate",
     "db:migrate": "pnpm --filter @comicle/server db:migrate",
-    "avatars:check": "node -e \"console.log('avatars:check disponível na T07')\"",
+    "avatars:check": "pnpm --filter @comicle/web avatars:check",
+    "avatars:generate": "pnpm --filter @comicle/web avatars:generate",
     "e2e": "node -e \"console.log('e2e disponível na T20')\""
   },
   "devDependencies": {

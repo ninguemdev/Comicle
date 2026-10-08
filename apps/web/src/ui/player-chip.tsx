@@ -1,13 +1,12 @@
-import type { MemberProgress } from '@comicle/shared';
-import type { ReactNode } from 'react';
+import type { AvatarConfig, MemberProgress } from '@comicle/shared';
 
+import { AvatarRenderer } from '../features/avatar/avatar-renderer';
 import { strings } from '../strings/pt-BR';
 import { CheckIcon, CrownIcon } from './icons';
 
 export interface PlayerChipProps {
   nickname: string;
-  /** Avatar slot; `AvatarRenderer` arrives in T07. */
-  avatar: ReactNode;
+  avatar: AvatarConfig;
   isHost?: boolean;
   isSelf?: boolean;
   connected?: boolean;
@@ -53,7 +52,7 @@ export function PlayerChip({
     >
       <span className="relative shrink-0">
         <span className="flex size-10 items-center justify-center overflow-hidden rounded-full border-2 border-ink bg-paper">
-          {avatar}
+          <AvatarRenderer avatar={avatar} size={32} label={strings.avatar.of(nickname)} />
         </span>
         {isHost && (
           <span className="absolute -top-3 -right-2" title={strings.ui.player.host}>

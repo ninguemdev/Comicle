@@ -51,44 +51,52 @@ Regras:
 - `id` é único globalmente, em `kebab-case`, prefixado pela categoria em `kebab-case` (`hat-cowboy`, `face-accessory-glasses`); a pasta da arte usa o mesmo prefixo (`face-accessory/`). **Nunca reutilize nem renomeie um `id` publicado** — perfis salvos dependem dele. Para aposentar uma arte, adicione `"retired": true`: ela some da lista de escolha, mas continua renderizando para quem já a usa.
 - `file` é relativo a `apps/web/public/avatars/`.
 - O padrão de cada categoria obrigatória é a primeira opção não aposentada; o de cada opcional é `null`.
-- `catalog.ts` valida o JSON com Zod ao carregar e exporta tipos e helpers (`isValidAvatar`, `defaultAvatar`, `randomAvatar(rng)`, `sanitizeAvatar`, `activeOptions`). O `Rng` é a interface de `@comicle/shared` (D18).
+- `catalog.ts` valida o JSON com Zod ao carregar e exporta tipos e helpers (`isValidAvatar`, `defaultAvatar`, `randomAvatar(rng)`, `sanitizeAvatar`, `activeOptions`, `findAvatarOption`, `avatarCategorySlug`). O `Rng` é a interface de `@comicle/shared` (D18).
 
 ---
 
 ## 3. Especificação das artes
 
+O guia completo para quem desenha, com estilo, pincéis, paleta, gabarito, coordenadas, regras por camada e a lista das artes atuais, está em [`avatares-guia-de-artes.md`](./avatares-guia-de-artes.md). Resumo:
+
 | Item | Valor |
 |---|---|
+| Estilo | skribbl.io: pincel redondo de espessura constante, leve tremido, cores chapadas |
 | Formato | SVG (preferido) ou PNG com transparência |
-| Área | 512 × 512 (`viewBox="0 0 512 512"`), fundo transparente |
+| Área | SVG 512 × 512 (`viewBox="0 0 512 512"`) ou PNG 1024 × 1024, fundo transparente, margem segura de 16 (32 no PNG) |
 | Alinhamento | Todas as camadas usam o mesmo enquadramento; o centro do rosto fica em (256, 280) |
-| Zona do chapéu | y de 0 a 220; pode sobrepor o topo da cabeça |
-| Zona dos olhos | y de 200 a 300 |
-| Zona da boca | y de 300 a 400 |
-| Traço | Contorno preto (`#16161D`), ~10 px, combinando com a identidade de HQ |
-| SVG | Sem scripts, sem fontes externas, sem `<image>` remoto; IDs internos únicos (prefixe com o `id` da arte) |
-| PNG | 1024 × 1024 para ficar nítido em telas densas |
+| Zonas | Cada camada tem um retângulo próprio (cabeça, bochechas, olhos, boca, acessório, chapéu); o chapéu vai de y 16 a 220, os olhos de 196 a 304, a boca de 300 a 410 |
+| Pincéis | 16 / 12 / 8 no SVG (32 / 24 / 16 no PNG), contorno `#16161D` |
+| Paleta | As 16 cores do editor de desenho ([interface §4](./interface.md#4-editor-de-desenho)) |
+| SVG | Sem scripts, eventos, `<image>`, `<foreignObject>` ou referências externas; IDs internos prefixados com o `id` da arte |
+| Tamanho | Até 100 KB por arquivo |
 
-Um gabarito `apps/web/public/avatars/_template.svg` (criado na T07) mostra as zonas acima.
+Os números vêm de `apps/web/scripts/avatars/layout.ts`, que o gerador das provisórias e o gabarito usam. O gabarito fica em `apps/web/public/avatars/_template.svg` (com legendas) e `_template.png` (1024 × 1024, para programas de pintura).
 
 ---
 
-## 4. Como adicionar uma arte
+## 4. Como adicionar ou trocar uma arte
 
-1. Salve o arquivo em `apps/web/public/avatars/<categoria>/<id>.svg`.
-2. Adicione a entrada em `catalog.json` na categoria certa.
-3. Rode `pnpm avatars:check` — confere que todo `file` existe, que não há arquivo órfão, IDs duplicados ou SVG com conteúdo proibido.
-4. Abra `/perfil` em dev e confira a composição.
+1. Salve o arquivo em `apps/web/public/avatars/<pasta>/<id>.svg` (ou `.png`), onde `<pasta>` é o prefixo da categoria (`face-accessory`, `hat`…). Para trocar uma provisória, basta sobrescrever o arquivo dela.
+2. Opção nova: adicione a entrada em `catalog.json` na categoria certa. Arte em PNG: o `file` da opção termina em `.png` e o SVG provisório é apagado.
+3. Rode `pnpm avatars:check`: confere o catálogo, que todo `file` existe com o nome padrão, que não há arquivo órfão, a segurança e o `viewBox` dos SVGs, as dimensões dos PNGs e o tamanho; no fim, conta as artes definitivas e as provisórias. Roda no CI.
+4. Em `pnpm dev`, confira em `/dev/ui` (seção Avatares: quatro tamanhos e todas as artes) e em `/perfil`.
 5. Commit: `feat(avatar): adiciona chapéu de cowboy`.
 
 ---
 
 ## 5. Artes provisórias
 
-Até as artes definitivas chegarem, a T07 cria placeholders em SVG gerados por código simples (formas geométricas e traços), com 4 a 6 opções por categoria. Eles seguem a mesma especificação e são substituídos arquivo a arquivo, mantendo os `id`s ou aposentando-os.
+Até as artes definitivas chegarem, as 30 opções do catálogo (5 por categoria) usam artes geradas por código em `apps/web/scripts/avatars/`: um motor de esboço determinístico (`sketch.ts`) imita o traço do skribbl.io (pincel redondo de espessura constante, tremido suave de mão, contornos que passam um pouco do início, cores chapadas) e desenha cada arte sobre as âncoras do layout padrão. Os testes garantem que cada arte fica na zona da sua categoria e que toda cabeça cobre a área do rosto.
+
+- `pnpm avatars:generate` reescreve as provisórias e o gabarito. A saída é sempre a mesma (a semente vem do `id`).
+- Toda provisória tem o comentário com o marcador `comicle-placeholder`. O gerador **nunca sobrescreve** um arquivo sem o marcador, ou seja, uma arte definitiva.
+- As provisórias são substituídas arquivo a arquivo, mantendo os `id`s ou aposentando-os ([D20](./decisoes.md)).
 
 ---
 
 ## 6. Renderização
 
-`AvatarRenderer({ avatar, size })` empilha as camadas como `<img>` absolutamente posicionadas dentro de um contêiner quadrado, na ordem da §1, com `alt` vazio nas camadas e `aria-label` no contêiner. Tamanhos usados: 32 (listas), 64 (cartões), 160 (lobby/apresentação), 256 (editor).
+`AvatarRenderer({ avatar, size, label })` empilha as camadas como `<img>` absolutamente posicionadas dentro de um contêiner quadrado, na ordem da §1, com `alt` vazio nas camadas. Com `label`, o contêiner é `role="img"` com `aria-label` (ex.: "Avatar de Ana" no `PlayerChip`); sem `label`, é decorativo (`aria-hidden`), como nas miniaturas do editor, que já ficam dentro de um botão com rótulo. Opcional em `null` e `id` desconhecido não desenham camada. Tamanhos usados: 32 (listas), 64 (cartões e miniaturas), 160 (lobby/apresentação), 256 (editor).
+
+O editor (`AvatarEditor`) mostra a prévia em 256, uma aba por categoria (setas, Home e End trocam de aba), uma miniatura por opção com o avatar atual já aplicado, "Nenhum" nas opcionais e o botão **Aleatório**. Os painéis inativos ficam montados e escondidos, para todas as miniaturas já estarem carregadas ao trocar de aba.
