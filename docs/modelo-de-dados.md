@@ -170,7 +170,7 @@ rooms ─┬─< matches ─┬─< themes ──< stories ──< panels
 
 ### Repositórios
 
-Interfaces em `apps/server/src/modules/stories/story-repository.ts`, com duas implementações: `DrizzleStoryRepository` (produção e testes `*.db.test.ts`) e `InMemoryStoryRepository` (testes unitários e de integração do realtime).
+Interfaces em `apps/server/src/modules/stories/story-repository.ts`, com duas implementações: `DrizzleStoryRepository` (`drizzle-story.repository.ts` — o sufixo `.repository` libera o Drizzle na regra de domínio puro; produção e testes `*.db.test.ts`) e `InMemoryStoryRepository` (`in-memory-story-repository.ts`; testes unitários e de integração do realtime). As duas passam pela mesma suíte de contrato (`story-repository.contract.ts`).
 
 ```ts
 interface StoryRepository {
@@ -184,6 +184,12 @@ interface StoryRepository {
   deleteAllOpenRooms(): Promise<number>;                         // boot (R17)
 }
 ```
+
+- `NewMatch = { id, roomId, settings, totalRounds, startedAt, themes: NewTheme[], stories: NewStory[] }`, com `NewTheme` e `NewStory` espelhando as colunas de `themes` e `stories`. A partida nasce com `status = 'in_progress'`.
+- `NewPanel = { id, storyId, position, artistPlayerId, artistNickname, status, png }`; `png` é `null` exatamente quando `status = 'empty'`.
+- `saveRoundPanels` confere que as histórias pertencem à partida e grava a rodada num único `INSERT` de várias linhas: atômico, sem transação explícita. Posição repetida ou já ocupada faz nada ser gravado.
+- Escrita inválida (referência quebrada, posição repetida, imagem incoerente com o status) lança `StoryRepositoryError`; os serviços tratam isso como falha de persistência (R57).
+- `setMatchStatus` preenche `finished_at` com o horário do banco ao entrar em `finished` ou `aborted`.
 
 ---
 

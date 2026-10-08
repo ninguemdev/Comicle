@@ -22,7 +22,7 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404` | Pré-checagem antes de entrar; rate limit por IP (proteção contra varredura de códigos) |
 | `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403` · `404` | Consulta `PanelAccessPolicy`; `Cache-Control: private, no-store` |
 | `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` | Último autosave do próprio jogador na rodada de desenho atual (R48) |
-| `GET /healthz` | — | `200 { status: 'ok' }` | Também verifica o banco |
+| `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
 
 Erros HTTP usam o corpo `{ error: { code, message } }`, com os mesmos `ErrorCode` do realtime. Status por código: `INVALID_PAYLOAD` e `IMAGE_INVALID` 400 · `UNAUTHORIZED` 401 · `KICKED`, `NOT_IN_ROOM` e `NOT_HOST` 403 · `ROOM_NOT_FOUND` 404 · `ROOM_FULL`, `INVALID_STATE`, `NOT_ENOUGH_PLAYERS` e `DEADLINE_PASSED` 409 · `ROOM_CLOSED` 410 · `IMAGE_TOO_LARGE` 413 · `RATE_LIMITED` 429 · `INTERNAL` 500. Outros erros 4xx do Fastify (JSON malformado, por exemplo) saem como `INVALID_PAYLOAD` com o status original; nenhum erro expõe stack trace.
 
