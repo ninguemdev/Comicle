@@ -37,7 +37,7 @@ Estrutura de workspaces, ferramentas de qualidade, testes, banco local e CI func
 - [x] `pnpm dev` sobe web em `:5173` e server em `:3000`; a página carrega e `/api/healthz` via proxy responde (ajuste a rota do proxy se preferir `/healthz` direto).
 - [x] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build` passam.
 - [ ] `docker compose up -d` deixa o Postgres saudável com os bancos `comicle` e `comicle_test`.
-- [ ] CI verde no PR desta task.
+- [x] CI verde no PR desta task.
 - [x] `git config core.hooksPath` retorna `.githooks` após `pnpm install`.
 
 ## Testes obrigatórios
