@@ -1,8 +1,10 @@
 import type { ClientToServerEvents, ServerToClientEvents } from '@comicle/shared';
 import type { Server, Socket } from 'socket.io';
 
-/** Per-connection data; filled by the auth middleware from T05 on. */
-export type SocketData = Record<string, never>;
+/** Per-connection data, set by the auth middleware before `connection`. */
+export interface SocketData {
+  guestId: string;
+}
 
 type NoInterServerEvents = Record<string, never>;
 

@@ -70,7 +70,18 @@ export async function connectClient(url: string, token?: string): Promise<TestCl
   });
   await new Promise<void>((resolve, reject) => {
     client.once('connect', resolve);
-    client.once('connect_error', reject);
+    client.once('connect_error', (error) => {
+      client.close();
+      reject(error);
+    });
   });
   return client;
+}
+
+/** Creates a guest session on the server and connects a client with its token. */
+export async function connectGuest(
+  server: TestServer,
+): Promise<{ client: TestClient; guestId: string; token: string }> {
+  const { token, guestId } = server.guestSessions.create();
+  return { client: await connectClient(server.url, token), guestId, token };
 }
