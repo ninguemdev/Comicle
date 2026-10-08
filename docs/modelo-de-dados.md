@@ -28,9 +28,12 @@ type Room = {
   hostPlayerId: string;
   members: Map<string, Member>;      // por playerId
   bannedGuestIds: Set<string>;
+  status: 'lobby' | 'in_match';
   settings: MatchSettings;
   match: Match | null;
   emptySince: number | null;         // para R16
+  hostTransferPending: boolean;      // R14: ninguém conectado quando a função mudaria
+  closed: boolean;                   // encerrando: não aceita mais nada
 };
 
 type Member = {

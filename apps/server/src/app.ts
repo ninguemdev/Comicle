@@ -7,8 +7,13 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { AppConfig } from './config/env';
 import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
 import { GuestSessionStore } from './modules/guest-identity/session-store';
+import { createSocketBroadcaster, roomHandlers } from './modules/rooms/room.handlers';
+import { RoomRegistry } from './modules/rooms/room-registry';
+import { registerRoomRoutes } from './modules/rooms/room.routes';
+import { RoomService } from './modules/rooms/room.service';
 import type { StoryRepository } from './modules/stories/story-repository';
 import { timeSyncHandlers } from './modules/timing/time-sync.handlers';
+import { createRoomPublisher } from './modules/views/room-publisher';
 import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
@@ -87,6 +92,9 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   http.decorateRequest('guestId', '');
   registerGuestIdentityRoutes(http, guestSessions, createRequireGuest(authenticate));
 
+  const rooms = new RoomRegistry();
+  registerRoomRoutes(http, rooms);
+
   // Hooks must exist before ready(); the socket server only after it.
   const socketRef: { io?: AppSocketServer } = {};
   http.addHook('preClose', () => {
@@ -98,11 +106,33 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   });
 
   await http.ready();
+  const broadcaster = createSocketBroadcaster(() => {
+    if (!socketRef.io) {
+      throw new Error('Socket.IO ainda não foi criado');
+    }
+    return socketRef.io;
+  });
+  const roomService = new RoomService({
+    clock,
+    scheduler: deps.scheduler,
+    rng: deps.rng,
+    newId,
+    storyRepository: deps.storyRepository,
+    registry: rooms,
+    broadcaster,
+    publish: createRoomPublisher(clock, broadcaster),
+    log: http.log,
+  });
   const io = createSocketServer(http.server, {
     corsOrigins: config.CORS_ORIGINS,
     clock,
     log: http.log,
-    handlers: [...timeSyncHandlers(clock), ...(deps.extraSocketHandlers ?? [])],
+    handlers: [
+      ...timeSyncHandlers(clock),
+      ...roomHandlers(roomService),
+      ...(deps.extraSocketHandlers ?? []),
+    ],
+    onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
     rateLimits: deps.socketRateLimits ?? DEFAULT_SOCKET_RATE_LIMITS,
     authenticate,
   });

@@ -19,7 +19,7 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 |---|---|---|---|
 | `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | `expiresAt` em ms epoch do servidor (renovado a cada uso, R3); rate limit de 10/min por IP → `429 RATE_LIMITED` |
 | `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
-| `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404` | Pré-checagem antes de entrar; rate limit por IP (proteção contra varredura de códigos) |
+| `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404 ROOM_NOT_FOUND` | Pré-checagem antes de entrar; o código é normalizado (R6) e um código mal formado responde como inexistente. `joinable` = sala não cheia (R9); a rota é anônima, então reconexão e expulsão (R12) só se resolvem no `room:join`. Rate limit de 30/min por IP (proteção contra varredura de códigos) |
 | `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403` · `404` | Consulta `PanelAccessPolicy`; `Cache-Control: private, no-store` |
 | `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` | Último autosave do próprio jogador na rodada de desenho atual (R48) |
 | `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
@@ -75,6 +75,15 @@ type Ack<T> =
 | `presentation:end` | `{}` | `{}` | anfitrião, `presentation` | R56 |
 
 `PlayerProfile = { nickname: string; avatar: AvatarConfig }` (R1, R2).
+
+Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate limit:
+
+- `room:create` e `room:join` com o socket já em outra sala → `INVALID_STATE`. Repetir o `room:join` da sala em que o socket já está é idempotente e atualiza o perfil.
+- `room:join`: sala inexistente → `ROOM_NOT_FOUND`; sala encerrando → `ROOM_CLOSED`; sessão expulsa → `KICKED`; sala cheia → `ROOM_FULL`, exceto para quem já é membro, que reconecta com o mesmo `playerId` (R9) e, no lobby, com o perfil enviado. Se a sessão já tinha outra conexão na sala, ela recebe `session:replaced` (R5).
+- `room:leave`, `room:kick`, `room:updateSettings` e `player:updateProfile` de quem não está em sala → `NOT_IN_ROOM`; ações de anfitrião de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`.
+- `room:kick` com o próprio `playerId` ou um jogador que não está na sala → `INVALID_PAYLOAD`.
+
+O servidor publica as `room:view` antes de responder o ack, então quem age recebe a view nova antes da resposta.
 
 Validação de imagem no servidor (`apps/server/src/modules/drawing/panel-image.ts`): assinatura PNG, chunk IHDR com `PANEL_WIDTH × PANEL_HEIGHT`, tamanho `≤ PANEL_MAX_BYTES`. Falha: `IMAGE_INVALID` ou `IMAGE_TOO_LARGE`.
 

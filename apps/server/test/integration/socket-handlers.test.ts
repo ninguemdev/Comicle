@@ -10,12 +10,17 @@ import {
   type TestServerOverrides,
 } from '../support/test-server';
 
-// `room:kick` is used as a test-only event: no module registers it yet (T08).
-const kickHandler = defineHandler('room:kick', ({ playerId }) => {
-  switch (playerId) {
-    case 'not-host':
+// `presentation:navigate` is used as a test-only event: no module registers it yet (T16).
+const NOT_HOST_STORY = 1;
+const CRASH_STORY = 2;
+const navigateHandler = defineHandler('presentation:navigate', (payload) => {
+  if (payload.action !== 'goToStory') {
+    return {};
+  }
+  switch (payload.storyIndex) {
+    case NOT_HOST_STORY:
       throw new DomainError('NOT_HOST', 'Só o anfitrião pode expulsar.');
-    case 'crash':
+    case CRASH_STORY:
       throw new Error('falha inesperada');
     default:
       return {};
@@ -32,7 +37,7 @@ describe('handlers de socket', () => {
   });
 
   async function start(overrides: TestServerOverrides = {}) {
-    server = await startTestServer({ extraSocketHandlers: [kickHandler], ...overrides });
+    server = await startTestServer({ extraSocketHandlers: [navigateHandler], ...overrides });
     ({ client } = await connectGuest(server));
     return { server, client };
   }
@@ -40,7 +45,7 @@ describe('handlers de socket', () => {
   it('payload válido chega ao handler e recebe ack ok', async () => {
     const { client } = await start();
 
-    expect(await client.emitWithAck('room:kick', { playerId: 'p1' })).toEqual({
+    expect(await client.emitWithAck('presentation:navigate', { action: 'next' })).toEqual({
       ok: true,
       data: {},
     });
@@ -50,7 +55,7 @@ describe('handlers de socket', () => {
     const { client } = await start();
 
     // @ts-expect-error: invalid payload on purpose
-    const ack = await client.emitWithAck('room:kick', { playerId: 42 });
+    const ack = await client.emitWithAck('presentation:navigate', { action: 'voar' });
 
     expect(ack).toEqual({
       ok: false,
@@ -61,7 +66,12 @@ describe('handlers de socket', () => {
   it("DomainError('NOT_HOST') → ack com esse código e a mensagem", async () => {
     const { client } = await start();
 
-    expect(await client.emitWithAck('room:kick', { playerId: 'not-host' })).toEqual({
+    const ack = await client.emitWithAck('presentation:navigate', {
+      action: 'goToStory',
+      storyIndex: NOT_HOST_STORY,
+    });
+
+    expect(ack).toEqual({
       ok: false,
       error: { code: 'NOT_HOST', message: 'Só o anfitrião pode expulsar.' },
     });
@@ -70,7 +80,12 @@ describe('handlers de socket', () => {
   it('exceção qualquer → INTERNAL, sem vazar a mensagem interna', async () => {
     const { client } = await start();
 
-    expect(await client.emitWithAck('room:kick', { playerId: 'crash' })).toEqual({
+    const ack = await client.emitWithAck('presentation:navigate', {
+      action: 'goToStory',
+      storyIndex: CRASH_STORY,
+    });
+
+    expect(ack).toEqual({
       ok: false,
       error: { code: 'INTERNAL', message: 'Erro interno. Tente novamente.' },
     });
@@ -83,7 +98,7 @@ describe('handlers de socket', () => {
 
     const acks = [];
     for (let i = 0; i < 4; i++) {
-      acks.push(await client.emitWithAck('room:kick', { playerId: 'p1' }));
+      acks.push(await client.emitWithAck('presentation:navigate', { action: 'next' }));
     }
 
     expect(acks.map((ack) => ack.ok)).toEqual([true, true, true, false]);
