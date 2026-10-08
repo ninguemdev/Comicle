@@ -64,7 +64,8 @@ pnpm dev                     # web: http://localhost:5173 · server: http://loca
 | `pnpm test:db` | testes contra o PostgreSQL |
 | `pnpm e2e` | testes ponta a ponta |
 | `pnpm lint` · `pnpm typecheck` · `pnpm format` | qualidade |
-| `pnpm avatars:check` | valida o catálogo de avatares |
+| `pnpm avatars:check` | valida o catálogo e as artes de avatar |
+| `pnpm avatars:generate` | regera as artes provisórias e o gabarito |
 
 Para testar com várias pessoas na mesma rede, abra o endereço da sua máquina na rede local (`pnpm dev` expõe o Vite com `--host`) ou use janelas anônimas para simular jogadores.
 
@@ -120,7 +121,8 @@ Opcional: espelhar as tasks como issues com `scripts/sync-tasks-to-issues.sh`.
 | [Modelo de dados](docs/modelo-de-dados.md) | Memória, PostgreSQL e retenção |
 | [Arquitetura](docs/arquitetura.md) | Stack, camadas, configuração, testes, produção |
 | [Interface](docs/interface.md) | Identidade visual, telas, página de HQ, editor |
-| [Avatares](docs/avatares.md) | Catálogo e guia para adicionar artes |
+| [Avatares](docs/avatares.md) | Catálogo, renderização e artes provisórias |
+| [Guia de artes dos avatares](docs/avatares-guia-de-artes.md) | Estilo, tamanhos, gabarito e zonas para desenhar as artes |
 | [Decisões](docs/decisoes.md) | Registro de decisões |
 | [Tasks](docs/tasks/README.md) | Backlog e status |
 

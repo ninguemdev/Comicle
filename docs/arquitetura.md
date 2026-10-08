@@ -48,7 +48,7 @@ Versões: a estável mais recente de cada pacote no momento da T01, travadas pel
 | Testes | **Vitest** (unidade e integração), **Testing Library** + jsdom (web), **Playwright** (E2E) | Vitest é da especificação |
 | Qualidade | **ESLint** (flat config, `typescript-eslint` com regras type-checked, `react-hooks`) + **Prettier** | Padrão do ecossistema |
 | Build do servidor | **tsdown** (empacota `@comicle/shared` dentro do bundle) | O pacote compartilhado exporta TS puro |
-| Dev do servidor | **tsx watch** | |
+| Dev do servidor e scripts | **tsx** (`tsx watch` no servidor; scripts de `apps/web/scripts/`) | Roda o TypeScript do `@comicle/shared` sem build ([D20](./decisoes.md)) |
 | Logs | **pino** (embutido no Fastify), `pino-pretty` só em dev | |
 | CI | **GitHub Actions** | |
 
@@ -62,7 +62,8 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 .
 ├─ apps/
 │  ├─ web/
-│  │  ├─ public/avatars/<categoria>/<id>.svg
+│  │  ├─ public/avatars/<categoria>/<id>.svg · _template.svg · _template.png
+│  │  ├─ scripts/                   # avatars:check, avatars:generate e o motor das artes (avatars/)
 │  │  └─ src/
 │  │     ├─ main.tsx · app.tsx · router.tsx · app-layout.tsx · boot.ts
 │  │     ├─ config/env.ts            # VITE_* validados com Zod
