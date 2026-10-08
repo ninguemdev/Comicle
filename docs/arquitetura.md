@@ -133,7 +133,9 @@ As regras 1, 2 e 6 são garantidas com `no-restricted-imports` do próprio ESLin
 
 ### Composição
 
-`buildApp({ config, clock, scheduler, rng, storyRepository, timing })` monta Fastify, Socket.IO, registros e serviços. `main.ts` cria as dependências reais; testes passam `InMemoryStoryRepository`, relógio controlável e `timing` com durações curtas.
+`buildApp({ config, clock, scheduler, rng, storyRepository, timing })` monta Fastify, Socket.IO, registros e serviços, e devolve `{ http, io }`. `main.ts` cria as dependências reais; testes passam `InMemoryStoryRepository`, relógio controlável e `timing` com durações curtas (via `createTestDeps` / `startTestServer` em `apps/server/test/support/`). Testes também podem passar `extraSocketHandlers` (eventos só de teste) e `socketRateLimits`.
+
+Cada handler de socket passa, nesta ordem, por: rate limit da conexão → validação com o schema do evento → handler → `Ack`.
 
 ### Serialização por sala
 

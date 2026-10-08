@@ -1,15 +1,34 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import { buildApp } from './app';
+import { createTestDeps } from '../test/support/test-server';
+import { buildApp, type App } from './app';
 
 describe('buildApp', () => {
-  it('GET /healthz responde 200', async () => {
-    const app = buildApp();
+  let app: App | undefined;
 
-    const response = await app.inject({ method: 'GET', url: '/healthz' });
+  afterEach(async () => {
+    await app?.http.close();
+  });
+
+  it('GET /healthz responde 200', async () => {
+    app = await buildApp(createTestDeps());
+
+    const response = await app.http.inject({ method: 'GET', url: '/healthz' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ status: 'ok' });
-    await app.close();
+  });
+
+  it('aplica os cabeçalhos do helmet e o CORS configurado', async () => {
+    app = await buildApp(createTestDeps());
+
+    const response = await app.http.inject({
+      method: 'GET',
+      url: '/healthz',
+      headers: { origin: 'http://localhost:5173' },
+    });
+
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
   });
 });
