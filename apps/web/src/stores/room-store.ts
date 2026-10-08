@@ -1,4 +1,14 @@
-import type { PlayerView } from '@comicle/shared';
+import {
+  fail,
+  type Ack,
+  type ClientEventAckData,
+  type ClientEventName,
+  type ClientEventPayload,
+  type Empty,
+  type PlayerProfile,
+  type PlayerView,
+  type RoomRemovedReason,
+} from '@comicle/shared';
 import { create } from 'zustand';
 
 import { env } from '../config/env';
@@ -9,11 +19,20 @@ import {
   type SocketClientOptions,
 } from '../lib/socket-client';
 import { startTimeSync, type TimeSample } from '../lib/time-sync';
+import { strings } from '../strings/pt-BR';
 import { useSessionStore } from './session-store';
+
+/** Settings the server accepts in v1 (only the collaborative mode, R21). */
+export type SettingsInput = ClientEventPayload<'room:updateSettings'>['settings'];
+
+/** Why the player is no longer in the room: removed by the server or replaced by another tab (R5). */
+export type RoomExit = RoomRemovedReason | 'replaced';
 
 interface RoomState {
   /** Last `room:view`: the only source of game state on the client (arquitetura §5). */
   view: PlayerView | null;
+  /** Set by `room:removed` and `session:replaced`; cleared by the next create or join. */
+  exit: RoomExit | null;
   connection: ConnectionStatus;
   /** Server clock minus local clock (protocolo §6). */
   clockOffsetMs: number;
@@ -23,6 +42,13 @@ interface RoomState {
      * (`offline`): they retry with the given token.
      */
     connect(token: string): void;
+    createRoom(profile: PlayerProfile): Promise<Ack<{ roomCode: string }>>;
+    /** Also re-enters a room the player is already in (reconnection, edited profile). */
+    joinRoom(roomCode: string, profile: PlayerProfile): Promise<Ack<{ roomCode: string }>>;
+    leaveRoom(): Promise<Ack<Empty>>;
+    kick(playerId: string): Promise<Ack<Empty>>;
+    updateSettings(settings: SettingsInput): Promise<Ack<Empty>>;
+    startMatch(): Promise<Ack<Empty>>;
   };
 }
 
@@ -61,6 +87,20 @@ export function createRoomStore(deps: RoomStoreDeps) {
       }
     }
 
+    function emit<E extends ClientEventName>(
+      event: E,
+      payload: ClientEventPayload<E>,
+    ): Promise<Ack<ClientEventAckData[E]>> {
+      if (client === null) {
+        return Promise.resolve(fail('INTERNAL', strings.connection.offline));
+      }
+      return client.emitWithAck(event, payload);
+    }
+
+    function leftRoom(exit: RoomExit): void {
+      set({ view: null, exit });
+    }
+
     async function handleUnauthorized(): Promise<void> {
       const token = await deps.renewSession();
       if (token === null) {
@@ -72,6 +112,7 @@ export function createRoomStore(deps: RoomStoreDeps) {
 
     return {
       view: null,
+      exit: null,
       connection: 'connecting',
       clockOffsetMs: 0,
       actions: {
@@ -92,7 +133,38 @@ export function createRoomStore(deps: RoomStoreDeps) {
           client.on('room:view', (view) => {
             set({ view });
           });
+          client.on('room:removed', ({ reason }) => {
+            leftRoom(reason);
+          });
+          client.on('session:replaced', () => {
+            leftRoom('replaced');
+          });
           client.connect();
+        },
+        createRoom(profile) {
+          set({ exit: null });
+          return emit('room:create', { profile });
+        },
+        joinRoom(roomCode, profile) {
+          set({ exit: null });
+          return emit('room:join', { roomCode, profile });
+        },
+        async leaveRoom() {
+          const ack = await emit('room:leave', {});
+          if (ack.ok) {
+            set({ view: null });
+          }
+          return ack;
+        },
+        kick(playerId) {
+          return emit('room:kick', { playerId });
+        },
+        updateSettings(settings) {
+          return emit('room:updateSettings', { settings });
+        },
+        // The server handles `match:start` from T11 on; until then the ack reports the failure.
+        startMatch() {
+          return emit('match:start', {});
         },
       },
     };
