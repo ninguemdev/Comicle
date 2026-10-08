@@ -61,9 +61,8 @@ describe('tela de perfil', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Arregalados' }));
     clickSave();
 
-    expect(await screen.findByRole('heading', { name: 'Sala K7PQ2M' })).toBeInstanceOf(
-      HTMLHeadingElement,
-    );
+    // The room screen waits for the socket, which this test does not open.
+    expect(await screen.findByText('Entrando na sala…')).toBeInstanceOf(HTMLElement);
     const expected = { nickname: 'Ana Bia', avatar: { ...defaultAvatar(), eyes: 'eyes-wide' } };
     expect(useProfileStore.getState().profile).toEqual(expected);
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.profile) ?? 'null')).toEqual(

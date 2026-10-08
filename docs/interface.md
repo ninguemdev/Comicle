@@ -37,9 +37,9 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 
 | Tela | Rota / condição | Conteúdo essencial |
 |---|---|---|
-| Início | `/` | Logo, avatar + nickname atuais (botão editar), **Criar sala**, **Entrar em sala** (campo de código) |
+| Início | `/` | Logo, avatar + nickname atuais (botão editar), **Criar sala** (sem perfil salvo, leva antes à personalização), **Entrar em sala** (campo de código normalizado ao digitar: maiúsculas e só caracteres do alfabeto, R6) |
 | Personalização | `/perfil` (ou modal ao entrar pelo convite sem perfil) | Prévia grande do avatar, abas por categoria com miniaturas, campo de nickname, botão aleatório, salvar |
-| Lobby | `/sala/:code`, `room.status = 'lobby'` | Código e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
+| Lobby | `/sala/:code`, `room.status = 'lobby'` | Código, link do convite visível e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
 | Temas | `task.kind = 'write_theme'` | Campo grande, contador de caracteres, exemplos rotativos de inspiração, timer, **Pronto** |
 | Leitura | `task.kind = 'read_story'`, `status = 'reading'` | Tema no topo, `ComicPage` com os quadros anteriores, aviso "Depois de começar, você não verá estes quadros de novo", botão **Começar a desenhar**, timer de leitura |
 | Preparação | `read_story`, `status = 'ready'` | `SpeechBubble` "Guarde bem na memória…", progresso dos demais. Sem quadros |
@@ -49,7 +49,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 | Espectador | `task.kind = 'spectate'` | "Partida em andamento — você entra na próxima", lista de jogadores |
 | Apresentação | `phase = 'presentation'` | Ver §5 |
 
-Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela.
+Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela. Já os motivos para não estar na sala trocam a tela por uma mensagem com volta ao início: sala inexistente ou código mal formado, sala cheia, expulsão, sala encerrada e sessão aberta em outra aba (R5, R9, R12, R16).
 
 ---
 

@@ -3,6 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from './router';
+import { lobbyView, setUpStores } from './test/room-fixtures';
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
@@ -24,7 +25,8 @@ describe('rotas', () => {
     expect(screen.getByRole('heading', { name: 'Seu perfil' })).toBeInstanceOf(HTMLHeadingElement);
   });
 
-  it('/sala/:code mostra o código da sala', () => {
+  it('/sala/:code mostra a sala', () => {
+    setUpStores(lobbyView());
     renderAt('/sala/K7PQ2M');
 
     expect(screen.getByRole('heading', { name: 'Sala K7PQ2M' })).toBeInstanceOf(HTMLHeadingElement);

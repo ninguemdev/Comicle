@@ -1,4 +1,4 @@
-import type { PlayerView, ServerToClientEvents } from '@comicle/shared';
+import { defaultAvatar, type PlayerView, type ServerToClientEvents } from '@comicle/shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { SocketClient, SocketClientOptions } from '../lib/socket-client';
@@ -20,22 +20,27 @@ const VIEW: PlayerView = {
 /** Records what the store does with the socket and lets the test play the server. */
 function fakeSocket() {
   let options: SocketClientOptions | null = null;
-  let viewListener: ServerToClientEvents['room:view'] | null = null;
+  const server: {
+    view?: ServerToClientEvents['room:view'];
+    removed?: ServerToClientEvents['room:removed'];
+    replaced?: ServerToClientEvents['session:replaced'];
+  } = {};
   const client = {
     connect: vi.fn(),
     disconnect: vi.fn(),
     reconnectWithToken: vi.fn(),
-    emitWithAck: vi.fn((event: string, payload: { clientSentAt: number }) =>
+    emitWithAck: vi.fn((event: string, payload: { clientSentAt?: number }) =>
       Promise.resolve(
         event === 'time:sync'
           ? { ok: true, data: { clientSentAt: payload.clientSentAt, serverNow: 5000 } }
-          : { ok: false, error: { code: 'INTERNAL', message: '' } },
+          : { ok: true, data: {} },
       ),
     ),
-    on: vi.fn((event: string, listener: ServerToClientEvents['room:view']) => {
-      if (event === 'room:view') {
-        viewListener = listener;
-      }
+    // `never`: the store passes the listener typed for each event.
+    on: vi.fn((event: keyof ServerToClientEvents, listener: never) => {
+      if (event === 'room:view') server.view = listener;
+      if (event === 'room:removed') server.removed = listener;
+      if (event === 'session:replaced') server.replaced = listener;
       return () => undefined;
     }),
   } satisfies Record<keyof SocketClient, unknown>;
@@ -51,7 +56,8 @@ function fakeSocket() {
       if (options === null) throw new Error('socket não criado');
       return options;
     },
-    pushView: (view: PlayerView) => viewListener?.(view),
+    pushView: (view: PlayerView) => server.view?.(view),
+    server,
   };
 }
 
@@ -134,6 +140,76 @@ describe('room-store', () => {
     socket.options().onUnauthorized();
     await vi.waitFor(() => {
       expect(store.getState().connection).toBe('offline');
+    });
+  });
+
+  it('ações da sala emitem o evento certo e devolvem o ack', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    const profile = { nickname: 'Ana', avatar: defaultAvatar() };
+    const { actions } = store.getState();
+
+    await actions.createRoom(profile);
+    await actions.joinRoom('K7PQ2M', profile);
+    await actions.kick('p2');
+    await actions.updateSettings({
+      ...VIEW.room.settings,
+      mode: 'collaborative',
+      drawingSeconds: 60,
+    });
+    expect(await actions.startMatch()).toEqual({ ok: true, data: {} });
+
+    expect(socket.client.emitWithAck.mock.calls.map(([event]) => event)).toEqual([
+      'room:create',
+      'room:join',
+      'room:kick',
+      'room:updateSettings',
+      'match:start',
+    ]);
+    expect(socket.client.emitWithAck).toHaveBeenCalledWith('room:join', {
+      roomCode: 'K7PQ2M',
+      profile,
+    });
+  });
+
+  it('sair da sala apaga a view', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    socket.pushView(VIEW);
+
+    await store.getState().actions.leaveRoom();
+
+    expect(store.getState().view).toBeNull();
+  });
+
+  it('R12, R16, R5: room:removed e session:replaced apagam a view e guardam o motivo', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+
+    for (const reason of ['kicked', 'closed'] as const) {
+      socket.pushView(VIEW);
+      socket.server.removed?.({ reason });
+      expect(store.getState()).toMatchObject({ view: null, exit: reason });
+    }
+    socket.server.replaced?.({});
+    expect(store.getState().exit).toBe('replaced');
+
+    await store.getState().actions.joinRoom('K7PQ2M', { nickname: 'Ana', avatar: defaultAvatar() });
+    expect(store.getState().exit).toBeNull();
+  });
+
+  it('ação sem socket responde com erro em vez de travar', async () => {
+    const store = createRoomStore({
+      createSocketClient: fakeSocket().create,
+      renewSession: vi.fn(),
+    });
+
+    expect(await store.getState().actions.leaveRoom()).toMatchObject({
+      ok: false,
+      error: { code: 'INTERNAL' },
     });
   });
 });

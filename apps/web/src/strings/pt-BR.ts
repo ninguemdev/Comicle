@@ -1,4 +1,16 @@
-import { MIN_PLAYERS, type ErrorCode } from '@comicle/shared';
+import { MAX_PLAYERS, MIN_PLAYERS, type ErrorCode } from '@comicle/shared';
+
+const SECONDS_PER_MINUTE = 60;
+
+/** 90 → "1 min 30 s". */
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  const rest = seconds % SECONDS_PER_MINUTE;
+  if (minutes === 0) {
+    return `${String(rest)} s`;
+  }
+  return rest === 0 ? `${String(minutes)} min` : `${String(minutes)} min ${String(rest)} s`;
+}
 
 /** Final text of each error code; the server `message` is only a fallback (protocolo §2). */
 export const errorMessages = {
@@ -50,8 +62,14 @@ export const strings = {
     },
   },
   home: {
-    comingSoon: 'Em breve: crie uma sala e chame os amigos para desenhar.',
     editProfile: 'Editar perfil',
+    noNickname: 'Escolha um apelido para jogar',
+    createRoom: 'Criar sala',
+    creating: 'Criando…',
+    joinTitle: 'Entrar em sala',
+    codeLabel: 'Código da sala',
+    codePlaceholder: 'EX.: K7PQ2M',
+    join: 'Entrar',
   },
   avatar: {
     of: (nickname: string) => `Avatar de ${nickname}`,
@@ -72,7 +90,65 @@ export const strings = {
   },
   room: {
     title: (code: string) => `Sala ${code}`,
-    comingSoon: 'O lobby chega em breve.',
+    joining: 'Entrando na sala…',
+    inviteLabel: 'Link de convite',
+    copyInvite: 'Copiar convite',
+    inviteCopied: 'Convite copiado!',
+    copyFailed: 'Não deu para copiar. Selecione o link e copie.',
+    players: (count: number) => `Jogadores (${String(count)}/${String(MAX_PLAYERS)})`,
+    leave: 'Sair da sala',
+    editProfile: 'Editar perfil',
+    start: 'Iniciar partida',
+    kick: (nickname: string) => `Expulsar ${nickname}`,
+    kickTitle: 'Expulsar jogador?',
+    kickBody: (nickname: string) =>
+      `${nickname} sai da sala e não consegue voltar enquanto ela existir.`,
+    kickConfirm: 'Expulsar',
+    cancel: 'Cancelar',
+    spectating: 'Partida em andamento: você entra na próxima.',
+    retry: 'Tentar de novo',
+    settings: {
+      title: 'Configurações',
+      hostOnly: 'Só o anfitrião muda as configurações.',
+      panelCount: 'Quantidade de quadros',
+      perPlayer: 'Baseada nos jogadores',
+      perPlayerHint: '(um quadro por jogador)',
+      fixed: 'Fixa',
+      fixedValue: 'Quadros por história',
+      panels: (count: number) => `${String(count)} quadros`,
+      drawingSeconds: 'Tempo por quadrinho',
+      duration: formatDuration,
+      mode: 'Modo',
+      collaborative: 'Colaborativo',
+      individual: 'Individual',
+      soon: 'Em breve',
+    },
+    problems: {
+      notFound: {
+        title: 'Sala não encontrada',
+        message: 'Confira o código ou peça um convite novo.',
+      },
+      full: {
+        title: 'Sala cheia',
+        message: `Esta sala já tem ${String(MAX_PLAYERS)} jogadores.`,
+      },
+      kicked: {
+        title: 'Você foi removido',
+        message: 'O anfitrião tirou você desta sala.',
+      },
+      closed: {
+        title: 'Sala encerrada',
+        message: 'Esta sala foi encerrada.',
+      },
+      replaced: {
+        title: 'Sala aberta em outro lugar',
+        message: 'Você entrou nesta sala em outra aba ou aparelho. Continue por lá.',
+      },
+      failed: {
+        title: 'Não deu para entrar',
+        message: 'Algo deu errado ao entrar na sala.',
+      },
+    },
   },
   notFound: {
     code: '404',
