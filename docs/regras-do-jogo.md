@@ -150,7 +150,7 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R35 — Leitura.** A partir da rodada 1, cada rodada começa em `round_reading`, com prazo `min(READING_BASE_SECONDS + READING_PER_PANEL_SECONDS × r, READING_MAX_SECONDS)` segundos, sendo `r` o índice da rodada (= quadros já existentes).
 
-**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready`. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história. A interface mostra "Prepare-se…" com o progresso dos demais, sem os quadros.
+**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready`. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história. A confirmação vale para a rodada: se a mesma história voltar a ele numa rodada posterior (quantidade fixa maior que o número de participantes), ele a lê de novo. A interface mostra "Prepare-se…" com o progresso dos demais, sem os quadros.
 
 **R37 — Fim da leitura.** A leitura termina quando todos os participantes **conectados** confirmaram ou quando o prazo acaba; quem não confirmou é marcado como pronto automaticamente. Participantes desconectados contam como prontos.
 
@@ -158,11 +158,11 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R39 — Autosave.** Enquanto desenha, o cliente envia `panel:autosave` com o PNG atual no máximo a cada `AUTOSAVE_INTERVAL_MS`, e só se houve mudança. O servidor guarda, em memória, o último por (rodada, jogador).
 
-**R40 — Concluir.** `panel:submit { reason: 'done' }` envia o PNG final. O jogador vai para a espera e não pode reabrir o quadro. Tela sem nenhum traço é enviada sem imagem.
+**R40 — Concluir.** `panel:submit { reason: 'done' }` envia o PNG final. O jogador vai para a espera e não pode reabrir o quadro. Tela sem nenhum traço é enviada sem imagem. Qualquer envio final (`done` ou `timeout`) encerra a participação do jogador na rodada.
 
 **R41 — Encerramento antecipado.** O desenho termina antes do prazo quando **todos** os participantes (inclusive desconectados) concluíram.
 
-**R42 — Fechamento.** Ao fim do desenho, a partida entra em `round_closing` por `ROUND_CLOSING_MS` e o servidor emite `round:collect`. Os clientes que ainda não concluíram enviam `panel:submit { reason: 'timeout' }` com o que houver na tela. Ao final da janela, cada quadro é resolvido nesta ordem: envio final → último autosave → vazio. Os quadros da rodada são persistidos em uma única transação.
+**R42 — Fechamento.** Ao fim do desenho, a partida entra em `round_closing` por `ROUND_CLOSING_MS` e o servidor emite `round:collect`. Os clientes que ainda não concluíram enviam `panel:submit { reason: 'timeout' }` com o que houver na tela. Ao final da janela, cada quadro é resolvido nesta ordem: envio final → último autosave → vazio; um envio final sem imagem (tela em branco) é vazio, mesmo com autosave anterior. A janela termina antes se todos os envios finais já chegaram; se o desenho acabou porque todos concluíram (R41), a rodada é resolvida na hora, sem janela. Os quadros da rodada são persistidos em uma única transação.
 
 **R43 — Status do quadro.** `complete` (o jogador concluiu), `partial` (imagem vinda de `timeout` ou autosave) ou `empty` (nenhuma imagem). Quadros `partial` são exibidos normalmente, sem marcação.
 
@@ -208,7 +208,7 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R56 — Encerrar.** `presentation:end` (anfitrião) devolve a sala ao lobby. Espectadores viram membros comuns. O conteúdo permanece até a próxima partida começar (R25) ou a sala ser encerrada (R16).
 
-**R57 — Abortar partida.** `match:abort` (anfitrião, com confirmação na interface) devolve a sala ao lobby em qualquer fase e apaga o conteúdo da partida.
+**R57 — Abortar partida.** `match:abort` (anfitrião, com confirmação na interface) devolve a sala ao lobby em qualquer fase e apaga o conteúdo da partida. O servidor também aborta quando não consegue gravar os temas ou uma rodada depois de uma nova tentativa. Nos dois casos, todos os conectados recebem `match:aborted` com o motivo (`host` ou `persistence_failed`).
 
 ---
 

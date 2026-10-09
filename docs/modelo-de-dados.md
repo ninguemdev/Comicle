@@ -53,10 +53,11 @@ type Match = {
   totalRounds: number;
   plan: DistributionPlan;                // R31–R33
   fallbackThemes: string[];              // já embaralhados; usados em ordem (R30)
+  panelIds: string[][];                  // [rodada][história]: ids dos quadros, sorteados no início
   phase: MatchPhase;
   phaseStartedAt: number;
   phaseDeadlineAt: number | null;
-  roundIndex: number;                    // -1 na fase de temas
+  roundIndex: number;                    // -1 na fase de temas; a última rodada na apresentação
   stories: StoryState[];                 // índice = assento do autor
   themes: Map<string, ThemeDraftState>;  // por playerId, só na fase de temas
   round: RoundState | null;
