@@ -20,7 +20,7 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 | `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | `expiresAt` em ms epoch do servidor (renovado a cada uso, R3); rate limit de 10/min por IP → `429 RATE_LIMITED` |
 | `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404 ROOM_NOT_FOUND` | Pré-checagem antes de entrar; o código é normalizado (R6) e um código mal formado responde como inexistente. `joinable` = sala não cheia (R9); a rota é anônima, então reconexão e expulsão (R12) só se resolvem no `room:join`. Rate limit de 30/min por IP (proteção contra varredura de códigos) |
-| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
+| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R54, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
 | `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` · `403 NOT_IN_ROOM` · `404 ROOM_NOT_FOUND` | Último autosave do próprio jogador na rodada atual, em `round_drawing` ou `round_closing` (R48); `204` sem rascunho ou fora dessas fases. `Cache-Control: private, no-store` |
 | `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
 
@@ -95,6 +95,11 @@ Erros das rodadas:
 - `round:ready`: fora de `round_reading`, com outro `roundIndex` ou de espectador → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED`. Confirmar de novo é idempotente.
 - `panel:autosave` e `panel:submit` (R44): de espectador, com `roundIndex` de uma rodada futura, na leitura da rodada ou depois do próprio envio final → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo do desenho; a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
 - O `panel:autosave` não gera `room:view`: só mudaria o `hasDraft` do próprio jogador, que importa ao (re)conectar e chega com essa view.
+
+Erros da apresentação:
+
+- `presentation:navigate` e `presentation:end`: de outro membro (inclusive espectador) → `NOT_HOST`; fora de `presentation` → `INVALID_STATE`; `goToStory` com `storyIndex > maxStoryReached` → `INVALID_STATE` (R52). Ações sem efeito definido em R52 respondem `ok` sem mudar o cursor (D29).
+- Todos os membros recebem a mesma `PresentationView` a cada passo; as imagens reveladas (R54) ficam acessíveis para qualquer membro da sala.
 
 O servidor publica as `room:view` antes de responder o ack, então quem age recebe a view nova antes da resposta.
 

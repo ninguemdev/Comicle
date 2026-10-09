@@ -198,7 +198,9 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 | `prev` | `panel(0)` → `theme`; `panel(k)` → `panel(k−1)`; `full` → último quadro; `theme` → `full` da história anterior (se houver); `finished` → `full` da última |
 | `showFull` | vai para `full` da história atual |
 | `nextStory` | vai para `theme` da próxima história; a atual passa a contar como totalmente revelada; na última, vai para `finished` |
-| `goToStory(i)` | só para `i ≤ maxStoryReached`; vai para `full` da história `i` |
+| `goToStory(i)` | só para `i ≤ maxStoryReached` (senão `INVALID_STATE`); vai para `full` da história `i`, também a partir de `finished` |
+
+Ações sem efeito definido na tabela — `prev` no `theme` da primeira história; `next`, `showFull` e `nextStory` em `finished` — não mudam o cursor e respondem `ok` (D29). Navegar ou encerrar fora da apresentação → `INVALID_STATE`; de quem não é anfitrião → `NOT_HOST`.
 
 **R53 — Revelação.** Cada história tem `revealedCount`, que só cresce: `panel(k)` revela até `k+1`; `full`, `nextStory` ou sair da história para frente revela tudo. `maxStoryReached` também só cresce.
 
@@ -206,7 +208,7 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R55 — Créditos.** O tema mostra o autor; cada quadro mostra o artista. Quadro `empty` aparece como um quadro em branco com o texto "{nickname} não desenhou a tempo".
 
-**R56 — Encerrar.** `presentation:end` (anfitrião) devolve a sala ao lobby. Espectadores viram membros comuns. O conteúdo permanece até a próxima partida começar (R25) ou a sala ser encerrada (R16).
+**R56 — Encerrar.** `presentation:end` (anfitrião, em qualquer ponto da apresentação) devolve a sala ao lobby e marca a partida como `finished` no banco. Espectadores viram membros comuns. O conteúdo permanece até a próxima partida começar (R25) ou a sala ser encerrada (R16).
 
 **R57 — Abortar partida.** `match:abort` (anfitrião, com confirmação na interface) devolve a sala ao lobby em qualquer fase e apaga o conteúdo da partida. O servidor também aborta quando não consegue gravar os temas ou uma rodada depois de uma nova tentativa. Nos dois casos, todos os conectados recebem `match:aborted` com o motivo (`host` ou `persistence_failed`).
 

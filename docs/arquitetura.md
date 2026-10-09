@@ -98,7 +98,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │           ├─ stories/              # repositórios, temas reserva
 │           ├─ drawing/              # panel-image, panel-access-policy, rotas de imagem
 │           ├─ timing/               # GameTimingConfig (perfis default e fast), time:sync
-│           ├─ presentation/         # cursor puro, serviço, handlers
+│           ├─ presentation/         # cursor puro e handlers (o serviço é o MatchService)
 │           └─ views/                # buildPlayerView (projeção)
 ├─ packages/
 │  └─ shared/src/
@@ -159,7 +159,7 @@ lobby ──start──▶ theme_writing ──▶ round_drawing (r=0) ──▶
 abort (qualquer fase) ──────────────────────────────────────────────────────────────▶ lobby
 ```
 
-`modules/matches/match-machine.ts` é puro: `(estado, evento, agora) → { estado, efeitos }`, criado com `createMatchMachine(timing)`. Ids, ordem dos assentos e temas reserva chegam prontos no evento `start` (o serviço os sorteia com o `Rng`), então a máquina não usa aleatoriedade. Efeitos são dados que o `MatchService` executa dentro de `runExclusive`: `schedule_phase` / `cancel_phase` (timer `room:<id>:phase`), `persist_match`, `persist_round`, `set_match_status`, `emit_collect` (`round:collect`), `notify_aborted` (`match:aborted`) e `delete_match`. Os ids dos quadros também chegam no `start` (`panelIds[rodada][história]`), então o fechamento resolve e persiste a rodada numa transição só. Presença entra como evento (`presence_changed`, com os conectados): o `RoomService` avisa o `MatchService` a cada saída ou queda, dentro da fila da sala, para a leitura não esperar desconectados (R37). Depois de cada transição o serviço publica as views. Isso deixa as transições testáveis sem rede, banco ou timers reais.
+`modules/matches/match-machine.ts` é puro: `(estado, evento, agora) → { estado, efeitos }`, criado com `createMatchMachine(timing)`. Ids, ordem dos assentos e temas reserva chegam prontos no evento `start` (o serviço os sorteia com o `Rng`), então a máquina não usa aleatoriedade. Efeitos são dados que o `MatchService` executa dentro de `runExclusive`: `schedule_phase` / `cancel_phase` (timer `room:<id>:phase`), `persist_match`, `persist_round`, `set_match_status` (com o id da partida, porque no `presentation_end` a sala já não a tem), `emit_collect` (`round:collect`), `notify_aborted` (`match:aborted`) e `delete_match`. Os ids dos quadros também chegam no `start` (`panelIds[rodada][história]`), então o fechamento resolve e persiste a rodada numa transição só. Presença entra como evento (`presence_changed`, com os conectados): o `RoomService` avisa o `MatchService` a cada saída ou queda, dentro da fila da sala, para a leitura não esperar desconectados (R37). Depois de cada transição o serviço publica as views. Isso deixa as transições testáveis sem rede, banco ou timers reais.
 
 ### Modos de jogo
 
@@ -187,7 +187,7 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 - Início da partida → só apaga a partida anterior da sala (R25). Fim da etapa de temas → `createMatch` grava `matches`, `themes` e `stories` de uma vez, com `started_at` do início; falha → mais uma tentativa → aborta a partida.
 - Fim de cada rodada → `saveRoundPanels` em uma transação; os rascunhos em memória daquela rodada são descartados.
 - Falha de banco ao persistir uma rodada (ou os temas): registra o erro, tenta mais uma vez; se falhar, aborta a partida (R57) e avisa os jogadores com `match:aborted { reason: 'persistence_failed' }`. Nunca deixa a partida em estado inconsistente.
-- Entrada na apresentação → `setMatchStatus('presenting')`; uma falha só é registrada.
+- Entrada na apresentação → `setMatchStatus('presenting')`; `presentation:end` → `setMatchStatus('finished')`. Uma falha só é registrada.
 
 ---
 
