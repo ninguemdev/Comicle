@@ -5,6 +5,8 @@ import type { Rng } from '@comicle/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config/env';
+import { registerDrawingRoutes } from './modules/drawing/drawing.routes';
+import { DrawingService } from './modules/drawing/drawing.service';
 import { matchHandlers } from './modules/matches/match.handlers';
 import { MatchService } from './modules/matches/match.service';
 import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
@@ -95,10 +97,16 @@ export async function buildApp(deps: AppDeps): Promise<App> {
   guestSessions.startSweeping();
   const authenticate = (token: string) => guestSessions.authenticate(token);
   http.decorateRequest('guestId', '');
-  registerGuestIdentityRoutes(http, guestSessions, createRequireGuest(authenticate));
+  const requireGuest = createRequireGuest(authenticate);
+  registerGuestIdentityRoutes(http, guestSessions, requireGuest);
 
   const rooms = new RoomRegistry();
   registerRoomRoutes(http, rooms);
+  registerDrawingRoutes(
+    http,
+    new DrawingService({ registry: rooms, storyRepository: deps.storyRepository }),
+    requireGuest,
+  );
 
   // Hooks must exist before ready(); the socket server only after it.
   const socketRef: { io?: AppSocketServer } = {};

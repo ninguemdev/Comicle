@@ -23,6 +23,10 @@ export class RoomRegistry {
     this.codes.delete(room.code);
   }
 
+  all(): IterableIterator<Room> {
+    return this.rooms.values();
+  }
+
   byId(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
   }
