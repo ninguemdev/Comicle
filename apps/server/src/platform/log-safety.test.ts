@@ -33,6 +33,10 @@ describe('serializeError', () => {
   });
 
   it('valores que não são Error viram só o tipo', () => {
-    expect(serializeError('Um gato astronauta')).toEqual({ type: 'string', message: '', stack: '' });
+    expect(serializeError('Um gato astronauta')).toEqual({
+      type: 'string',
+      message: '',
+      stack: '',
+    });
   });
 });
