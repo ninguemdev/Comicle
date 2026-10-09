@@ -19,7 +19,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T11 | [Motor de partida e etapa de temas](./T11-motor-partida-temas.md) | T08, T10 | ✅ |
 | T12 | [Rodadas no servidor](./T12-rodadas-servidor.md) | T11 | ✅ |
 | T13 | [Editor de desenho](./T13-editor-desenho.md) | T06 | ✅ |
-| T14 | [Página de HQ](./T14-pagina-hq.md) | T06 | 🟨 |
+| T14 | [Página de HQ](./T14-pagina-hq.md) | T06 | ✅ |
 | T15 | [Fluxo da partida no cliente](./T15-fluxo-partida-web.md) | T09, T12, T13, T14 | ⬜ |
 | T16 | [Apresentação no servidor](./T16-apresentacao-servidor.md) | T12 | ⬜ |
 | T17 | [Apresentação no cliente](./T17-apresentacao-web.md) | T15, T16 | ⬜ |
