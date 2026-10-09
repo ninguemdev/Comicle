@@ -1,19 +1,11 @@
-import {
-  EMPTY_ROOM_TTL_MS,
-  HOST_TRANSFER_GRACE_MS,
-  LOBBY_DISCONNECT_REMOVE_MS,
-  ROOM_MAX_AGE_MS,
-  type Empty,
-  type MatchSettings,
-  type PlayerProfile,
-  type Rng,
-} from '@comicle/shared';
+import { type Empty, type MatchSettings, type PlayerProfile, type Rng } from '@comicle/shared';
 import type { FastifyBaseLogger } from 'fastify';
 
 import type { Clock } from '../../platform/clock';
 import { DomainError } from '../../platform/errors';
 import type { Scheduler } from '../../platform/scheduler';
 import type { StoryRepository } from '../stories/story-repository';
+import type { GameTimingConfig } from '../timing/game-timing';
 import type { PublishRoom } from '../views/room-publisher';
 import { assertCanKick, assertCanUpdateSettings, assertLobby, nextHost } from './host-policy';
 import { Room, socketIdOf, type Member } from './room';
@@ -33,6 +25,7 @@ export interface RoomServiceDeps {
   rng: Rng;
   newId: () => string;
   storyRepository: StoryRepository;
+  timing: GameTimingConfig;
   registry: RoomRegistry;
   broadcaster: RoomBroadcaster;
   publish: PublishRoom;
@@ -85,7 +78,9 @@ export class RoomService {
         registry.unbind(actor.socketId);
         throw error;
       }
-      this.schedule(room, timerKeys.maxAge(room), now + ROOM_MAX_AGE_MS, () => this.close(room));
+      this.schedule(room, timerKeys.maxAge(room), now + this.deps.timing.roomMaxAgeMs, () =>
+        this.close(room),
+      );
       this.deps.publish(room);
       return { roomCode: code };
     });
@@ -186,13 +181,18 @@ export class RoomService {
       this.schedule(
         room,
         timerKeys.removal(room, member.playerId),
-        now + LOBBY_DISCONNECT_REMOVE_MS,
+        now + this.deps.timing.lobbyDisconnectRemoveMs,
         () => this.removeIfStillAway(room, member.playerId),
       );
       if (member.playerId === room.hostPlayerId) {
-        this.schedule(room, timerKeys.hostTransfer(room), now + HOST_TRANSFER_GRACE_MS, () => {
-          this.transferHostIfStillAway(room);
-        });
+        this.schedule(
+          room,
+          timerKeys.hostTransfer(room),
+          now + this.deps.timing.hostTransferGraceMs,
+          () => {
+            this.transferHostIfStillAway(room);
+          },
+        );
       }
       this.updateEmptiness(room);
       this.deps.publish(room);
@@ -299,7 +299,9 @@ export class RoomService {
     }
     if (room.emptySince === null) {
       room.emptySince = this.deps.clock.now();
-      this.schedule(room, key, room.emptySince + EMPTY_ROOM_TTL_MS, () => this.close(room));
+      this.schedule(room, key, room.emptySince + this.deps.timing.emptyRoomTtlMs, () =>
+        this.close(room),
+      );
     }
   }
 

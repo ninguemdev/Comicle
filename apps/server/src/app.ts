@@ -12,6 +12,7 @@ import { RoomRegistry } from './modules/rooms/room-registry';
 import { registerRoomRoutes } from './modules/rooms/room.routes';
 import { RoomService } from './modules/rooms/room.service';
 import type { StoryRepository } from './modules/stories/story-repository';
+import type { GameTimingConfig } from './modules/timing/game-timing';
 import { timeSyncHandlers } from './modules/timing/time-sync.handlers';
 import { createRoomPublisher } from './modules/views/room-publisher';
 import type { Clock } from './platform/clock';
@@ -35,6 +36,8 @@ export interface AppDeps {
   scheduler: Scheduler;
   rng: Rng;
   storyRepository: StoryRepository;
+  /** Durations of rooms and matches (`gameTimingFor(config.GAME_TIMING_PROFILE)` in production). */
+  timing: GameTimingConfig;
   /** Throws when the database is unreachable (`/healthz`). */
   checkDatabase: () => Promise<void>;
   /** Handlers on top of the modules' own (tests register test-only events here). */
@@ -118,6 +121,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     rng: deps.rng,
     newId,
     storyRepository: deps.storyRepository,
+    timing: deps.timing,
     registry: rooms,
     broadcaster,
     publish: createRoomPublisher(clock, broadcaster),

@@ -4,6 +4,7 @@ import { io as ioClient, type Socket } from 'socket.io-client';
 import { buildApp, type App, type AppDeps } from '../../src/app';
 import { loadConfig } from '../../src/config/env';
 import { InMemoryStoryRepository } from '../../src/modules/stories/in-memory-story-repository';
+import { defaultGameTiming } from '../../src/modules/timing/game-timing';
 import { SeededRng } from '../../src/platform/random';
 import { FakeClock } from './fake-clock';
 import { ManualScheduler } from './manual-scheduler';
@@ -34,6 +35,7 @@ export function createTestDeps(overrides: TestServerOverrides = {}): TestDeps {
     rng: new SeededRng(TEST_SEED),
     storyRepository: new InMemoryStoryRepository(),
     checkDatabase: () => Promise.resolve(),
+    timing: defaultGameTiming,
     ...overrides,
     clock: scheduler.clock,
     scheduler,
