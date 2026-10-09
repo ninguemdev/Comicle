@@ -11,7 +11,9 @@ import { assertCanKick, assertCanUpdateSettings, assertLobby, nextHost } from '.
 import { Room, socketIdOf, type Member } from './room';
 import type { RoomBroadcaster } from './room-broadcaster';
 import { generateUniqueRoomCode } from './room-code';
+import { runAsMember, scheduleInRoom } from './room-access';
 import type { RoomRegistry } from './room-registry';
+import { timerKeys } from './timer-keys';
 
 /** The connection asking for something: its socket and the guest session behind it. */
 export interface RoomActor {
@@ -30,18 +32,6 @@ export interface RoomServiceDeps {
   broadcaster: RoomBroadcaster;
   publish: PublishRoom;
   log: FastifyBaseLogger;
-}
-
-/** One timer per key (arquitetura §4, Tempo); every key of a room starts with its ID. */
-const timerKeys = {
-  hostTransfer: (room: Room) => `room:${room.id}:host-transfer`,
-  removal: (room: Room, playerId: string) => `room:${room.id}:remove:${playerId}`,
-  empty: (room: Room) => `room:${room.id}:empty`,
-  maxAge: (room: Room) => `room:${room.id}:max-age`,
-};
-
-function notInRoom(): DomainError {
-  return new DomainError('NOT_IN_ROOM', 'Você não está nesta sala.');
 }
 
 /**
@@ -319,6 +309,7 @@ export class RoomService {
       timerKeys.hostTransfer(room),
       timerKeys.empty(room),
       timerKeys.maxAge(room),
+      timerKeys.phase(room),
     ]) {
       scheduler.cancel(key);
     }
@@ -338,29 +329,15 @@ export class RoomService {
     }
   }
 
-  /** Timer whose task runs in the room's queue, like any other mutation. */
   private schedule(room: Room, key: string, at: number, task: () => void | Promise<void>): void {
-    this.deps.scheduler.schedule(key, at, () => room.runExclusive(task));
+    scheduleInRoom(this.deps.scheduler, room, key, at, task);
   }
 
-  /** Runs `task` in the room's queue for the member this socket speaks for. */
-  private async withMember<T>(
+  private withMember<T>(
     socketId: string,
     task: (room: Room, member: Member) => T | Promise<T>,
   ): Promise<T> {
-    const binding = this.deps.registry.binding(socketId);
-    const room = binding && this.deps.registry.byId(binding.roomId);
-    if (!binding || !room) {
-      throw notInRoom();
-    }
-    return room.runExclusive(() => {
-      const member = room.members.get(binding.playerId);
-      // Checked again inside the queue: a kick or a close may have run in between.
-      if (room.closed || !member || this.deps.registry.binding(socketId) === undefined) {
-        throw notInRoom();
-      }
-      return task(room, member);
-    });
+    return runAsMember(this.deps.registry, socketId, task);
   }
 
   private assertOutsideRooms(socketId: string): void {
