@@ -108,6 +108,8 @@ export const strings = {
   },
   room: {
     title: (code: string) => `Sala ${code}`,
+    /** Announced when the room is back in the lobby (interface.md §6). */
+    announceLobby: 'De volta ao lobby',
     joining: 'Entrando na sala…',
     inviteLabel: 'Link de convite',
     copyInvite: 'Copiar convite',

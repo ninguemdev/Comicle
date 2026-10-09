@@ -10,6 +10,7 @@ import { SpeechBubble } from '../../ui/speech-bubble';
 import { Toast } from '../../ui/toast';
 import { MatchScreen } from '../match/match-screen';
 import { Lobby } from './lobby';
+import { RoomAnnouncer } from './room-announcement';
 
 type Problem = keyof typeof strings.room.problems;
 
@@ -136,6 +137,7 @@ function RoomSession({ code }: { code: string }) {
   }
   return (
     <>
+      <RoomAnnouncer view={view} />
       {view.match === null ? <Lobby view={view} /> : <MatchScreen view={view} match={view.match} />}
       <MatchAbortedToast />
     </>
