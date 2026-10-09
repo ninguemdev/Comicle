@@ -1,4 +1,5 @@
 import { assignedStory, type Match, type PanelMeta } from '../matches/match';
+import { isPanelRevealed } from '../presentation/presentation-cursor';
 
 // Who may see which panel image (R59). Pure; with buildPlayerView, the only place that decides it.
 
@@ -13,7 +14,32 @@ export function readablePanels(match: Match, playerId: string): readonly PanelMe
   return assignedStory(match, playerId)?.panels ?? [];
 }
 
-/** R59: outside the player's own reading (and the presentation, T16), no panel is accessible. */
+/** R53, R54: the revealed panels of the story being presented, the same for every member. */
+export function presentedPanels(match: Match): readonly PanelMeta[] {
+  const cursor = match.presentation;
+  if (match.phase !== 'presentation' || cursor === null) {
+    return [];
+  }
+  const story = match.stories[cursor.storyIndex];
+  return (story?.panels ?? []).filter((panel) =>
+    isPanelRevealed(cursor, cursor.storyIndex, panel.position),
+  );
+}
+
+/** R54: a revealed panel of any story, for every member of the room. */
+function isPresented(match: Match, panelId: string): boolean {
+  const cursor = match.presentation;
+  if (cursor === null) {
+    return false;
+  }
+  return match.stories.some((story, storyIndex) =>
+    story.panels.some(
+      (panel) => panel.id === panelId && isPanelRevealed(cursor, storyIndex, panel.position),
+    ),
+  );
+}
+
+/** R59: outside the player's own reading and the presentation, no panel is accessible. */
 export function canAccessPanel(match: Match | null, playerId: string, panelId: string): boolean {
   if (match === null) {
     return false;
@@ -26,8 +52,7 @@ export function canAccessPanel(match: Match | null, playerId: string, panelId: s
     case 'round_closing':
       return false;
     case 'presentation':
-      // R54 arrives with the presentation cursor (T16); until then nothing is revealed.
-      return false;
+      return isPresented(match, panelId);
     default:
       return match.phase satisfies never;
   }

@@ -122,6 +122,8 @@ const timeout = (playerId: string, marker: number, roundIndex = 0): MatchEvent =
 });
 const deadline: MatchEvent = { type: 'phase_deadline' };
 const abort: MatchEvent = { type: 'abort', reason: 'host' };
+const nextStep: MatchEvent = { type: 'presentation_navigate', action: { action: 'next' } };
+const endPresentation: MatchEvent = { type: 'presentation_end' };
 
 /** Round 0 drawing, started at T0 + 1. */
 function drawingMatch(totalRounds = seats.length): Match {
@@ -191,6 +193,8 @@ describe('match machine', () => {
       ['lobby', lobby, ready('ana'), 'INVALID_STATE'],
       ['lobby', lobby, done('ana', 1), 'INVALID_STATE'],
       ['lobby', lobby, abort, 'INVALID_STATE'],
+      ['lobby', lobby, nextStep, 'INVALID_STATE'],
+      ['lobby', lobby, endPresentation, 'INVALID_STATE'],
       ['theme_writing', themeWriting, startEvent(), 'INVALID_STATE'],
       ['theme_writing', themeWriting, draft('ana', 'x'), undefined],
       ['theme_writing', themeWriting, submit('ana'), undefined],
@@ -199,6 +203,8 @@ describe('match machine', () => {
       ['theme_writing', themeWriting, done('ana', 1), 'INVALID_STATE'],
       ['theme_writing', themeWriting, deadline, undefined],
       ['theme_writing', themeWriting, abort, undefined],
+      ['theme_writing', themeWriting, nextStep, 'INVALID_STATE'],
+      ['theme_writing', themeWriting, endPresentation, 'INVALID_STATE'],
       ['round_drawing', roundDrawing, startEvent(), 'INVALID_STATE'],
       ['round_drawing', roundDrawing, draft('ana', 'x'), 'INVALID_STATE'],
       ['round_drawing', roundDrawing, submit('ana'), 'INVALID_STATE'],
@@ -208,20 +214,25 @@ describe('match machine', () => {
       ['round_drawing', roundDrawing, done('espectador', 1), 'INVALID_STATE'],
       ['round_drawing', roundDrawing, deadline, undefined],
       ['round_drawing', roundDrawing, abort, undefined],
+      ['round_drawing', roundDrawing, nextStep, 'INVALID_STATE'],
       ['round_reading', roundReading, ready('ana'), undefined],
       ['round_reading', roundReading, ready('espectador'), 'INVALID_STATE'],
       ['round_reading', roundReading, ready('ana', 2), 'INVALID_STATE'],
       ['round_reading', roundReading, autosave('ana', 1, 1), 'INVALID_STATE'],
       ['round_reading', roundReading, done('ana', 1, 1), 'INVALID_STATE'],
       ['round_reading', roundReading, abort, undefined],
+      ['round_reading', roundReading, endPresentation, 'INVALID_STATE'],
       ['round_closing', roundClosing, done('caio', 3), undefined],
       ['round_closing', roundClosing, autosave('caio', 3), 'DEADLINE_PASSED'],
       ['round_closing', roundClosing, ready('caio', 0), 'INVALID_STATE'],
       ['round_closing', roundClosing, abort, undefined],
+      ['round_closing', roundClosing, nextStep, 'INVALID_STATE'],
       ['presentation', presentation, done('ana', 1, 2), 'DEADLINE_PASSED'],
       ['presentation', presentation, ready('ana', 2), 'INVALID_STATE'],
       ['presentation', presentation, startEvent(), 'INVALID_STATE'],
       ['presentation', presentation, abort, undefined],
+      ['presentation', presentation, nextStep, undefined],
+      ['presentation', presentation, endPresentation, undefined],
     ])('%s + %o → %s', (_phase, state, event, expected) => {
       expect(errorCode(() => machine.transition(state(), event, T0 + 2))).toBe(expected);
     });
@@ -613,7 +624,51 @@ describe('match machine', () => {
         'cancel_phase',
         'set_match_status',
       ]);
-      expect(effects).toContainEqual({ type: 'set_match_status', status: 'presenting' });
+      expect(effects).toContainEqual({
+        type: 'set_match_status',
+        matchId: 'match-1',
+        status: 'presenting',
+      });
+    });
+  });
+
+  describe('apresentação', () => {
+    it('R52, R53: o anfitrião move o cursor sem efeitos colaterais', () => {
+      const presenting = readingMatch(3).match;
+      const { match, effects } = run(presenting, [
+        nextStep,
+        { type: 'presentation_navigate', action: { action: 'nextStory' } },
+      ]);
+
+      expect(match?.presentation).toEqual({
+        status: 'showing',
+        storyIndex: 1,
+        step: { kind: 'theme' },
+        maxStoryReached: 1,
+        revealedCount: [3, 0, 0],
+      });
+      expect(match?.phase).toBe('presentation');
+      expect(effects).toEqual([]);
+    });
+
+    it('R52: goToStory além de maxStoryReached → INVALID_STATE', () => {
+      const presenting = readingMatch(3).match;
+      const goTo = (storyIndex: number): MatchEvent => ({
+        type: 'presentation_navigate',
+        action: { action: 'goToStory', storyIndex },
+      });
+
+      expect(errorCode(() => run(presenting, [goTo(1)]))).toBe('INVALID_STATE');
+      expect(errorCode(() => run(presenting, [goTo(0)]))).toBeUndefined();
+    });
+
+    it('R56: encerrar volta ao lobby e marca a partida como finished, sem apagar nada', () => {
+      const presenting = readingMatch(3).match;
+
+      expect(run(presenting, [nextStep, endPresentation])).toEqual({
+        match: null,
+        effects: [{ type: 'set_match_status', matchId: 'match-1', status: 'finished' }],
+      });
     });
   });
 

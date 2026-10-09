@@ -1,5 +1,6 @@
 import {
   defaultAvatar,
+  type ArtistRef,
   type MatchView,
   type MemberProgress,
   type MemberRole,
@@ -7,9 +8,10 @@ import {
   type PanelRef,
   type PlayerTask,
   type PlayerView,
+  type PresentationView,
 } from '@comicle/shared';
 
-import { readablePanels } from '../drawing/panel-access-policy';
+import { presentedPanels, readablePanels } from '../drawing/panel-access-policy';
 import { assignedStory, isParticipant, seatOf, type Match, type PanelMeta } from '../matches/match';
 import { isConnected, type Member, type Room } from '../rooms/room';
 
@@ -56,18 +58,51 @@ function progressOf(match: Match | null, playerId: string): MemberProgress {
   return done ? 'done' : 'working';
 }
 
-/** Credits of a panel: the nickname copied at the start and the artist's current avatar. */
+/** Credits: the nickname copied at the start and the player's current avatar. */
+function artistRef(room: Room, playerId: string, nickname: string): ArtistRef {
+  const avatar = room.members.get(playerId)?.profile.avatar ?? defaultAvatar();
+  return { playerId, nickname, avatar };
+}
+
 function panelRef(room: Room, match: Match, panel: PanelMeta): PanelRef {
-  const avatar = room.members.get(panel.artistPlayerId)?.profile.avatar ?? defaultAvatar();
   return {
     panelId: panel.id,
     position: panel.position,
-    artist: {
-      playerId: panel.artistPlayerId,
-      nickname: seatOf(match, panel.artistPlayerId)?.nickname ?? '',
-      avatar,
-    },
+    artist: artistRef(
+      room,
+      panel.artistPlayerId,
+      seatOf(match, panel.artistPlayerId)?.nickname ?? '',
+    ),
     status: panel.status,
+  };
+}
+
+/** R50–R55: the same for every member; only what the cursor already revealed. */
+function presentationView(room: Room, match: Match): PresentationView | null {
+  const cursor = match.presentation;
+  const story = cursor && match.stories[cursor.storyIndex];
+  if (match.phase !== 'presentation' || !cursor || !story) {
+    return null;
+  }
+  return {
+    status: cursor.status,
+    storyIndex: cursor.storyIndex,
+    storyCount: match.stories.length,
+    step: cursor.step,
+    maxStoryReached: cursor.maxStoryReached,
+    story: {
+      theme: {
+        text: story.themeText,
+        author: artistRef(room, story.authorPlayerId, story.authorNickname),
+      },
+      panelCount: story.panels.length,
+      revealedPanels: presentedPanels(match).map((panel) => panelRef(room, match, panel)),
+    },
+    reachedStories: match.stories.slice(0, cursor.maxStoryReached + 1).map((reached, index) => ({
+      index,
+      themeText: reached.themeText,
+      author: artistRef(room, reached.authorPlayerId, reached.authorNickname),
+    })),
   };
 }
 
@@ -140,7 +175,7 @@ function matchView(room: Room, match: Match, playerId: string): MatchView {
     phaseDeadlineAt: match.phaseDeadlineAt,
     progress: { done, total: match.seats.length },
     task: taskOf(room, match, playerId),
-    presentation: null,
+    presentation: presentationView(room, match),
   };
 }
 

@@ -10,6 +10,13 @@ import {
   testStories,
 } from '../../../test/support/room-builders';
 import type { Match } from '../matches/match';
+import {
+  initialPresentationCursor,
+  isPanelRevealed,
+  navigate,
+  type PresentationAction,
+  type PresentationCursor,
+} from '../presentation/presentation-cursor';
 import { buildPlayerView } from './build-player-view';
 
 describe('buildPlayerView no lobby', () => {
@@ -324,5 +331,123 @@ describe('buildPlayerView nas rodadas', () => {
         progress: { done: 0, total: 3 },
       });
     }
+  });
+});
+
+describe('buildPlayerView na apresentação', () => {
+  const players = ['ana', 'bia', 'caio'];
+  const COUNTS = [2, 2, 2];
+
+  function presentingRoom(cursor: PresentationCursor) {
+    const room = testRoom(
+      testMember('ana', { joinedAt: 0 }),
+      testMember('bia', { joinedAt: 1 }),
+      testMember('caio', { joinedAt: 2 }),
+      testMember('davi', { joinedAt: 3 }),
+    );
+    return inMatch(
+      room,
+      testMatch(players, {
+        phase: 'presentation',
+        roundIndex: 1,
+        phaseDeadlineAt: null,
+        themes: new Map(),
+        stories: testStories(players, 2),
+        presentation: cursor,
+      }),
+    );
+  }
+
+  it('R58: revealedPanels e reachedStories corretos em cada passo, iguais para todos', () => {
+    const steps: { action: PresentationAction | null; panels: string[]; reached: string[] }[] = [
+      { action: null, panels: [], reached: ['Tema de ana'] },
+      { action: { action: 'next' }, panels: ['panel-0-ana'], reached: ['Tema de ana'] },
+      {
+        action: { action: 'next' },
+        panels: ['panel-0-ana', 'panel-1-ana'],
+        reached: ['Tema de ana'],
+      },
+      {
+        action: { action: 'next' },
+        panels: ['panel-0-ana', 'panel-1-ana'],
+        reached: ['Tema de ana'],
+      },
+      { action: { action: 'next' }, panels: [], reached: ['Tema de ana', 'Tema de bia'] },
+      {
+        action: { action: 'next' },
+        panels: ['panel-0-bia'],
+        reached: ['Tema de ana', 'Tema de bia'],
+      },
+      {
+        action: { action: 'prev' },
+        panels: ['panel-0-bia'],
+        reached: ['Tema de ana', 'Tema de bia'],
+      },
+      {
+        action: { action: 'goToStory', storyIndex: 0 },
+        panels: ['panel-0-ana', 'panel-1-ana'],
+        reached: ['Tema de ana', 'Tema de bia'],
+      },
+      {
+        action: { action: 'nextStory' },
+        panels: ['panel-0-bia'],
+        reached: ['Tema de ana', 'Tema de bia'],
+      },
+      {
+        action: { action: 'nextStory' },
+        panels: [],
+        reached: ['Tema de ana', 'Tema de bia', 'Tema de caio'],
+      },
+    ];
+    let cursor = initialPresentationCursor(players.length);
+    for (const { action, panels, reached } of steps) {
+      if (action) {
+        cursor = navigate(cursor, action, COUNTS);
+      }
+      const room = presentingRoom(cursor);
+      const views = [...players, 'davi'].map((p) => buildPlayerView(room, p, 0).match);
+      const presentation = views[0]?.presentation;
+
+      expect(presentation?.story.revealedPanels.map((panel) => panel.panelId)).toEqual(panels);
+      expect(presentation?.reachedStories.map((story) => story.themeText)).toEqual(reached);
+      // R58: never a panel or theme the cursor has not reached.
+      const json = JSON.stringify(views[0]);
+      const hidden = testStories(players, 2)
+        .flatMap((story, index) =>
+          story.panels.filter((panel) => !isPanelRevealed(cursor, index, panel.position)),
+        )
+        .map((panel) => panel.id);
+      for (const id of hidden) {
+        expect(json).not.toContain(id);
+      }
+      for (const story of testStories(players, 2).slice(cursor.maxStoryReached + 1)) {
+        expect(json).not.toContain(story.themeText);
+      }
+      for (const view of views) {
+        expect(view?.presentation).toEqual(presentation);
+        expect(view?.task).toEqual({ kind: 'watch' });
+      }
+    }
+  });
+
+  it('R55: o tema traz o autor e cada quadro o artista', () => {
+    const cursor = navigate(initialPresentationCursor(3), { action: 'showFull' }, COUNTS);
+    const presentation = buildPlayerView(presentingRoom(cursor), 'davi', 0).match?.presentation;
+
+    expect(presentation).toMatchObject({
+      status: 'showing',
+      storyIndex: 0,
+      storyCount: 3,
+      step: { kind: 'full' },
+      maxStoryReached: 0,
+      story: {
+        theme: { text: 'Tema de ana', author: { playerId: 'ana', nickname: 'ana' } },
+        panelCount: 2,
+      },
+    });
+    expect(presentation?.story.revealedPanels.map((panel) => panel.artist.playerId)).toEqual([
+      'bia',
+      'caio',
+    ]);
   });
 });

@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { defaultAvatar } from '@comicle/shared';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { defineHandler } from '../../src/platform/realtime/define-handler';
-import { DomainError } from '../../src/platform/errors';
+import { InMemoryStoryRepository } from '../../src/modules/stories/in-memory-story-repository';
 import {
   connectGuest,
   startTestServer,
@@ -9,23 +9,6 @@ import {
   type TestServer,
   type TestServerOverrides,
 } from '../support/test-server';
-
-// `presentation:navigate` is used as a test-only event: no module registers it yet (T16).
-const NOT_HOST_STORY = 1;
-const CRASH_STORY = 2;
-const navigateHandler = defineHandler('presentation:navigate', (payload) => {
-  if (payload.action !== 'goToStory') {
-    return {};
-  }
-  switch (payload.storyIndex) {
-    case NOT_HOST_STORY:
-      throw new DomainError('NOT_HOST', 'Só o anfitrião pode expulsar.');
-    case CRASH_STORY:
-      throw new Error('falha inesperada');
-    default:
-      return {};
-  }
-});
 
 describe('handlers de socket', () => {
   let server: TestServer | undefined;
@@ -37,7 +20,7 @@ describe('handlers de socket', () => {
   });
 
   async function start(overrides: TestServerOverrides = {}) {
-    server = await startTestServer({ extraSocketHandlers: [navigateHandler], ...overrides });
+    server = await startTestServer(overrides);
     ({ client } = await connectGuest(server));
     return { server, client };
   }
@@ -45,10 +28,11 @@ describe('handlers de socket', () => {
   it('payload válido chega ao handler e recebe ack ok', async () => {
     const { client } = await start();
 
-    expect(await client.emitWithAck('presentation:navigate', { action: 'next' })).toEqual({
-      ok: true,
-      data: {},
+    const ack = await client.emitWithAck('room:create', {
+      profile: { nickname: 'Ana', avatar: defaultAvatar() },
     });
+
+    expect(ack).toEqual({ ok: true, data: { roomCode: expect.any(String) as string } });
   });
 
   it('payload inválido → INVALID_PAYLOAD', async () => {
@@ -63,26 +47,27 @@ describe('handlers de socket', () => {
     });
   });
 
-  it("DomainError('NOT_HOST') → ack com esse código e a mensagem", async () => {
+  it('DomainError → ack com o código e a mensagem dele', async () => {
     const { client } = await start();
 
     const ack = await client.emitWithAck('presentation:navigate', {
       action: 'goToStory',
-      storyIndex: NOT_HOST_STORY,
+      storyIndex: 1,
     });
 
     expect(ack).toEqual({
       ok: false,
-      error: { code: 'NOT_HOST', message: 'Só o anfitrião pode expulsar.' },
+      error: { code: 'NOT_IN_ROOM', message: 'Você não está nesta sala.' },
     });
   });
 
   it('exceção qualquer → INTERNAL, sem vazar a mensagem interna', async () => {
-    const { client } = await start();
+    const storyRepository = new InMemoryStoryRepository();
+    vi.spyOn(storyRepository, 'createRoom').mockRejectedValue(new Error('falha inesperada'));
+    const { client } = await start({ storyRepository });
 
-    const ack = await client.emitWithAck('presentation:navigate', {
-      action: 'goToStory',
-      storyIndex: CRASH_STORY,
+    const ack = await client.emitWithAck('room:create', {
+      profile: { nickname: 'Ana', avatar: defaultAvatar() },
     });
 
     expect(ack).toEqual({
@@ -98,7 +83,7 @@ describe('handlers de socket', () => {
 
     const acks = [];
     for (let i = 0; i < 4; i++) {
-      acks.push(await client.emitWithAck('presentation:navigate', { action: 'next' }));
+      acks.push(await client.emitWithAck('time:sync', { clientSentAt: i }));
     }
 
     expect(acks.map((ack) => ack.ok)).toEqual([true, true, true, false]);

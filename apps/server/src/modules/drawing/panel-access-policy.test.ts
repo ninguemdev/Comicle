@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { testMatch, testRoundMatch, testStories } from '../../../test/support/room-builders';
-import { canAccessPanel, readablePanels } from './panel-access-policy';
+import { initialPresentationCursor, navigate } from '../presentation/presentation-cursor';
+import { canAccessPanel, presentedPanels, readablePanels } from './panel-access-policy';
 
 const players = ['ana', 'bia', 'caio'];
 
@@ -42,5 +43,27 @@ describe('PanelAccessPolicy', () => {
       const anyAccess = players.some((p) => panelIds(2).some((id) => canAccessPanel(match, p, id)));
       expect(anyAccess).toBe(false);
     }
+  });
+
+  it('R54: na apresentação, todos veem só os quadros revelados', () => {
+    // ana's story fully revealed and left behind; bia's up to panel 0; caio's untouched.
+    const cursor = navigate(
+      navigate(initialPresentationCursor(3), { action: 'nextStory' }, [2, 2, 2]),
+      { action: 'next' },
+      [2, 2, 2],
+    );
+    const presenting = testMatch(players, {
+      phase: 'presentation',
+      roundIndex: 1,
+      themes: new Map(),
+      stories: testStories(players, 2),
+      presentation: cursor,
+    });
+
+    for (const viewer of [...players, 'davi']) {
+      const accessible = panelIds(2).filter((id) => canAccessPanel(presenting, viewer, id));
+      expect(accessible).toEqual(['panel-0-ana', 'panel-1-ana', 'panel-0-bia']);
+    }
+    expect(presentedPanels(presenting).map((panel) => panel.id)).toEqual(['panel-0-bia']);
   });
 });
