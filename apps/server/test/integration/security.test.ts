@@ -141,6 +141,166 @@ describe('segurança (integração)', () => {
     );
   });
 
+  describe('autorização do anfitrião', () => {
+    type Actor = 'anfitrião' | 'membro' | 'espectador' | 'não membro';
+    /** `ok` or the error code each actor gets. */
+    type Expected = Partial<Record<Actor, 'ok' | 'NOT_HOST' | 'NOT_IN_ROOM' | 'INVALID_STATE'>>;
+    type HostAction = [ClientEventName, (players: Record<string, Player>) => unknown, Expected];
+
+    const settings = {
+      mode: 'collaborative',
+      panelCount: { kind: 'fixed', value: 5 },
+      drawingSeconds: 60,
+    };
+    const kickBia = (players: Record<string, Player>) => ({
+      playerId: players.bia?.views.latest?.me.playerId ?? '',
+    });
+    const outsiders = {
+      membro: 'NOT_HOST',
+      espectador: 'NOT_HOST',
+      'não membro': 'NOT_IN_ROOM',
+    } as const;
+
+    /** Every action only the host may take (R11, R12, R22, R52, R56, R57). */
+    const LOBBY: HostAction[] = [
+      ['room:kick', kickBia, { ...outsiders, anfitrião: 'ok' }],
+      ['room:updateSettings', () => ({ settings }), { ...outsiders, anfitrião: 'ok' }],
+      ['match:abort', () => ({}), { ...outsiders, anfitrião: 'INVALID_STATE' }],
+      [
+        'presentation:navigate',
+        () => ({ action: 'next' }),
+        { ...outsiders, anfitrião: 'INVALID_STATE' },
+      ],
+      ['presentation:end', () => ({}), { ...outsiders, anfitrião: 'INVALID_STATE' }],
+      ['match:start', () => ({}), { ...outsiders }],
+    ];
+    const PRESENTATION: HostAction[] = [
+      ['room:kick', kickBia, { ...outsiders, anfitrião: 'INVALID_STATE' }],
+      ['room:updateSettings', () => ({ settings }), { ...outsiders, anfitrião: 'INVALID_STATE' }],
+      ['match:start', () => ({}), { ...outsiders, anfitrião: 'INVALID_STATE' }],
+      ['match:abort', () => ({}), { ...outsiders }],
+      ['presentation:end', () => ({}), { ...outsiders }],
+      ['presentation:navigate', () => ({ action: 'next' }), { ...outsiders, anfitrião: 'ok' }],
+    ];
+
+    async function checkMatrix(
+      actions: HostAction[],
+      players: Record<Actor, Player | undefined>,
+      named: Record<string, Player>,
+    ) {
+      // Refusals first: the host's own actions change the room.
+      const order: Actor[] = ['não membro', 'espectador', 'membro', 'anfitrião'];
+      for (const actor of order) {
+        const player = players[actor];
+        if (!player) continue;
+        for (const [event, payload, expected] of actions) {
+          const outcome = expected[actor];
+          if (outcome === undefined) continue;
+          const ack = await emitRaw(player.client, event, payload(named));
+          const label = `${actor} → ${event}`;
+          if (outcome === 'ok') {
+            expect(ack.ok, label).toBe(true);
+          } else {
+            expect(ack, label).toMatchObject({ ok: false, error: { code: outcome } });
+          }
+        }
+      }
+    }
+
+    it('no lobby, cada ação exclusiva × cada papel', async () => {
+      await start();
+      const [ana, bia] = await room();
+      const eve = await newPlayer('Eve');
+      const before = ana.views.latest?.room.settings;
+
+      await checkMatrix(
+        LOBBY,
+        { anfitrião: undefined, membro: bia, espectador: undefined, 'não membro': eve },
+        { bia },
+      );
+      // Nothing the others tried changed the room.
+      expect(ana.views.latest?.room.settings).toEqual(before);
+      expect(ana.views.latest?.room.members).toHaveLength(2);
+
+      await checkMatrix(
+        LOBBY,
+        { anfitrião: ana, membro: undefined, espectador: undefined, 'não membro': undefined },
+        { bia },
+      );
+      expect(ana.views.latest?.room.members).toHaveLength(1);
+    });
+
+    it('na apresentação, cada ação exclusiva × cada papel', async () => {
+      await start();
+      const [ana, bia] = await room();
+      const caio = await newPlayer('Caio');
+      const code = ana.views.latest?.room.code ?? '';
+      await caio.client.emitWithAck('room:join', { roomCode: code, profile: caio.profile });
+      await ana.client.emitWithAck('match:start', {});
+      const davi = await newPlayer('Davi');
+      await davi.client.emitWithAck('room:join', { roomCode: code, profile: davi.profile });
+      const eve = await newPlayer('Eve');
+      const seated = [ana, bia, caio];
+      for (const player of seated) {
+        await player.views.waitFor(inPhase('theme_writing'));
+        await player.client.emitWithAck('theme:submit', {
+          text: `Tema de ${player.profile.nickname}`,
+        });
+      }
+      for (let roundIndex = 0; roundIndex < 3; roundIndex++) {
+        for (const player of seated) {
+          await player.views.waitFor(
+            (v) => v.match?.roundIndex === roundIndex && v.match.phase !== 'theme_writing',
+          );
+          if (player.views.latest?.match?.phase === 'round_reading') {
+            await player.client.emitWithAck('round:ready', { roundIndex });
+          }
+        }
+        for (const player of seated) {
+          await player.views.waitFor(
+            (v) => v.match?.phase === 'round_drawing' && v.match.roundIndex === roundIndex,
+          );
+          await player.client.emitWithAck('panel:submit', {
+            roundIndex,
+            reason: 'done',
+            png: panelPng(roundIndex + 1),
+          });
+        }
+      }
+      await davi.views.waitFor(inPhase('presentation'));
+      expect(davi.views.latest?.me.role).toBe('spectator');
+
+      await checkMatrix(
+        PRESENTATION,
+        { anfitrião: undefined, membro: bia, espectador: davi, 'não membro': eve },
+        { bia },
+      );
+      // The presentation did not move and the match is still on.
+      expect(ana.views.latest?.match?.presentation).toMatchObject({
+        storyIndex: 0,
+        step: { kind: 'theme' },
+      });
+
+      await checkMatrix(
+        PRESENTATION,
+        { anfitrião: ana, membro: undefined, espectador: undefined, 'não membro': undefined },
+        { bia },
+      );
+      const revealed = await bia.views.waitFor((v) => v.match?.presentation?.step.kind === 'panel');
+      // R59: the revealed panel goes to members, spectator included, never to an outsider.
+      const panelId = revealed.match?.presentation?.story.revealedPanels[0]?.panelId ?? '';
+      const image = (player: Player) =>
+        server.http.inject({
+          method: 'GET',
+          url: `/api/panels/${panelId}`,
+          headers: { authorization: `Bearer ${player.token}` },
+        });
+      expect((await image(bia)).statusCode).toBe(200);
+      expect((await image(davi)).statusCode).toBe(200);
+      expect((await image(eve)).statusCode).toBe(403);
+    });
+  });
+
   describe('limites de taxa', () => {
     it.each([
       ['POST /api/guest-sessions', 'POST', '/api/guest-sessions', 10],
