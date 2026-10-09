@@ -1,14 +1,33 @@
 import { render, screen } from '@testing-library/react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { AppLayout } from './app-layout';
+import { ErrorPage } from './features/errors/error-page';
 import { routes } from './router';
 import { lobbyView, setUpStores } from './test/room-fixtures';
 
-function renderAt(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+function renderAt(path: string, routeList: RouteObject[] = routes) {
+  const router = createMemoryRouter(routeList, { initialEntries: [path] });
   render(<RouterProvider router={router} />);
 }
+
+function Boom(): never {
+  throw new Error('quebrou');
+}
+
+/** The app's layout and error page around a screen that crashes. */
+const crashingRoutes: RouteObject[] = [
+  {
+    element: <AppLayout />,
+    errorElement: <ErrorPage />,
+    children: [{ path: 'quebra', element: <Boom /> }],
+  },
+];
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('rotas', () => {
   it('/ mostra a tela inicial', () => {
@@ -47,5 +66,30 @@ describe('rotas', () => {
     expect(await screen.findByRole('heading', { name: 'Componentes' })).toBeInstanceOf(
       HTMLHeadingElement,
     );
+  });
+
+  it.each([
+    ['/', 'Comicle'],
+    ['/perfil', 'Seu perfil · Comicle'],
+    ['/nao-existe', 'Página não encontrada · Comicle'],
+  ])('%s tem o título "%s"', (path, title) => {
+    renderAt(path);
+
+    expect(document.title).toBe(title);
+  });
+
+  it('uma tela que quebra mostra a página de erro com volta ao início', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    renderAt('/quebra', crashingRoutes);
+
+    expect(screen.getByRole('heading', { name: 'Algo deu errado' })).toBeInstanceOf(
+      HTMLHeadingElement,
+    );
+    expect(screen.getByRole('link', { name: 'Voltar ao início' })).toBeInstanceOf(
+      HTMLAnchorElement,
+    );
+    expect(document.title).toBe('Algo deu errado · Comicle');
   });
 });

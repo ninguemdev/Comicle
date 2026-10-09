@@ -1,7 +1,13 @@
-import { normalizeRoomCode, roomCodeSchema, type ErrorCode } from '@comicle/shared';
+import {
+  normalizeRoomCode,
+  roomCodeSchema,
+  type ErrorCode,
+  type PlayerView,
+} from '@comicle/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 
+import { useDocumentTitle } from '../../lib/document-title';
 import { useProfileStore } from '../../stores/profile-store';
 import { useRoomStore, type RoomExit } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
@@ -51,6 +57,7 @@ function ProblemScreen({
   onRetry?: (() => void) | undefined;
 }) {
   const { title, message } = strings.room.problems[problem];
+  useDocumentTitle(title);
   return (
     <div className="flex flex-col items-start gap-6">
       <h1 className="font-display text-5xl tracking-wide">{title}</h1>
@@ -67,6 +74,13 @@ function ProblemScreen({
       </div>
     </div>
   );
+}
+
+/** Tab title: the room in the lobby, the phase during the match. */
+function RoomTitle({ code, view }: { code: string; view: PlayerView | null }) {
+  const phase = view?.room.code === code ? view.match?.phase : undefined;
+  useDocumentTitle(phase === undefined ? strings.room.title(code) : strings.match.phases[phase]);
+  return null;
 }
 
 /** R57: why the match just ended, once per abort that happens while the room is open. */
@@ -133,10 +147,16 @@ function RoomSession({ code }: { code: string }) {
     );
   }
   if (view?.room.code !== code) {
-    return <SpeechBubble>{strings.room.joining}</SpeechBubble>;
+    return (
+      <>
+        <RoomTitle code={code} view={null} />
+        <SpeechBubble>{strings.room.joining}</SpeechBubble>
+      </>
+    );
   }
   return (
     <>
+      <RoomTitle code={code} view={view} />
       <RoomAnnouncer view={view} />
       {view.match === null ? <Lobby view={view} /> : <MatchScreen view={view} match={view.match} />}
       <MatchAbortedToast />
