@@ -138,7 +138,7 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
           <label className="flex items-center gap-2 font-semibold text-muted">
             <input type="radio" name="mode" disabled className="size-5" />
             {texts.individual}
-            <span className="rounded-full border-2 border-ink bg-pop-yellow px-2 text-xs text-ink">
+            <span className="rounded-full border-2 border-ink bg-pop-yellow px-2 text-xs">
               {texts.soon}
             </span>
           </label>

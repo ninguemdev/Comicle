@@ -188,7 +188,7 @@ export function Toolbar(props: ToolbarProps) {
             >
               <span
                 aria-hidden="true"
-                className="rounded-full bg-ink"
+                className="rounded-full bg-current"
                 style={{ width: preview, height: preview }}
               />
             </ToolButton>
