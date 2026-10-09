@@ -1,6 +1,7 @@
 import type { MatchPhase, MatchSettings, PanelStatus } from '@comicle/shared';
 
-import type { DistributionPlan } from '../game-modes/game-mode';
+import { storyForPlayer, type DistributionPlan } from '../game-modes/game-mode';
+import type { PresentationCursor } from '../presentation/presentation-cursor';
 import type { NewMatch, ThemeSource } from '../stories/story-repository';
 
 // Match state in memory (docs/modelo-de-dados.md §1). Pure data: transitions live in
@@ -39,6 +40,28 @@ export interface StoryState {
   readonly panels: readonly PanelMeta[];
 }
 
+export type PanelSubmitReason = 'done' | 'timeout';
+
+/** R40, R42: what a player handed in; `png` is `null` for a blank canvas. */
+export interface PanelFinal {
+  readonly png: Uint8Array | null;
+  readonly reason: PanelSubmitReason;
+}
+
+/** The round in progress, by playerId; discarded when the round ends. */
+export interface RoundState {
+  /** R36, R37: confirmed the reading. */
+  readonly ready: ReadonlySet<string>;
+  /** R39: latest autosave. */
+  readonly drafts: ReadonlyMap<string, Uint8Array>;
+  /** R40, R42. */
+  readonly finals: ReadonlyMap<string, PanelFinal>;
+}
+
+export function emptyRound(): RoundState {
+  return { ready: new Set(), drafts: new Map(), finals: new Map() };
+}
+
 export interface Match {
   readonly id: string;
   readonly settings: MatchSettings;
@@ -48,20 +71,39 @@ export interface Match {
   readonly plan: DistributionPlan;
   /** R30: fallback themes already shuffled; used in order, never repeated. */
   readonly fallbackThemes: readonly string[];
+  /** `panelIds[r][i]`: ID of the panel drawn for story `i` in round `r`, drawn at the start. */
+  readonly panelIds: readonly (readonly string[])[];
   readonly phase: MatchPhase;
   readonly phaseStartedAt: number;
   readonly phaseDeadlineAt: number | null;
-  /** -1 during theme_writing. */
+  /** -1 during theme_writing; the last round during the presentation. */
   readonly roundIndex: number;
   /** By playerId; only during theme_writing. */
   readonly themes: ReadonlyMap<string, ThemeDraftState>;
   /** Index = seat of the author; empty until the themes are resolved. */
   readonly stories: readonly StoryState[];
+  /** Only during the rounds (reading, drawing, closing). */
+  readonly round: RoundState | null;
+  /** Only in `presentation`. */
+  readonly presentation: PresentationCursor | null;
 }
 
 /** Members outside `seats` (disconnected at the start or joined later) are spectators (R10, R24). */
 export function isParticipant(match: Match, playerId: string): boolean {
   return match.seats.some((seat) => seat.playerId === playerId);
+}
+
+export function seatOf(match: Match, playerId: string): Seat | undefined {
+  return match.seats.find((seat) => seat.playerId === playerId);
+}
+
+/** R31: the story `playerId` works on in the current round, if any. */
+export function assignedStory(match: Match, playerId: string): StoryState | undefined {
+  if (match.roundIndex < 0) {
+    return undefined;
+  }
+  const index = storyForPlayer(match.plan, match.roundIndex, playerId);
+  return index === undefined ? undefined : match.stories[index];
 }
 
 /** Row set written when the themes are resolved (arquitetura §4, Persistência). */

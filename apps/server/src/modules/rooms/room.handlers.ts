@@ -46,5 +46,11 @@ export function createSocketBroadcaster(server: () => AppSocketServer): RoomBroa
       // Packets already queued are flushed before the connection closes.
       socket?.disconnect(true);
     },
+    sendCollect(socketId, roundIndex) {
+      server().to(socketId).emit('round:collect', { roundIndex });
+    },
+    sendMatchAborted(socketId, reason) {
+      server().to(socketId).emit('match:aborted', { reason });
+    },
   };
 }

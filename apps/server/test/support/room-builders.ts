@@ -51,12 +51,17 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
     totalRounds: playerIds.length,
     plan: buildCollaborativePlan(playerIds, playerIds.length),
     fallbackThemes: [],
+    panelIds: playerIds.map((_, round) =>
+      playerIds.map((author) => `panel-${String(round)}-${author}`),
+    ),
     phase: 'theme_writing',
     phaseStartedAt: 0,
     phaseDeadlineAt: 90_000,
     roundIndex: -1,
     themes: new Map(playerIds.map((playerId) => [playerId, { draft: '', final: null }])),
     stories: [],
+    round: null,
+    presentation: null,
     ...overrides,
   };
 }

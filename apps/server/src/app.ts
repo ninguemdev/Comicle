@@ -128,6 +128,8 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     registry: rooms,
     broadcaster,
     publish,
+    // The match service is created right below; it exists by the time anyone connects.
+    onPresenceChange: (room) => matchService.handlePresenceChange(room),
     log: http.log,
   });
   const matchService = new MatchService({
@@ -138,6 +140,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     storyRepository: deps.storyRepository,
     timing: deps.timing,
     registry: rooms,
+    broadcaster,
     publish,
     onReturnToLobby: (room) => {
       roomService.scheduleLobbyRemovals(room);
