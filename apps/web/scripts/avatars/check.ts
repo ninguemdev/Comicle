@@ -2,7 +2,6 @@ import { AVATAR_CATEGORIES, avatarCatalogSchema, avatarCategorySlug } from '@com
 
 import { ART_SIZE, MAX_ART_BYTES, PNG_ART_SIZE } from './layout';
 import { readPngInfo } from './png';
-import { PLACEHOLDER_MARKER } from './sketch';
 
 // Rules of `pnpm avatars:check` (docs/avatares.md §4, docs/avatares-guia-de-artes.md).
 
@@ -16,8 +15,6 @@ export interface CheckReport {
   errors: string[];
   /** Arts in the catalog. */
   total: number;
-  /** Arts that are still generated placeholders. */
-  placeholders: string[];
 }
 
 const ART_EXTENSIONS = ['svg', 'png'] as const;
@@ -88,12 +85,6 @@ function artProblems(file: ArtFile): string[] {
   return problems;
 }
 
-function isPlaceholder(file: ArtFile): boolean {
-  return (
-    file.path.endsWith('.svg') && new TextDecoder().decode(file.bytes).includes(PLACEHOLDER_MARKER)
-  );
-}
-
 /** Checks the catalog against the files in apps/web/public/avatars/. */
 export function checkAvatars(catalogJson: unknown, files: readonly ArtFile[]): CheckReport {
   const parsed = avatarCatalogSchema.safeParse(catalogJson);
@@ -103,12 +94,10 @@ export function checkAvatars(catalogJson: unknown, files: readonly ArtFile[]): C
         (issue) => `catálogo (${issue.path.join('.')}): ${issue.message}`,
       ),
       total: 0,
-      placeholders: [],
     };
   }
 
   const errors: string[] = [];
-  const placeholders: string[] = [];
   const arts = new Map(
     files.filter((file) => !isIgnored(file.path)).map((file) => [file.path, file]),
   );
@@ -130,9 +119,6 @@ export function checkAvatars(catalogJson: unknown, files: readonly ArtFile[]): C
         continue;
       }
       errors.push(...artProblems(art).map((problem) => `${option.file}: ${problem}`));
-      if (isPlaceholder(art)) {
-        placeholders.push(option.file);
-      }
     }
   }
 
@@ -142,5 +128,5 @@ export function checkAvatars(catalogJson: unknown, files: readonly ArtFile[]): C
     }
   }
 
-  return { errors, total, placeholders };
+  return { errors, total };
 }

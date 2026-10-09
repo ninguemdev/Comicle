@@ -7,7 +7,7 @@ import { AvatarRenderer } from './avatar-renderer';
 const FULL: AvatarConfig = {
   head: 'head-square',
   eyes: 'eyes-wide',
-  mouth: 'mouth-open',
+  mouth: 'mouth-sad',
   cheeks: 'cheeks-blush',
   hat: 'hat-cap',
   faceAccessory: 'face-accessory-glasses',
@@ -22,12 +22,12 @@ describe('AvatarRenderer', () => {
     const { container } = render(<AvatarRenderer avatar={FULL} size={64} />);
 
     expect(layerSources(container)).toEqual([
-      '/avatars/head/head-square.svg',
-      '/avatars/cheeks/cheeks-blush.svg',
-      '/avatars/eyes/eyes-wide.svg',
-      '/avatars/mouth/mouth-open.svg',
-      '/avatars/face-accessory/face-accessory-glasses.svg',
-      '/avatars/hat/hat-cap.svg',
+      '/avatars/head/head-square.png',
+      '/avatars/cheeks/cheeks-blush.png',
+      '/avatars/eyes/eyes-wide.png',
+      '/avatars/mouth/mouth-sad.png',
+      '/avatars/face-accessory/face-accessory-glasses.png',
+      '/avatars/hat/hat-cap.png',
     ]);
   });
 
@@ -37,8 +37,8 @@ describe('AvatarRenderer', () => {
     );
 
     expect(layerSources(container)).toEqual([
-      '/avatars/head/head-round.svg',
-      '/avatars/mouth/mouth-smile.svg',
+      '/avatars/head/head-round.png',
+      '/avatars/mouth/mouth-smile.png',
     ]);
   });
 

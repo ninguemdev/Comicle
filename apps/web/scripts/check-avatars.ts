@@ -43,8 +43,5 @@ if (report.errors.length > 0) {
   }
   process.exitCode = 1;
 } else {
-  const definitive = report.total - report.placeholders.length;
-  console.log(
-    `avatars:check ok: ${String(report.total)} artes, ${String(definitive)} definitiva(s) e ${String(report.placeholders.length)} provisória(s).`,
-  );
+  console.log(`avatars:check ok: ${String(report.total)} artes.`);
 }

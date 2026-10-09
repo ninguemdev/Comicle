@@ -41,8 +41,8 @@ describe('AvatarEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Arregalados' }));
 
     expect(onChange).toHaveBeenLastCalledWith({ ...defaultAvatar(), eyes: 'eyes-wide' });
-    expect(previewLayers()).toContain('/avatars/eyes/eyes-wide.svg');
-    expect(previewLayers()).not.toContain('/avatars/eyes/eyes-dots.svg');
+    expect(previewLayers()).toContain('/avatars/eyes/eyes-wide.png');
+    expect(previewLayers()).not.toContain('/avatars/eyes/eyes-dots.png');
     expect(screen.getByRole('button', { name: 'Arregalados' }).getAttribute('aria-pressed')).toBe(
       'true',
     );
@@ -56,7 +56,7 @@ describe('AvatarEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Nenhum' }));
 
     expect(onChange).toHaveBeenLastCalledWith({ ...defaultAvatar(), hat: null });
-    expect(previewLayers()).not.toContain('/avatars/hat/hat-cap.svg');
+    expect(previewLayers()).not.toContain('/avatars/hat/hat-cap.png');
   });
 
   it('R2: categorias obrigatórias não oferecem "nenhum"', () => {
