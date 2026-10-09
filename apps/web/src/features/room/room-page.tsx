@@ -1,5 +1,5 @@
 import { normalizeRoomCode, roomCodeSchema, type ErrorCode } from '@comicle/shared';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 
 import { useProfileStore } from '../../stores/profile-store';
@@ -7,7 +7,9 @@ import { useRoomStore, type RoomExit } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Button, buttonClassName } from '../../ui/button';
 import { SpeechBubble } from '../../ui/speech-bubble';
-import { Lobby, SpectatorScreen } from './lobby';
+import { Toast } from '../../ui/toast';
+import { MatchScreen } from '../match/match-screen';
+import { Lobby } from './lobby';
 
 type Problem = keyof typeof strings.room.problems;
 
@@ -66,6 +68,25 @@ function ProblemScreen({
   );
 }
 
+/** R57: why the match just ended, once per abort that happens while the room is open. */
+function MatchAbortedToast() {
+  const aborted = useRoomStore((state) => state.matchAborted);
+  const [seen, setSeen] = useState(() => aborted?.seq ?? 0);
+  const dismiss = useCallback(() => {
+    setSeen(aborted?.seq ?? 0);
+  }, [aborted]);
+  if (aborted === null || aborted.seq <= seen) {
+    return null;
+  }
+  return (
+    <Toast
+      message={strings.match.aborted[aborted.payload.reason]}
+      tone={aborted.payload.reason === 'host' ? 'info' : 'error'}
+      onDismiss={dismiss}
+    />
+  );
+}
+
 /** Joins when connected (again after a reconnection) and picks the screen for the room state. */
 function RoomSession({ code }: { code: string }) {
   const connection = useRoomStore((state) => state.connection);
@@ -113,7 +134,12 @@ function RoomSession({ code }: { code: string }) {
   if (view?.room.code !== code) {
     return <SpeechBubble>{strings.room.joining}</SpeechBubble>;
   }
-  return view.room.status === 'lobby' ? <Lobby view={view} /> : <SpectatorScreen view={view} />;
+  return (
+    <>
+      {view.match === null ? <Lobby view={view} /> : <MatchScreen view={view} match={view.match} />}
+      <MatchAbortedToast />
+    </>
+  );
 }
 
 /** `/sala/:code`: lobby, match and presentation are states of this route (arquitetura §5). */

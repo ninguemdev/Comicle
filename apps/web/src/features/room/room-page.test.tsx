@@ -8,6 +8,7 @@ import { useProfileStore } from '../../stores/profile-store';
 import { useRoomStore } from '../../stores/room-store';
 import {
   lobbyView,
+  matchView,
   member,
   mockRoomActions,
   ROOM_CODE,
@@ -241,8 +242,8 @@ describe('sala no cliente', () => {
     expect(actions.joinRoom).not.toHaveBeenCalled();
   });
 
-  it('R10: sala em partida mostra a tela de espectador', () => {
-    setUpStores(lobbyView({ status: 'in_match' }));
+  it('R10: sala em partida mostra a tela de espectador a quem não joga', () => {
+    setUpStores(matchView({ task: { kind: 'spectate' } }, 'p4'));
 
     renderAt();
 
