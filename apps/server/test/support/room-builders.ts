@@ -1,7 +1,12 @@
 import { DRAWING_SECONDS_DEFAULT, defaultAvatar } from '@comicle/shared';
 
 import { buildCollaborativePlan } from '../../src/modules/game-modes/collaborative/distribution';
-import type { Match } from '../../src/modules/matches/match';
+import {
+  emptyRound,
+  type Match,
+  type RoundState,
+  type StoryState,
+} from '../../src/modules/matches/match';
 import { Room, type Member } from '../../src/modules/rooms/room';
 
 // Builders for unit tests of the rooms and matches modules.
@@ -71,4 +76,38 @@ export function inMatch(room: Room, match: Match): Room {
   room.status = 'in_match';
   room.match = match;
   return room;
+}
+
+/** Stories of these authors with `panelCount` panels each, drawn as R31 says. */
+export function testStories(authors: string[], panelCount: number): StoryState[] {
+  return authors.map((author, seat) => ({
+    id: `story-${author}`,
+    themeId: `theme-${author}`,
+    authorPlayerId: author,
+    authorNickname: author,
+    themeText: `Tema de ${author}`,
+    themeSource: 'player',
+    panels: Array.from({ length: panelCount }, (_, position) => ({
+      id: `panel-${String(position)}-${author}`,
+      position,
+      artistPlayerId: authors[(seat + 1 + position) % authors.length] ?? author,
+      status: 'complete',
+    })),
+  }));
+}
+
+/** Match of these players in round `roundIndex` of `phase`, every earlier panel drawn. */
+export function testRoundMatch(
+  playerIds: string[],
+  phase: 'round_reading' | 'round_drawing' | 'round_closing',
+  roundIndex: number,
+  round: Partial<RoundState> = {},
+): Match {
+  return testMatch(playerIds, {
+    phase,
+    roundIndex,
+    themes: new Map(),
+    stories: testStories(playerIds, roundIndex),
+    round: { ...emptyRound(), ...round },
+  });
 }
