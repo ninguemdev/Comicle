@@ -40,6 +40,7 @@ apps/web          cliente React
 apps/server       servidor Fastify + Socket.IO
 packages/shared   tipos, schemas Zod, eventos, constantes, catálogo de avatares (@comicle/shared)
 e2e/              Playwright
+infra/            runtime da instalação em dionel.site/comicle (EC2, Cloudflare)
 docs/             especificação, regras, arquitetura, tasks
 ```
 

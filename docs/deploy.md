@@ -131,3 +131,65 @@ Desnecessário. O banco só guarda o conteúdo das partidas em andamento, apagad
 - **Logs:** JSON do pino, uma linha por evento, na saída padrão (`docker logs`, ou o coletor da sua plataforma). Campos úteis: `level` (30 = info, 40 = warn, 50 = error), `time` (ms epoch), `msg`, `reqId`, `err` (tipo, código, primeira linha da mensagem e pilha, sem parâmetros de query). Os logs nunca têm tokens, temas, apelidos nem imagens.
 - **Saúde:** `GET /healthz` responde `200 {"status":"ok"}` quando o banco responde e `503` quando não. O `HEALTHCHECK` da imagem usa a mesma rota, a cada 15 s.
 - **Volume de log:** com `LOG_LEVEL=info`, cada requisição gera duas linhas (inclusive o healthcheck); `warn` deixa só os problemas.
+
+## 9. Instalação de referência: `dionel.site/comicle`
+
+A instalação do criador do projeto, pela opção A do §5. O portfólio continua no Cloudflare Pages; uma EC2 roda só o jogo; a Cloudflare manda à EC2 apenas os caminhos do jogo.
+
+```text
+navegador ──https──▶ Cloudflare (dionel.site)
+                       ├─ /comicle, /comicle/*, /api/*, /socket.io/* ─▶ Worker ─▶ comicle-origin.dionel.site
+                       │                                                         └─ EC2: Caddy :443 ─▶ app:3000 ─▶ postgres
+                       └─ o resto ─▶ Cloudflare Pages (portfólio)
+```
+
+**Na EC2 não se compila nada.** Ela tem só Docker Engine e Compose (repositório oficial da Docker), rotação de log do Docker (`/etc/docker/daemon.json`: 10 MB × 3) e 2 GiB de swap com `vm.swappiness=10`, porque a `t3.small` tem 2 GiB de RAM. É administrada pelo AWS Systems Manager, sem SSH; o security group só abre 80 e 443.
+
+### Imagem
+
+O workflow [`publish.yml`](../.github/workflows/publish.yml) roda a cada push na `main`: builda com `VITE_BASE_PATH=/comicle/`, testa a imagem (`/healthz`, `/comicle/sala/…` com os assets em `/comicle/assets/`, nada fora de `/comicle/`) e publica `ghcr.io/ninguemdev/comicle-dionel:sha-<commit>`. Publicar não é instalar: a máquina só muda de versão quando alguém troca a tag no `.env`. O pacote precisa ser público no GHCR (configuração do pacote no GitHub) para a máquina baixar sem login.
+
+### Arquivos da máquina (`/opt/comicle`, `root`, `0750`)
+
+| Arquivo | Origem |
+|---|---|
+| `compose.yaml` | [`infra/ec2/compose.yaml`](../infra/ec2/compose.yaml) |
+| `Caddyfile` | [`infra/ec2/Caddyfile`](../infra/ec2/Caddyfile) |
+| `.env` (`0600`) | [`infra/ec2/.env.example`](../infra/ec2/.env.example) preenchido: `COMICLE_IMAGE`, `ORIGIN_HOST`, `POSTGRES_PASSWORD` (`openssl rand -hex 32`) |
+| `certs/origin.key` (`0600`) · `certs/origin.pem` | Certificado Cloudflare Origin CA (abaixo) |
+
+O compose não sobe sem as três variáveis. App e Postgres não publicam porta; só o Caddy ouve 80 e 443. O Caddy responde 403 a quem não é da Cloudflare (nem da própria máquina), repassa só os caminhos do jogo e troca o `X-Forwarded-For` pelo `CF-Connecting-IP`, que a Cloudflare preenche e o navegador não consegue forjar; por isso o app roda com `TRUST_PROXY=true`.
+
+### Certificado da origem
+
+A chave é gerada na própria máquina e nunca sai dela:
+
+```bash
+cd /opt/comicle && install -d -m 0750 certs
+openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes \
+  -subj /CN=comicle-origin.dionel.site -keyout certs/origin.key -out origin.csr
+chmod 600 certs/origin.key
+```
+
+Na Cloudflare: **SSL/TLS → Origin Server → Create Certificate → Use my private key and CSR**, cole o `origin.csr`, hostname `comicle-origin.dionel.site`. Salve o certificado devolvido em `certs/origin.pem`. Ele só é aceito pela Cloudflare, o que basta: ninguém mais fala com a origem.
+
+### Cloudflare
+
+1. DNS: registro `A` `comicle-origin` → Elastic IP da EC2, com proxy (nuvem laranja).
+2. SSL/TLS da zona em **Full (strict)**. O portfólio no Pages não é afetado: ele não tem origem própria.
+3. Worker [`infra/cloudflare/worker.js`](../infra/cloudflare/worker.js) com as rotas `dionel.site/comicle`, `dionel.site/comicle/*`, `dionel.site/api/*` e `dionel.site/socket.io/*`. Antes de ativar as rotas, confirme na Cloudflare que elas passam na frente do domínio do Pages (teste com uma rota só) e que o portfólio não usa esses caminhos (hoje o Pages responde o próprio `index.html` neles).
+
+Desfazer é tirar as rotas do Worker: o portfólio volta a responder tudo.
+
+### Atualizar e voltar
+
+```bash
+cd /opt/comicle
+grep COMICLE_IMAGE .env            # anote a tag atual: é o rollback
+# troque a tag no .env pela do commit novo (Actions → Publish)
+docker compose pull app && docker compose up -d app
+docker compose ps && curl -fsk --resolve "comicle-origin.dionel.site:443:127.0.0.1" \
+  https://comicle-origin.dionel.site/comicle/ -o /dev/null && echo ok
+```
+
+Voltar é o mesmo com a tag anterior. Lembre do §6: trocar a versão encerra as salas abertas. Nunca rode `docker compose down -v`, que apaga o volume do Postgres (sem perda real, §7, mas sem motivo).

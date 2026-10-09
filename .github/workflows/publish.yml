@@ -1,0 +1,89 @@
+name: Publish
+
+# Every push to main publishes the image of https://dionel.site/comicle/ (docs/deploy.md §9),
+# tagged with the commit. Deploying it is a separate, manual step: a restart ends every room.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  BASE_PATH: /comicle/
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: comicle
+          POSTGRES_PASSWORD: comicle
+          POSTGRES_DB: comicle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U comicle -d comicle"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/comicle-dionel
+          tags: type=sha
+      - name: Build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: comicle:candidate
+          build-args: VITE_BASE_PATH=${{ env.BASE_PATH }}
+          cache-from: type=gha,scope=publish
+          cache-to: type=gha,scope=publish,mode=max
+      - name: Start the container
+        run: >-
+          docker run -d --name comicle --network host
+          -e DATABASE_URL=postgres://comicle:comicle@localhost:5432/comicle
+          -e PUBLIC_BASE_PATH=$BASE_PATH
+          comicle:candidate
+      - name: /healthz answers
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz; then exit 0; fi
+            sleep 2
+          done
+          docker logs comicle
+          exit 1
+      - name: The game lives under the base path, and only there
+        run: |
+          page=$(curl -fsS "http://localhost:3000${BASE_PATH}sala/K7PQ2M")
+          grep -q '<div id="root">' <<<"$page"
+          grep -q "src=\"${BASE_PATH}assets/" <<<"$page"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/sala/K7PQ2M)" = 404
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Same inputs as the tested build: every layer comes from the cache.
+      - name: Push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VITE_BASE_PATH=${{ env.BASE_PATH }}
+          cache-from: type=gha,scope=publish

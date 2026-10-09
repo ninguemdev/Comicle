@@ -1,0 +1,60 @@
+# Runtime of https://dionel.site/comicle/ on the EC2 host (docs/deploy.md §9).
+# Lives in /opt/comicle next to .env and certs/; images come ready from GHCR, nothing is built here.
+#   docker compose up -d
+
+name: comicle
+
+services:
+  app:
+    image: ${COMICLE_IMAGE:?set COMICLE_IMAGE (ghcr.io/ninguemdev/comicle-dionel:sha-…)}
+    environment:
+      DATABASE_URL: postgres://comicle:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/comicle
+      # Same as the VITE_BASE_PATH the image was built with (publish.yml).
+      PUBLIC_BASE_PATH: /comicle/
+      # Caddy replaces X-Forwarded-For with the player's address (Caddyfile).
+      TRUST_PROXY: 'true'
+      CORS_ORIGINS: https://dionel.site
+    # No ports: only Caddy reaches it, on the compose network.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # The server closes in well under this on SIGTERM (main.ts).
+    stop_grace_period: 10s
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: comicle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: comicle
+    volumes:
+      - comicle-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U comicle -d comicle']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10
+    environment:
+      ORIGIN_HOST: ${ORIGIN_HOST:?set ORIGIN_HOST (comicle-origin.dionel.site)}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  comicle-data:
+  caddy-data:
+  caddy-config:

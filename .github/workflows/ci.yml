@@ -117,6 +117,31 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v7
+      - name: The EC2 compose refuses to start without its settings
+        working-directory: infra/ec2
+        run: |
+          settings='COMICLE_IMAGE=comicle:ci ORIGIN_HOST=origin.example.com POSTGRES_PASSWORD=x'
+          for missing in COMICLE_IMAGE ORIGIN_HOST POSTGRES_PASSWORD; do
+            if env $(tr ' ' '\n' <<<"$settings" | grep -v "^$missing=") \
+              docker compose config --quiet 2>/dev/null; then
+              echo "the compose started without $missing"
+              exit 1
+            fi
+          done
+          env $settings docker compose config --quiet
+      - name: The EC2 Caddyfile is valid
+        working-directory: infra/ec2
+        env:
+          COMICLE_IMAGE: comicle:ci
+          ORIGIN_HOST: origin.example.com
+          POSTGRES_PASSWORD: x
+        run: |
+          mkdir certs
+          openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 1 \
+            -subj "/CN=$ORIGIN_HOST" -keyout certs/origin.key -out certs/origin.pem
+          caddy_image=$(docker compose config --images | grep '^caddy:')
+          docker run --rm -e ORIGIN_HOST -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -v "$PWD/certs:/certs:ro" "$caddy_image" caddy validate --config /etc/caddy/Caddyfile
       - name: Build the production image
         run: docker build -t comicle:ci .
       - name: Start the container
