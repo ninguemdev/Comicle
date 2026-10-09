@@ -129,7 +129,6 @@ for (const layout of LAYOUTS) {
       await page.getByRole('button', { name: texts.presentation.showFull }).click();
       await expect(page.getByText(texts.presentation.full, { exact: true })).toBeVisible();
       await review(page, '18-apresentacao-hq-completa');
-      // The second story: theme, its two panels, the full page, then the end.
       for (let step = 0; step < STEPS_TO_FINISH; step++) {
         await presentationNext(ana);
       }
