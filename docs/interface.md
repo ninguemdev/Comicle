@@ -133,10 +133,11 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 
 - Área principal grande:
   - `theme`: tema em balão de fala gigante + avatar e nickname do autor.
-  - `panel(k)`: quadro `k` em destaque (o maior possível), com artista; miniaturas dos já revelados em uma faixa.
+  - `panel(k)`: quadro `k` em destaque (o maior possível), com artista; miniaturas dos já revelados em uma faixa, com o atual marcado. A miniatura de um quadro `empty` não tem o texto do R55 (não cabe), só o nome acessível.
   - `full`: `ComicPage` da história inteira com créditos — a vista mais destacada.
   - `finished`: "Fim das histórias!" e, para o anfitrião, **Nova partida** (volta ao lobby).
-- Anfitrião: barra discreta no rodapé com **Voltar**, **Avançar**, **Ver HQ completa**, **Próxima história**, menu **Histórias** (lista `reachedStories`) e **Encerrar**. Teclado: `→`/`Espaço` avança, `←` volta, `F` visão completa.
+- Anfitrião: barra discreta no rodapé com **Voltar**, **Avançar**, **Ver HQ completa**, **Próxima história**, menu **Histórias** (lista `reachedStories`) e **Encerrar**. Teclado: `→`/`Espaço` avança, `←` volta, `F` visão completa (sem repetição por tecla segurada; `Espaço` sobre um botão focado só aciona o botão; nada enquanto um diálogo está aberto). Botões que não moveriam o cursor (D29) ficam desabilitados. **Encerrar** pede confirmação antes do fim; em `finished`, encerra direto.
+- A apresentação ocupa a tela inteira, com cabeçalho próprio; o **Encerrar partida** do cabeçalho da partida (R57, que apaga o conteúdo) não aparece nela.
 - Demais jogadores: sem controles; um indicador "O anfitrião está conduzindo".
 - Indicador de posição: "História 2 de 5".
 
