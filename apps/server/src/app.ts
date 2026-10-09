@@ -23,6 +23,7 @@ import { createRoomPublisher } from './modules/views/room-publisher';
 import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
+import { HELMET_OPTIONS } from './platform/http/security-headers';
 import { createRequireGuest } from './platform/http/require-guest';
 import { newId, newSessionToken } from './platform/ids';
 import {
@@ -78,7 +79,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     trustProxy: config.TRUST_PROXY,
   });
 
-  await http.register(helmet);
+  await http.register(helmet, HELMET_OPTIONS);
   await http.register(cors, { origin: config.CORS_ORIGINS });
   // Routes opt in with `config.rateLimit` (sessions, room lookup).
   await http.register(rateLimit, { global: false });
