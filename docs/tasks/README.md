@@ -16,7 +16,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T08 | [Salas no servidor](./T08-salas-servidor.md) | T04, T05 | ✅ |
 | T09 | [Telas de início e lobby](./T09-telas-inicio-lobby.md) | T07, T08 | ✅ |
 | T10 | [Distribuição das histórias](./T10-distribuicao-historias.md) | T02 | ✅ |
-| T11 | [Motor de partida e etapa de temas](./T11-motor-partida-temas.md) | T08, T10 | ⬜ |
+| T11 | [Motor de partida e etapa de temas](./T11-motor-partida-temas.md) | T08, T10 | 🟨 |
 | T12 | [Rodadas no servidor](./T12-rodadas-servidor.md) | T11 | ⬜ |
 | T13 | [Editor de desenho](./T13-editor-desenho.md) | T06 | ⬜ |
 | T14 | [Página de HQ](./T14-pagina-hq.md) | T06 | ⬜ |
