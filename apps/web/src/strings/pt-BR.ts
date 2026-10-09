@@ -23,6 +23,8 @@ export const errorMessages = {
   KICKED: 'Você foi removido desta sala pelo anfitrião.',
   NOT_IN_ROOM: 'Você não está nesta sala.',
   NOT_HOST: 'Só o anfitrião pode fazer isso.',
+  FORBIDDEN: 'Você não pode ver isso agora.',
+  PANEL_NOT_FOUND: 'Quadro não encontrado.',
   INVALID_STATE: 'Isso não pode ser feito agora.',
   NOT_ENOUGH_PLAYERS: `Precisa de pelo menos ${String(MIN_PLAYERS)} jogadores.`,
   DEADLINE_PASSED: 'O tempo acabou.',
