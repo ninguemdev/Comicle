@@ -1,0 +1,41 @@
+# Production example (docs/deploy.md): the game and its database on one machine.
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Then open http://localhost:3000.
+
+# Its own project name, so it never touches the development database of docker-compose.yml.
+name: comicle-prod
+
+services:
+  app:
+    build: .
+    image: comicle:latest
+    environment:
+      DATABASE_URL: postgres://comicle:${POSTGRES_PASSWORD:-comicle}@postgres:5432/comicle
+      # Behind a reverse proxy (nginx, Caddy…), so rate limits see the player's real IP:
+      # TRUST_PROXY: 'true'
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # The server closes in well under this on SIGTERM (main.ts).
+    stop_grace_period: 10s
+
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: comicle
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-comicle}
+      POSTGRES_DB: comicle
+    volumes:
+      - comicle-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U comicle -d comicle']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  comicle-data:

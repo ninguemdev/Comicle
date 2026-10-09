@@ -23,6 +23,7 @@ Em caso de dúvida, nesta ordem:
 | [`docs/cenarios-de-reconexao.md`](docs/cenarios-de-reconexao.md) | Quedas, recarregamentos e reinício do servidor em cada fase |
 | [`docs/avatares.md`](docs/avatares.md) | Catálogo, renderização e artes |
 | [`docs/avatares-guia-de-artes.md`](docs/avatares-guia-de-artes.md) | Guia para desenhar as artes: estilo, tamanhos, gabarito, zonas |
+| [`docs/deploy.md`](docs/deploy.md) | Imagem de produção, variáveis, proxy reverso, integração com o site |
 | [`docs/decisoes.md`](docs/decisoes.md) | Decisões tomadas e seus motivos |
 | [`docs/tasks/`](docs/tasks/README.md) | O que fazer agora, critérios de aceite, status |
 

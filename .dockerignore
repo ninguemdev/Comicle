@@ -1,0 +1,18 @@
+# Only what the build needs goes into the context (Dockerfile).
+**/node_modules
+**/dist
+.git
+.github
+.claude
+.githooks
+docs
+e2e
+coverage
+playwright-report
+test-results
+blob-report
+**/*.tsbuildinfo
+# Never ship local configuration or secrets.
+**/.env
+**/.env.*
+!**/.env.example
