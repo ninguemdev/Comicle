@@ -24,6 +24,7 @@ import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
 import { HELMET_OPTIONS } from './platform/http/security-headers';
+import { registerWebStatic } from './platform/http/web-static';
 import { serializeError } from './platform/log-safety';
 import { createRequireGuest } from './platform/http/require-guest';
 import { newId, newSessionToken } from './platform/ids';
@@ -117,6 +118,12 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     new DrawingService({ registry: rooms, storyRepository: deps.storyRepository }),
     requireGuest,
   );
+  if (config.SERVE_WEB_DIST !== undefined) {
+    await registerWebStatic(http, {
+      root: config.SERVE_WEB_DIST,
+      basePath: config.PUBLIC_BASE_PATH,
+    });
+  }
 
   // Hooks must exist before ready(); the socket server only after it.
   const socketRef: { io?: AppSocketServer } = {};
