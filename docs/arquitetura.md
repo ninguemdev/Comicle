@@ -108,6 +108,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │     └─ avatar/catalog.json + catalog.ts
 ├─ e2e/                              # Playwright
 ├─ docker/postgres/init/             # scripts de init do Postgres local (cria comicle_test)
+├─ infra/                            # runtime de dionel.site/comicle: compose e Caddyfile da EC2, Worker da Cloudflare (deploy §9)
 ├─ Dockerfile · docker-compose.prod.yml  # imagem de produção e exemplo de deploy (docs/deploy.md)
 ├─ docs/
 └─ .claude/ · .githooks/ · .github/

@@ -75,7 +75,7 @@ Uma imagem Docker com o servidor e o web, mais um PostgreSQL:
 docker compose -f docker-compose.prod.yml up -d --build   # http://localhost:3000
 ```
 
-Cada tag `v*` publica a imagem em `ghcr.io/ninguemdev/comicle`. Variáveis, proxy reverso (nginx com WebSocket), integração com um site existente em `/jogos/quadrinhos/`, backup e logs em [`docs/deploy.md`](docs/deploy.md).
+Cada tag `v*` publica a imagem em `ghcr.io/ninguemdev/comicle`; a instalação em `dionel.site/comicle` (EC2 + Cloudflare) usa a `comicle-dionel`, publicada a cada push na `main`. Variáveis, proxy reverso (nginx com WebSocket), integração com um site existente em `/jogos/quadrinhos/`, backup e logs em [`docs/deploy.md`](docs/deploy.md).
 
 ## Desenvolvendo com o Claude Code
 
