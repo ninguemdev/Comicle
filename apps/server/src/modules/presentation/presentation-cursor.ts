@@ -162,7 +162,7 @@ export function navigate(
     case 'nextStory':
       return nextStory(cursor, panelCounts);
     default:
-      return action.action satisfies never;
+      return action satisfies never;
   }
 }
 

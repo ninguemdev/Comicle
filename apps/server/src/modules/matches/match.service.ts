@@ -6,7 +6,8 @@ import { shuffled } from '../../platform/random';
 import type { Scheduler } from '../../platform/scheduler';
 import { assertValidPanelImage } from '../drawing/panel-image';
 import { getGameMode } from '../game-modes/registry';
-import { assertCanAbortMatch, assertCanStartMatch } from '../rooms/host-policy';
+import type { PresentationAction } from '../presentation/presentation-cursor';
+import { assertCanAbortMatch, assertCanStartMatch, assertHost } from '../rooms/host-policy';
 import { socketIdOf, type Room } from '../rooms/room';
 import type { RoomBroadcaster } from '../rooms/room-broadcaster';
 import { runAsMember, scheduleInRoom } from '../rooms/room-access';
@@ -159,6 +160,24 @@ export class MatchService {
     });
   }
 
+  /** R52, R53: only the host moves the presentation; everyone sees the same step. */
+  navigatePresentation(socketId: string, action: PresentationAction): Promise<Empty> {
+    return this.asMember(socketId, async (room, playerId) => {
+      assertHost(room, playerId);
+      await this.apply(room, { type: 'presentation_navigate', action });
+      return {};
+    });
+  }
+
+  /** R56. */
+  endPresentation(socketId: string): Promise<Empty> {
+    return this.asMember(socketId, async (room, playerId) => {
+      assertHost(room, playerId);
+      await this.apply(room, { type: 'presentation_end' });
+      return {};
+    });
+  }
+
   /** R37: called by the rooms module, inside the room's queue, which publishes afterwards. */
   async handlePresenceChange(room: Room): Promise<void> {
     await this.transition(room, { type: 'presence_changed', connected: connectedPlayers(room) });
@@ -218,7 +237,7 @@ export class MatchService {
       case 'persist_round':
         return this.persistRound(room, effect.panels);
       case 'set_match_status':
-        await this.setMatchStatus(room, effect.status);
+        await this.setMatchStatus(room, effect.matchId, effect.status);
         return true;
       case 'emit_collect':
         this.toConnected(room, (socketId) => {
@@ -282,11 +301,7 @@ export class MatchService {
   }
 
   /** Only logged: the status is bookkeeping, the match goes on without it. */
-  private async setMatchStatus(room: Room, status: MatchStatus): Promise<void> {
-    const matchId = room.match?.id;
-    if (matchId === undefined) {
-      return;
-    }
+  private async setMatchStatus(room: Room, matchId: string, status: MatchStatus): Promise<void> {
     try {
       await this.deps.storyRepository.setMatchStatus(matchId, status);
     } catch (error) {

@@ -3,7 +3,11 @@ import { themeSchema, type MatchAbortReason, type MatchSettings } from '@comicle
 import { DomainError } from '../../platform/errors';
 import type { DistributionPlan } from '../game-modes/game-mode';
 import { getGameMode } from '../game-modes/registry';
-import { initialPresentationCursor } from '../presentation/presentation-cursor';
+import {
+  initialPresentationCursor,
+  navigate,
+  type PresentationAction,
+} from '../presentation/presentation-cursor';
 import type { MatchStatus, NewPanel } from '../stories/story-repository';
 import type { GameTimingConfig } from '../timing/game-timing';
 import {
@@ -64,6 +68,10 @@ export type MatchEvent =
   | { type: 'presence_changed'; connected: ReadonlySet<string> }
   /** The phase timer fired. */
   | { type: 'phase_deadline' }
+  /** R52, R53: the host already checked. */
+  | { type: 'presentation_navigate'; action: PresentationAction }
+  /** R56: the host already checked. */
+  | { type: 'presentation_end' }
   | { type: 'abort'; reason: MatchAbortReason };
 
 export type MatchEffect =
@@ -73,7 +81,8 @@ export type MatchEffect =
   | { type: 'persist_match' }
   /** R42: every panel of the round, in one transaction. */
   | { type: 'persist_round'; panels: NewPanel[] }
-  | { type: 'set_match_status'; status: MatchStatus }
+  /** Carries the id: after `presentation_end` the room no longer has the match. */
+  | { type: 'set_match_status'; matchId: string; status: MatchStatus }
   /** R42: ask the clients still drawing for what is on their screen. */
   | { type: 'emit_collect'; roundIndex: number }
   | { type: 'notify_aborted'; reason: MatchAbortReason }
@@ -152,6 +161,14 @@ export function resolveThemes(match: Match): StoryState[] {
       panels: [],
     };
   });
+}
+
+type PresentingMatch = Match & { presentation: NonNullable<Match['presentation']> };
+
+function assertPresenting(match: Match | null): asserts match is PresentingMatch {
+  if (match?.phase !== 'presentation' || match.presentation === null) {
+    throw invalidState('Não há apresentação em andamento.');
+  }
 }
 
 /** Everyone in `seats` is now ready; used when the reading ends (R37). */
@@ -243,7 +260,11 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
     );
     return {
       match: presenting,
-      effects: [persist, ...effects, { type: 'set_match_status', status: 'presenting' }],
+      effects: [
+        persist,
+        ...effects,
+        { type: 'set_match_status', matchId: match.id, status: 'presenting' },
+      ],
     };
   }
 
@@ -406,6 +427,19 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
           return presenceChanged(match, event.connected, now);
         case 'phase_deadline':
           return onDeadline(match, now);
+        case 'presentation_navigate': {
+          assertPresenting(match);
+          const panelCounts = match.stories.map((story) => story.panels.length);
+          const presentation = navigate(match.presentation, event.action, panelCounts);
+          return { match: { ...match, presentation }, effects: [] };
+        }
+        case 'presentation_end':
+          // R56: back to the lobby; the content stays until the next match (R25).
+          assertPresenting(match);
+          return {
+            match: null,
+            effects: [{ type: 'set_match_status', matchId: match.id, status: 'finished' }],
+          };
         case 'abort':
           if (match === null) {
             throw invalidState('Não há partida em andamento.');

@@ -9,6 +9,7 @@ import { registerDrawingRoutes } from './modules/drawing/drawing.routes';
 import { DrawingService } from './modules/drawing/drawing.service';
 import { matchHandlers } from './modules/matches/match.handlers';
 import { MatchService } from './modules/matches/match.service';
+import { presentationHandlers } from './modules/presentation/presentation.handlers';
 import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
 import { GuestSessionStore } from './modules/guest-identity/session-store';
 import { createSocketBroadcaster, roomHandlers } from './modules/rooms/room.handlers';
@@ -24,7 +25,6 @@ import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
 import { createRequireGuest } from './platform/http/require-guest';
 import { newId, newSessionToken } from './platform/ids';
-import type { SocketHandler } from './platform/realtime/define-handler';
 import {
   DEFAULT_SOCKET_RATE_LIMITS,
   type SocketRateLimitConfig,
@@ -44,8 +44,6 @@ export interface AppDeps {
   timing: GameTimingConfig;
   /** Throws when the database is unreachable (`/healthz`). */
   checkDatabase: () => Promise<void>;
-  /** Handlers on top of the modules' own (tests register test-only events here). */
-  extraSocketHandlers?: readonly SocketHandler[];
   socketRateLimits?: SocketRateLimitConfig;
   /** Where pino writes (tests capture logs here); stdout by default. */
   logDestination?: { write(line: string): void };
@@ -163,7 +161,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
       ...timeSyncHandlers(clock),
       ...roomHandlers(roomService),
       ...matchHandlers(matchService),
-      ...(deps.extraSocketHandlers ?? []),
+      ...presentationHandlers(matchService),
     ],
     onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
     rateLimits: deps.socketRateLimits ?? DEFAULT_SOCKET_RATE_LIMITS,
