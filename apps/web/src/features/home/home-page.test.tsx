@@ -1,10 +1,11 @@
 import { fail } from '@comicle/shared';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { routes } from '../../router';
 import { useProfileStore } from '../../stores/profile-store';
+import { useThemeStore } from '../../stores/theme-store';
 import { mockRoomActions, ROOM_CODE, setUpStores } from '../../test/room-fixtures';
 
 function renderHome() {
@@ -14,6 +15,23 @@ function renderHome() {
 }
 
 describe('tela inicial', () => {
+  afterEach(() => {
+    useThemeStore.getState().actions.choose('system');
+  });
+
+  it('Aparência: Sistema, Claro e Escuro; a escolha vai para o <html>', () => {
+    setUpStores(null);
+    renderHome();
+    const group = screen.getByRole('group', { name: 'Aparência' });
+
+    expect(screen.getByRole('radio', { name: 'Sistema' })).toHaveProperty('checked', true);
+    fireEvent.click(screen.getByRole('radio', { name: 'Escuro' }));
+
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(screen.getByRole('radio', { name: 'Escuro' })).toHaveProperty('checked', true);
+    expect(group).toBeInstanceOf(HTMLFieldSetElement);
+  });
+
   it('mostra o perfil atual com atalho para editar', () => {
     setUpStores(null);
     renderHome();

@@ -7,6 +7,7 @@ import {
 } from '@comicle/shared';
 
 import type { DrawingColorId } from '../features/drawing/engine/palette';
+import type { ThemePreference } from '../stores/theme-store';
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -70,6 +71,13 @@ export const strings = {
       working: 'em andamento',
       done: 'pronto',
     },
+  },
+  themeSwitch: {
+    label: 'Aparência',
+    options: { system: 'Sistema', light: 'Claro', dark: 'Escuro' } satisfies Record<
+      ThemePreference,
+      string
+    >,
   },
   home: {
     editProfile: 'Editar perfil',
