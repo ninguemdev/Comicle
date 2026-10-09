@@ -1,10 +1,26 @@
-import { defaultAvatar, type PlayerProfile, type PlayerView } from '@comicle/shared';
+import {
+  clientEventSchemas,
+  defaultAvatar,
+  PANEL_MAX_BYTES,
+  TEXT_INPUT_MAX_LENGTH,
+  type Ack,
+  type ClientEventName,
+  type PlayerProfile,
+  type PlayerView,
+} from '@comicle/shared';
+import fc from 'fast-check';
+import type { Socket } from 'socket.io-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { loadConfig } from '../../src/config/env';
 import { InMemoryStoryRepository } from '../../src/modules/stories/in-memory-story-repository';
 import { fastGameTiming } from '../../src/modules/timing/game-timing';
 import { panelPng } from '../support/panel-png';
+import {
+  countAttachments,
+  payloadLike,
+  SOCKET_IO_MAX_ATTACHMENTS,
+} from '../support/payload-arbitrary';
 import { ViewRecorder } from '../support/room-events';
 import {
   connectClient,
@@ -24,6 +40,21 @@ interface Player {
 }
 
 const inPhase = (phase: string) => (view: PlayerView) => view.match?.phase === phase;
+const EVENTS = Object.keys(clientEventSchemas) as ClientEventName[];
+/** Room enough for thousands of events: the limits have tests of their own. */
+const NO_SOCKET_LIMITS = {
+  global: { capacity: 1_000_000, refillPerSecond: 1_000_000 },
+  perEvent: {},
+  failuresPerIp: {},
+};
+
+const ACK_WAIT_MS = 2000;
+
+/** Any event with any payload, as a hostile client could send it; no ack in time is an error. */
+function emitRaw(client: TestClient, event: string, payload: unknown): Promise<Ack<unknown>> {
+  const untyped: Socket = client;
+  return untyped.timeout(ACK_WAIT_MS).emitWithAck(event, payload);
+}
 
 describe('segurança (integração)', () => {
   let server: TestServer;
@@ -53,6 +84,204 @@ describe('segurança (integração)', () => {
       profile: { nickname, avatar: defaultAvatar() },
     };
   }
+
+  /** Ana (host) and Bia in a room; with `drawing`, already drawing round 0. */
+  async function room({ drawing = false } = {}): Promise<[Player, Player]> {
+    const ana = await newPlayer('Ana');
+    const bia = await newPlayer('Bia');
+    const created = await ana.client.emitWithAck('room:create', { profile: ana.profile });
+    if (!created.ok) throw new Error(created.error.code);
+    await bia.client.emitWithAck('room:join', {
+      roomCode: created.data.roomCode,
+      profile: bia.profile,
+    });
+    await bia.views.waitFor(() => true);
+    if (drawing) {
+      await ana.client.emitWithAck('match:start', {});
+      for (const player of [ana, bia]) {
+        await player.views.waitFor(inPhase('theme_writing'));
+        await player.client.emitWithAck('theme:submit', {
+          text: `Tema de ${player.profile.nickname}`,
+        });
+      }
+      await bia.views.waitFor(inPhase('round_drawing'));
+    }
+    return [ana, bia];
+  }
+
+  describe('robustez', () => {
+    const situations = {
+      'fora de sala': async () => (await newPlayer('Zé')).client,
+      'anfitrião no lobby': async () => (await room())[0].client,
+      'participante desenhando': async () => (await room({ drawing: true }))[1].client,
+    };
+
+    it.each(Object.keys(situations))(
+      'payload aleatório em qualquer evento (%s) nunca gera INTERNAL nem derruba o servidor',
+      async (situation) => {
+        await start({ socketRateLimits: NO_SOCKET_LIMITS });
+        const client = await situations[situation as keyof typeof situations]();
+
+        await fc.assert(
+          fc.asyncProperty(fc.constantFrom(...EVENTS), payloadLike, async (event, payload) => {
+            // Above the parser's limit the connection is closed before any handler: own test.
+            fc.pre(countAttachments(payload) <= SOCKET_IO_MAX_ATTACHMENTS);
+            const ack = await emitRaw(client, event, payload);
+            expect(ack.ok || ack.error.code).not.toBe('INTERNAL');
+            expect(client.connected).toBe(true);
+          }),
+          { numRuns: 400 },
+        );
+
+        const fresh = await newPlayer('Depois');
+        expect(await fresh.client.emitWithAck('time:sync', { clientSentAt: 1 })).toMatchObject({
+          ok: true,
+        });
+      },
+    );
+  });
+
+  describe('limites de taxa', () => {
+    it.each([
+      ['POST /api/guest-sessions', 'POST', '/api/guest-sessions', 10],
+      ['GET /api/rooms/:code (varredura de códigos)', 'GET', '/api/rooms/K7PQ2M', 30],
+    ] as const)(
+      '%s: a requisição além do limite por minuto → 429 RATE_LIMITED',
+      async (_name, method, url, max) => {
+        await start();
+        for (let i = 0; i < max; i++) {
+          expect((await server.http.inject({ method, url })).statusCode).not.toBe(429);
+        }
+
+        const refused = await server.http.inject({ method, url });
+
+        expect(refused.statusCode).toBe(429);
+        expect(refused.json()).toMatchObject({ error: { code: 'RATE_LIMITED' } });
+      },
+    );
+
+    it('socket: 20 eventos por segundo por conexão; o 21º → RATE_LIMITED', async () => {
+      await start();
+      const player = await newPlayer('Ana');
+      const acks = [];
+      for (let i = 0; i < 21; i++) {
+        acks.push(await player.client.emitWithAck('time:sync', { clientSentAt: i }));
+      }
+
+      expect(acks.slice(0, 20).every((ack) => ack.ok)).toBe(true);
+      expect(acks[20]).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
+    });
+
+    it('socket: um panel:autosave a cada 2 s', async () => {
+      await start();
+      const [, bia] = await room({ drawing: true });
+      const autosave = () =>
+        bia.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng(1) });
+
+      expect((await autosave()).ok).toBe(true);
+      expect(await autosave()).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
+      server.clock.advance(2000);
+      expect((await autosave()).ok).toBe(true);
+    });
+
+    it('socket: 10 room:join com falha por minuto por IP, somando conexões; depois nem o código certo entra', async () => {
+      await start();
+      const [ana] = await room();
+      const code = ana.views.latest?.room.code ?? '';
+      const first = await newPlayer('Varredor');
+      const second = await newPlayer('Varredor 2');
+      const guesses = ['AAAAAA', 'BBBBBB', 'CCCCCC', 'DDDDDD', 'EEEEEE'];
+      for (const scanner of [first, second]) {
+        for (const guess of guesses) {
+          expect(
+            await scanner.client.emitWithAck('room:join', {
+              roomCode: guess,
+              profile: scanner.profile,
+            }),
+          ).toMatchObject({ ok: false, error: { code: 'ROOM_NOT_FOUND' } });
+        }
+      }
+
+      const blocked = await second.client.emitWithAck('room:join', {
+        roomCode: code,
+        profile: second.profile,
+      });
+      expect(blocked).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
+
+      // One token back every 6 s.
+      server.clock.advance(6000);
+      expect(
+        (await second.client.emitWithAck('room:join', { roomCode: code, profile: second.profile }))
+          .ok,
+      ).toBe(true);
+    });
+  });
+
+  describe('limites de tamanho', () => {
+    it('mais anexos binários que o parser aceita: só a conexão de quem mandou cai', async () => {
+      await start();
+      const hostile = await newPlayer('Hostil');
+      const closed = new Promise<string>((resolve) => {
+        hostile.client.once('disconnect', resolve);
+      });
+      const payload = {
+        png: Array.from({ length: SOCKET_IO_MAX_ATTACHMENTS + 1 }, () => panelPng(1)),
+      };
+
+      await emitRaw(hostile.client, 'panel:autosave', payload).catch(() => undefined);
+
+      expect(await closed).toBe('transport close');
+      const other = await newPlayer('Outra');
+      expect((await other.client.emitWithAck('time:sync', { clientSentAt: 1 })).ok).toBe(true);
+    });
+
+    it('mensagem acima de maxHttpBufferSize (3 MiB): a conexão cai e o servidor segue', async () => {
+      await start();
+      const hostile = await newPlayer('Hostil');
+      const closed = new Promise<string>((resolve) => {
+        hostile.client.once('disconnect', resolve);
+      });
+
+      await emitRaw(hostile.client, 'panel:autosave', {
+        roundIndex: 0,
+        png: new Uint8Array(3 * 1024 * 1024 + 1),
+      }).catch(() => undefined);
+
+      expect(await closed).toBe('transport close');
+      const other = await newPlayer('Outra');
+      expect((await other.client.emitWithAck('time:sync', { clientSentAt: 1 })).ok).toBe(true);
+    });
+
+    it('R1, R27: texto acima do limite bruto → INVALID_PAYLOAD, nunca INTERNAL', async () => {
+      await start();
+      const player = await newPlayer('Ana');
+      const huge = 'a'.repeat(TEXT_INPUT_MAX_LENGTH + 1);
+
+      for (const [event, payload] of [
+        ['room:create', { profile: { nickname: huge, avatar: defaultAvatar() } }],
+        ['room:join', { roomCode: huge, profile: player.profile }],
+        ['theme:draft', { text: huge }],
+        ['room:kick', { playerId: huge }],
+      ] as const) {
+        expect(await emitRaw(player.client, event, payload)).toMatchObject({
+          ok: false,
+          error: { code: 'INVALID_PAYLOAD' },
+        });
+      }
+    });
+
+    it('imagem acima de PANEL_MAX_BYTES → IMAGE_TOO_LARGE', async () => {
+      await start();
+      const [, bia] = await room({ drawing: true });
+
+      expect(
+        await emitRaw(bia.client, 'panel:autosave', {
+          roundIndex: 0,
+          png: new Uint8Array(PANEL_MAX_BYTES + 1),
+        }),
+      ).toMatchObject({ ok: false, error: { code: 'IMAGE_TOO_LARGE' } });
+    });
+  });
 
   describe('logs', () => {
     it('nenhum log contém token, tema, apelido ou imagem, nem quando o banco falha', async () => {
