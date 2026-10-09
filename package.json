@@ -11,7 +11,7 @@
     "dev": "pnpm --parallel --filter @comicle/web --filter @comicle/server dev",
     "build": "pnpm -r build",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
+    "typecheck": "tsc -p tsconfig.json && tsc -p e2e/tsconfig.json && pnpm -r typecheck",
     "test": "vitest run",
     "test:db": "vitest run --config vitest.db.config.ts --passWithNoTests",
     "format": "prettier --write .",
@@ -20,10 +20,11 @@
     "db:migrate": "pnpm --filter @comicle/server db:migrate",
     "avatars:check": "pnpm --filter @comicle/web avatars:check",
     "avatars:generate": "pnpm --filter @comicle/web avatars:generate",
-    "e2e": "node -e \"console.log('e2e disponível na T20')\""
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
     "@types/node": "^24.19.1",
     "eslint": "^10.12.0",
     "eslint-config-prettier": "^10.1.8",
