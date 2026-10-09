@@ -13,6 +13,7 @@ import { strings } from '../../strings/pt-BR';
 import { Button, buttonClassName } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { AvatarEditor } from '../avatar/avatar-editor';
+import { ThemeSwitch } from '../theme/theme-switch';
 import { safeNextPath } from './next-path';
 
 type NicknameProblem = 'empty' | 'tooLong';
@@ -119,6 +120,7 @@ export function ProfilePage() {
           </div>
         </form>
       </Card>
+      <ThemeSwitch />
     </div>
   );
 }

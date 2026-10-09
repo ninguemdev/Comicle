@@ -79,7 +79,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-night/60 p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

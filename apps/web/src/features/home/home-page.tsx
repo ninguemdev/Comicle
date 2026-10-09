@@ -9,6 +9,7 @@ import { Card } from '../../ui/card';
 import { Logo } from '../../ui/logo';
 import { Toast } from '../../ui/toast';
 import { AvatarRenderer } from '../avatar/avatar-renderer';
+import { ThemeSwitch } from '../theme/theme-switch';
 import { isCompleteRoomCode, sanitizeRoomCodeInput } from './room-code-input';
 
 const texts = strings.home;
@@ -114,6 +115,7 @@ export function HomePage() {
           {creating ? texts.creating : texts.createRoom}
         </Button>
         <JoinForm />
+        <ThemeSwitch />
       </div>
       {error !== null && <Toast message={error} tone="error" onDismiss={dismissError} />}
     </div>

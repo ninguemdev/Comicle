@@ -11,6 +11,8 @@
   --color-pop-red: #ef476f;
   --color-pop-blue: #118ab2;
   --color-pop-green: #06d6a0;
+  /* Never inverts: text on the pop colors and the dialog backdrop, in both themes. */
+  --color-night: #16161d;
 
   --font-display: 'Bangers', 'Impact', system-ui, sans-serif;
   --font-body: 'Nunito Variable', 'Nunito', system-ui, sans-serif;
@@ -56,6 +58,37 @@
   border: var(--border-ink);
 }
 
+/*
+ * Dark mode (interface.md §1): the page tokens swap; the pop colors, the drawing canvas and the
+ * panels (white PNGs) stay as they are. "Sistema" needs no script: the media query applies unless
+ * the player picked light; an explicit choice sets data-theme on <html> (theme-store.ts).
+ */
+:root[data-theme='dark'] {
+  --color-paper: #1b1b24;
+  --color-ink: #f3eee2;
+  --color-muted: #a9a9b6;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-paper: #1b1b24;
+    --color-ink: #f3eee2;
+    --color-muted: #a9a9b6;
+    color-scheme: dark;
+  }
+}
+
+/* Text on a pop color stays dark in both themes (contrast AA); a text-* utility still wins. */
+@layer components {
+  .bg-pop-yellow,
+  .bg-pop-red,
+  .bg-pop-green,
+  .bg-pop-blue {
+    color: var(--color-night);
+  }
+}
+
 @layer base {
   html {
     color-scheme: light;
@@ -86,6 +119,7 @@
     outline: 3px solid var(--color-ink);
     outline-offset: 2px;
     background-color: var(--color-pop-yellow);
+    color: var(--color-night);
   }
 }
 

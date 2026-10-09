@@ -19,6 +19,7 @@ Tokens (Tailwind 4, `@theme` em `apps/web/src/styles/theme.css`):
 | `--color-pop-red` | `#EF476F` | alerta, tempo acabando, ações destrutivas |
 | `--color-pop-blue` | `#118AB2` | links, seleção |
 | `--color-pop-green` | `#06D6A0` | concluído, pronto |
+| `--color-night` | `#16161D` | nunca inverte: texto sobre as cores pop e fundo dos diálogos, nos dois temas |
 | `--font-display` | Bangers | títulos, botões principais, contagem regressiva |
 | `--font-body` | Nunito (variável) | todo o resto |
 | `--border-ink` | 3px sólida `ink` | cartões, botões, quadros |
@@ -27,7 +28,19 @@ Tokens (Tailwind 4, `@theme` em `apps/web/src/styles/theme.css`):
 
 Componentes base em `apps/web/src/ui/`: `Button` (primary, secondary, danger, ghost), `Card`, `Dialog` (com foco preso e `Esc`), `Timer`, `ProgressPill` ("3/5 prontos"), `SpeechBubble` (mensagens de estado), `PlayerChip` (avatar + nickname + estado), `Toast`, `ConnectionBanner` (faixa "Reconectando…") e `Logo`. Em desenvolvimento, a rota `/dev/ui` mostra todos eles; ela não entra no build de produção.
 
-A paleta do Tailwind fica restrita a esses tokens (`--color-*: initial` no `theme.css`): cor nova entra primeiro nesta tabela ([D19](./decisoes.md)). O texto do botão `danger` é `ink`, porque `paper` sobre `pop-red` não atinge contraste AA.
+A paleta do Tailwind fica restrita a esses tokens (`--color-*: initial` no `theme.css`): cor nova entra primeiro nesta tabela ([D19](./decisoes.md)). Texto sobre qualquer cor pop (botão primário e `danger`, selos, faixas) é `night`, nos dois temas, porque texto claro sobre `pop-yellow` ou `pop-red` não atinge contraste AA.
+
+### Modo escuro
+
+O seletor **Aparência** (Sistema, Claro, Escuro), na tela inicial e na personalização, vale para o navegador (`comicle.theme`). Com **Sistema**, o tema segue `prefers-color-scheme` só por CSS, sem script (a CSP não permite script inline) e sem piscar; uma escolha manual vira `data-theme` no `<html>`. No escuro, só três tokens trocam:
+
+| Token | Claro | Escuro |
+|---|---|---|
+| `--color-paper` | `#FFFBF0` | `#1B1B24` |
+| `--color-ink` | `#16161D` | `#F3EEE2` |
+| `--color-muted` | `#5B5B66` | `#A9A9B6` |
+
+Bordas, sombras duras e retícula seguem o `ink`, então ficam claras sobre o fundo escuro. As cores pop, a paleta do editor, o **quadro de desenho** (o canvas pinta o próprio fundo branco) e os desenhos (PNG de fundo branco) não mudam; a página de HQ fica com moldura escura e os quadros com o branco deles.
 
 Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A revelação de quadros na apresentação usa um "pop" leve (escala 0.96 → 1).
 
