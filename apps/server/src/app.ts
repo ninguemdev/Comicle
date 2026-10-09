@@ -57,15 +57,23 @@ export interface App {
   guestSessions: GuestSessionStore;
 }
 
-// Never log tokens or images (AGENTS.md, Logs).
+// Never log tokens, images, themes or nicknames (AGENTS.md, Logs). Nothing logs a payload today;
+// these paths keep it that way if something ever does. Errors go through serializeError.
 const REDACTED_PATHS = [
   'req.headers.authorization',
+  'req.headers.cookie',
   'authorization',
   '*.authorization',
   'token',
   '*.token',
   'png',
   '*.png',
+  'text',
+  '*.text',
+  'nickname',
+  '*.nickname',
+  'themeText',
+  '*.themeText',
 ];
 
 export async function buildApp(deps: AppDeps): Promise<App> {

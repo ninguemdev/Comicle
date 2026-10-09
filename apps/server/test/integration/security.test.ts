@@ -377,6 +377,63 @@ describe('segurança (integração)', () => {
     });
   });
 
+  describe('robustez HTTP', () => {
+    const segment = fc.oneof(
+      fc.string({ unit: 'binary', maxLength: 80 }),
+      fc.constantFrom(
+        '',
+        '..',
+        '%00',
+        '%E0%A4%A',
+        'K7PQ2M',
+        '00000000-0000-0000-0000-000000000000',
+      ),
+    );
+    const authorization = fc.option(
+      fc.oneof(
+        fc.string({ maxLength: 80 }).map((value) => `Bearer ${value}`),
+        fc.string({ unit: 'grapheme-ascii', maxLength: 80 }),
+      ),
+      { nil: undefined },
+    );
+    const route = fc.constantFrom(
+      (x: string) => ['GET', `/api/rooms/${x}`] as const,
+      (x: string) => ['GET', `/api/rooms/${x}/my-draft`] as const,
+      (x: string) => ['GET', `/api/panels/${x}`] as const,
+      () => ['GET', '/api/guest-sessions/me'] as const,
+      () => ['POST', '/api/guest-sessions'] as const,
+    );
+
+    it('rota, parâmetro, autorização e corpo aleatórios nunca respondem 500', async () => {
+      await start();
+      await fc.assert(
+        fc.asyncProperty(
+          route,
+          segment,
+          authorization,
+          fc.string({ maxLength: 200 }),
+          async (make, value, auth, body) => {
+            const [method, url] = make(encodeURIComponent(value));
+            const response = await server.http.inject({
+              method,
+              url,
+              headers: {
+                ...(auth === undefined ? {} : { authorization: auth }),
+                'content-type': 'application/json',
+              },
+              ...(method === 'POST' ? { payload: body } : {}),
+            });
+            expect(response.statusCode, `${method} ${url}`).toBeLessThan(500);
+            if (response.statusCode >= 400) {
+              expect(response.json<{ error: { code: string } }>().error.code).not.toBe('INTERNAL');
+            }
+          },
+        ),
+        { numRuns: 300 },
+      );
+    });
+  });
+
   describe('limites de tamanho', () => {
     it('mais anexos binários que o parser aceita: só a conexão de quem mandou cai', async () => {
       await start();
