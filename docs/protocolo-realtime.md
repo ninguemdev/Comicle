@@ -36,6 +36,7 @@ O cliente carrega imagens com `fetch` + `Authorization` e cria `blob:` URLs (hoo
 - Handshake: `io(SERVER_URL, { auth: { token } })`. O middleware valida (e renova) o token; inválido ou ausente → `connect_error` com `message === 'UNAUTHORIZED'` e `data.code === 'UNAUTHORIZED'`, e o cliente cria nova sessão.
 - `maxHttpBufferSize`: 3 MiB (acomoda `PANEL_MAX_BYTES` + envelope).
 - Um socket participa de no máximo uma sala.
+- **Reconexão** (detalhes em [cenários de reconexão](./cenarios-de-reconexao.md)): o socket novo não está em sala nenhuma; o cliente repete o `room:join` da sala da rota e recebe a `PlayerView` atual (R9). Enquanto o socket não está conectado, o cliente não emite nada (a ação falha na hora com `INTERNAL`), para nada ser enviado antes desse `room:join`. Um `panel:submit` perdido na queda é refeito depois dele, se a fase ainda aceitar (R42, R44). `room:join` que responde `ROOM_NOT_FOUND` ou `ROOM_CLOSED` para a sala em que o jogador estava significa sala encerrada (R16, R17).
 
 ### Envelope de ack
 

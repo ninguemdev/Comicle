@@ -51,7 +51,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 
 Durante a partida, um cabeçalho mostra a fase, "Quadro X de Y", o progresso, o timer e, para o anfitrião, **Encerrar partida** (discreto, com confirmação, R57). Quando a partida é encerrada, todos voltam ao lobby com um aviso do motivo (`match:aborted`). O desenho ocupa a tela inteira, com o tema numa linha recolhível.
 
-Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela. Já os motivos para não estar na sala trocam a tela por uma mensagem com volta ao início: sala inexistente ou código mal formado, sala cheia, expulsão, sala encerrada e sessão aberta em outra aba (R5, R9, R12, R16).
+Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela; as telas cheias (desenho e apresentação) começam abaixo dela, e os botões que mandam ações ficam desabilitados até a conexão voltar (o editor continua desenhando). Já os motivos para não estar na sala trocam a tela por uma mensagem com volta ao início: sala inexistente ou código mal formado, sala cheia, expulsão, sala encerrada e sessão aberta em outra aba (R5, R9, R12, R16).
 
 ---
 
