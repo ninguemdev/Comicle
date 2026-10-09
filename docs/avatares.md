@@ -71,27 +71,26 @@ O guia completo para quem desenha, com estilo, pincéis, paleta, gabarito, coord
 | SVG | Sem scripts, eventos, `<image>`, `<foreignObject>` ou referências externas; IDs internos prefixados com o `id` da arte |
 | Tamanho | Até 100 KB por arquivo |
 
-Os números vêm de `apps/web/scripts/avatars/layout.ts`, que o gerador das provisórias e o gabarito usam. O gabarito fica em `apps/web/public/avatars/_template.svg` (com legendas) e `_template.png` (1024 × 1024, para programas de pintura).
+Os números vêm de `apps/web/scripts/avatars/layout.ts`, que o gabarito usa. O gabarito fica em `apps/web/public/avatars/_template.svg` (com legendas) e `_template.png` (1024 × 1024, para programas de pintura).
 
 ---
 
 ## 4. Como adicionar ou trocar uma arte
 
-1. Salve o arquivo em `apps/web/public/avatars/<pasta>/<id>.svg` (ou `.png`), onde `<pasta>` é o prefixo da categoria (`face-accessory`, `hat`…). Para trocar uma provisória, basta sobrescrever o arquivo dela.
-2. Opção nova: adicione a entrada em `catalog.json` na categoria certa. Arte em PNG: o `file` da opção termina em `.png` e o SVG provisório é apagado.
-3. Rode `pnpm avatars:check`: confere o catálogo, que todo `file` existe com o nome padrão, que não há arquivo órfão, a segurança e o `viewBox` dos SVGs, as dimensões dos PNGs e o tamanho; no fim, conta as artes definitivas e as provisórias. Roda no CI.
+1. Salve o arquivo em `apps/web/public/avatars/<pasta>/<id>.svg` (ou `.png`), onde `<pasta>` é o prefixo da categoria (`face-accessory`, `hat`…). Para trocar uma arte no mesmo formato, basta sobrescrever o arquivo dela.
+2. Opção nova: adicione a entrada em `catalog.json` na categoria certa. O `file` termina com a extensão da arte (`.png` ou `.svg`); trocar de formato é apagar o arquivo antigo e mudar o `file`.
+3. Rode `pnpm avatars:check`: confere o catálogo, que todo `file` existe com o nome padrão, que não há arquivo órfão, a segurança e o `viewBox` dos SVGs, as dimensões e a transparência dos PNGs e o tamanho; no fim, conta as artes. Roda no CI.
 4. Em `pnpm dev`, confira em `/dev/ui` (seção Avatares: quatro tamanhos e todas as artes) e em `/perfil`.
 5. Commit: `feat(avatar): adiciona chapéu de cowboy`.
 
 ---
 
-## 5. Artes provisórias
+## 5. Artes atuais
 
-Até as artes definitivas chegarem, as 30 opções do catálogo (5 por categoria) usam artes geradas por código em `apps/web/scripts/avatars/`: um motor de esboço determinístico (`sketch.ts`) imita o traço do skribbl.io (pincel redondo de espessura constante, tremido suave de mão, contornos que passam um pouco do início, cores chapadas) e desenha cada arte sobre as âncoras do layout padrão. Os testes garantem que cada arte fica na zona da sua categoria e que toda cabeça cobre a área do rosto.
+As 50 opções do catálogo usam as **artes de rabisco**: PNG de 1024 × 1024 com transparência, traço de marcador irregular e cores chapadas, todas no enquadramento padrão (centro do rosto em 512, 560 no PNG) ([D28](./decisoes.md)). A lista, com rótulos e ordem, está no [guia de artes §10](./avatares-guia-de-artes.md#10-artes-atuais).
 
-- `pnpm avatars:generate` reescreve as provisórias e o gabarito. A saída é sempre a mesma (a semente vem do `id`).
-- Toda provisória tem o comentário com o marcador `comicle-placeholder`. O gerador **nunca sobrescreve** um arquivo sem o marcador, ou seja, uma arte definitiva.
-- As provisórias são substituídas arquivo a arquivo, mantendo os `id`s ou aposentando-os ([D20](./decisoes.md)).
+- `pnpm avatars:generate` só reescreve o gabarito (`_template.svg` e `_template.png`); nenhuma arte é gerada por código.
+- As artes geradas por código da D20 saíram junto com o motor de esboço que as desenhava.
 
 ---
 

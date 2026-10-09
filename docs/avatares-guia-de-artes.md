@@ -2,7 +2,7 @@
 
 Este é o guia para desenhar as **artes definitivas** dos avatares. Ele reúne tudo de que você precisa na hora de desenhar: estilo, tamanhos, pincéis, paleta, gabarito, coordenadas, regras de cada camada, como trocar um arquivo e a lista das artes atuais.
 
-O sistema por trás (catálogo, regras de ID, renderização) está em [`avatares.md`](./avatares.md). As artes que estão no jogo hoje são **provisórias**, geradas por código no mesmo layout descrito aqui. Cada uma pode ser trocada pela definitiva, arquivo por arquivo, sem mexer em código.
+O sistema por trás (catálogo, regras de ID, renderização) está em [`avatares.md`](./avatares.md). As artes que estão no jogo hoje são as **artes de rabisco** em PNG ([D28](./decisoes.md)), desenhadas no layout descrito aqui. Cada uma pode ser trocada por outra, arquivo por arquivo, sem mexer em código.
 
 Os números deste guia vêm de `apps/web/scripts/avatars/layout.ts`. Se um deles mudar, os dois mudam juntos.
 
@@ -98,25 +98,25 @@ No SVG, use `stroke-linecap="round"` e `stroke-linejoin="round"`.
 
 São as **16 cores fixas do editor de desenho** ([interface §4](./interface.md#4-editor-de-desenho)), para o avatar parecer feito no próprio jogo, e o contorno usa o nanquim da interface.
 
-| Cor | Hex | Uso nas provisórias |
-|---|---|---|
-| Nanquim (contorno) | `#16161D` | todo contorno |
-| Preto | `#000000` | pupilas, boca aberta, cartola, óculos escuros, tapa-olho |
-| Branco | `#FFFFFF` | branco dos olhos, dentes, brilhos, pompom |
-| Cinza | `#7F7F7F` | corrente do monóculo |
-| Prata | `#C3C3C3` | — |
-| Vermelho | `#E53935` | boné, corações, espirais, riscos, faixa da cartola |
-| Laranja | `#FB8C00` | cabeça quadrada |
-| Amarelo | `#FDD835` | cabeça redonda, coroa, pompom de festa |
-| Verde | `#43A047` | cabeça pera |
-| Ciano | `#00ACC1` | cabeça nuvem, pedras da coroa |
-| Azul | `#1E88E5` | gorro |
-| Anil | `#3949AB` | barra do gorro |
-| Roxo | `#8E24AA` | chapéu de festa |
-| Rosa | `#EC407A` | bochechas coradas, língua |
-| Marrom | `#8D6E63` | — |
-| Pele | `#F5CBA7` | cabeça oval |
-| Marrom-escuro | `#5D4037` | sardas, bigode |
+| Cor | Hex |
+|---|---|
+| Nanquim (contorno) | `#16161D` |
+| Preto | `#000000` |
+| Branco | `#FFFFFF` |
+| Cinza | `#7F7F7F` |
+| Prata | `#C3C3C3` |
+| Vermelho | `#E53935` |
+| Laranja | `#FB8C00` |
+| Amarelo | `#FDD835` |
+| Verde | `#43A047` |
+| Ciano | `#00ACC1` |
+| Azul | `#1E88E5` |
+| Anil | `#3949AB` |
+| Roxo | `#8E24AA` |
+| Rosa | `#EC407A` |
+| Marrom | `#8D6E63` |
+| Pele | `#F5CBA7` |
+| Marrom-escuro | `#5D4037` |
 
 O gabarito traz amostras dessas cores no canto inferior esquerdo, para usar com o conta-gotas. Uma cor fora da paleta não é proibida pelo checker, mas quebra a unidade visual; combine antes.
 
@@ -238,18 +238,18 @@ Ordem de desenho, de baixo para cima: **cabeça → bochechas → olhos → boca
 
 ---
 
-## 8. Trocar uma arte provisória pela definitiva
+## 8. Trocar uma arte
 
 1. Desenhe sobre o gabarito, seguindo as §§2–7.
-2. Exporte para o **mesmo caminho** da provisória: `apps/web/public/avatars/<pasta>/<id>.svg`. Nenhum código muda.
-   - **Em PNG:** salve `<id>.png`, apague o `<id>.svg` provisório e troque o `file` dessa opção em `packages/shared/src/avatar/catalog.json` para `.png`.
-3. Rode `pnpm avatars:check`. A última linha mostra quantas artes já são definitivas e quantas ainda são provisórias.
+2. Exporte para o **mesmo caminho** da arte atual: `apps/web/public/avatars/<pasta>/<id>.png`. Nenhum código muda.
+   - **Em SVG:** salve `<id>.svg`, apague o `<id>.png` e troque o `file` dessa opção em `packages/shared/src/avatar/catalog.json` para `.svg`.
+3. Rode `pnpm avatars:check`.
 4. Rode `pnpm dev` e confira:
    - `/dev/ui`, seção **Avatares**: o avatar nos quatro tamanhos (32, 64, 160 e 256) e todas as artes do catálogo lado a lado;
    - `/perfil`: combine sua arte com várias opções das outras categorias e use **Aleatório** algumas vezes.
-5. Commit: `feat(avatar): adiciona arte definitiva da cabeça redonda`.
+5. Commit: `feat(avatar): redesenha a cabeça redonda`.
 
-**Seu arquivo nunca é sobrescrito.** As provisórias têm um comentário com o marcador `comicle-placeholder`. O `pnpm avatars:generate` só reescreve arquivos que ainda têm esse marcador; não copie esse comentário para a sua arte.
+**Seu arquivo nunca é sobrescrito.** O `pnpm avatars:generate` só reescreve o gabarito; nenhuma arte é gerada por código.
 
 **Mantenha o `id` se a opção continua sendo a mesma coisa** (a "Redonda" ganhou um desenho melhor). Se ela virar outra coisa ("Boné" passou a ser "Capacete"), crie um `id` novo e aposente o antigo com `"retired": true`: perfis salvos dependem do `id`.
 
@@ -264,67 +264,87 @@ Ordem de desenho, de baixo para cima: **cabeça → bochechas → olhos → boca
 
 ## 10. Artes atuais
 
-Todas são provisórias até serem trocadas. A coluna "Provisória" descreve o que o código desenha hoje, para servir de referência.
+São as 50 artes de rabisco, em PNG de 1024 × 1024 ([D28](./decisoes.md)). A ordem de cada tabela é a ordem no editor.
 
 ### Cabeça (`head/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `head-round` | Redonda | círculo amarelo (é a cabeça de referência) |
-| `head-square` | Quadrada | quadrado de cantos arredondados, laranja |
-| `head-oval` | Oval | oval alto, cor de pele |
-| `head-pear` | Pera | estreita em cima e larga embaixo, verde |
-| `head-cloud` | Nuvem | contorno ondulado de nuvem, ciano |
+| `id` | Rótulo |
+|---|---|
+| `head-round` | Redonda (padrão) |
+| `head-square` | Quadrada |
+| `head-oval` | Oval |
+| `head-cloud` | Nuvem |
 
 ### Bochechas (`cheeks/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `cheeks-blush` | Coradas | elipses rosa sem contorno |
-| `cheeks-freckles` | Sardas | quatro pontinhos marrom-escuros de cada lado |
-| `cheeks-swirls` | Espirais | espirais vermelhas espelhadas |
-| `cheeks-hearts` | Corações | corações vermelhos com contorno |
-| `cheeks-stripes` | Riscos | três risquinhos vermelhos inclinados |
+| `id` | Rótulo |
+|---|---|
+| `cheeks-blush` | Coradas |
+| `cheeks-freckles` | Sardas |
+| `cheeks-hearts` | Corações |
+| `cheeks-stripes` | Riscos |
+| `cheeks-stars` | Estrelas |
+| `cheeks-whisker-lines` | Marcas de gato |
 
 ### Olhos (`eyes/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `eyes-dots` | Pontinhos | dois pontos pretos (padrão) |
-| `eyes-wide` | Arregalados | brancos grandes com pupila e brilho |
-| `eyes-sleepy` | Sonolentos | meia-lua branca com pálpebra reta caída |
-| `eyes-happy` | Felizes | arcos "^ ^" (olhos fechados sorrindo) |
-| `eyes-angry` | Bravos | brancos com pupilas para dentro e sobrancelhas inclinadas |
+| `id` | Rótulo |
+|---|---|
+| `eyes-dots` | Pontinhos (padrão) |
+| `eyes-wide` | Arregalados |
+| `eyes-sleepy` | Sonolentos |
+| `eyes-happy` | Felizes |
+| `eyes-angry` | Bravos |
+| `eyes-classic-open` | Clássicos |
+| `eyes-wink-left` | Piscadela |
+| `eyes-dizzy-spiral` | Espirais |
+| `eyes-heart-pupils` | Apaixonados |
+| `eyes-suspicious` | Desconfiados |
 
 ### Boca (`mouth/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `mouth-smile` | Sorriso | arco simples (padrão) |
-| `mouth-open` | Aberta | meia-lua preta com língua rosa |
-| `mouth-flat` | Séria | linha reta levemente torta |
-| `mouth-tongue` | Língua de fora | sorriso com língua rosa saindo à direita |
-| `mouth-teeth` | Dentuça | sorriso com dois dentes brancos |
+| `id` | Rótulo |
+|---|---|
+| `mouth-smile` | Sorriso (padrão) |
+| `mouth-tongue` | Língua de fora |
+| `mouth-big-grin` | Sorriso largo |
+| `mouth-open-happy` | Aberta feliz |
+| `mouth-surprised-o` | Surpresa |
+| `mouth-sad` | Triste |
+| `mouth-smirk` | Sorriso de canto |
+| `mouth-clenched-teeth` | Dentes cerrados |
+| `mouth-laugh` | Gargalhada |
+| `mouth-zigzag-nervous` | Nervosa |
 
 ### Acessório facial (`face-accessory/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `face-accessory-glasses` | Óculos | armação redonda nos dois olhos, com ponte e hastes |
-| `face-accessory-sunglasses` | Óculos escuros | lentes pretas arredondadas com brilho |
-| `face-accessory-mustache` | Bigode | bigode marrom-escuro com pontas enroladas |
-| `face-accessory-eyepatch` | Tapa-olho | tapa-olho preto no olho direito, com tira |
-| `face-accessory-monocle` | Monóculo | aro no olho direito, com corrente cinza |
+| `id` | Rótulo |
+|---|---|
+| `face-accessory-glasses` | Óculos |
+| `face-accessory-sunglasses` | Óculos escuros |
+| `face-accessory-mustache` | Bigode |
+| `face-accessory-eyepatch` | Tapa-olho |
+| `face-accessory-monocle` | Monóculo |
+| `face-accessory-clown-nose` | Nariz de palhaço |
+| `face-accessory-surgical-mask` | Máscara |
+| `face-accessory-bandana` | Bandana |
+| `face-accessory-nose-bandage` | Curativo |
+| `face-accessory-disguise-glasses` | Disfarce |
 
 ### Chapéu (`hat/`)
 
-| `id` | Rótulo | Provisória |
-|---|---|---|
-| `hat-cap` | Boné | boné vermelho com aba para a direita |
-| `hat-top` | Cartola | cartola preta com faixa vermelha |
-| `hat-beanie` | Gorro | gorro azul com barra anil e pompom branco |
-| `hat-crown` | Coroa | coroa amarela de três pontas com pedras |
-| `hat-party` | Festa | cone roxo com bolinhas e pompom amarelos |
+| `id` | Rótulo |
+|---|---|
+| `hat-cap` | Boné |
+| `hat-top` | Cartola |
+| `hat-beanie` | Gorro |
+| `hat-crown` | Coroa |
+| `hat-party` | Festa |
+| `hat-cowboy` | Cowboy |
+| `hat-chef` | Cozinheiro |
+| `hat-graduation` | Formatura |
+| `hat-wizard` | Mago |
+| `hat-propeller` | Hélice |
 
 ---
 
@@ -338,6 +358,6 @@ Roda no CI, então um PR com arte fora do padrão não passa.
 - SVG: as regras de segurança e o `viewBox` da §3.
 - PNG: 1024 × 1024 com transparência.
 - Tamanho de até 100 KB.
-- No fim, informa quantas artes são definitivas e quantas ainda são provisórias.
+- No fim, informa quantas artes o catálogo tem.
 
 O que ele **não** consegue conferir, e fica com você: o estilo, as zonas e âncoras (confira com o gabarito) e a leitura em 32 px (confira em `/dev/ui`).
