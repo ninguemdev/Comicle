@@ -80,7 +80,7 @@ type Ack<T> =
 Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate limit:
 
 - `room:create` e `room:join` com o socket já em outra sala → `INVALID_STATE`. Repetir o `room:join` da sala em que o socket já está é idempotente e atualiza o perfil.
-- `room:join`: sala inexistente → `ROOM_NOT_FOUND`; sala encerrando → `ROOM_CLOSED`; sessão expulsa → `KICKED`; sala cheia → `ROOM_FULL`, exceto para quem já é membro, que reconecta com o mesmo `playerId` (R9) e, no lobby, com o perfil enviado. Se a sessão já tinha outra conexão na sala, ela recebe `session:replaced` (R5).
+- `room:join`: depois de 10 tentativas com falha em um minuto vindas do mesmo IP (somando conexões), novas tentativas recebem `RATE_LIMITED` até o balde repor (uma a cada 6 s), contra a varredura de códigos ([arquitetura §7](./arquitetura.md#7-segurança)). Sala inexistente → `ROOM_NOT_FOUND`; sala encerrando → `ROOM_CLOSED`; sessão expulsa → `KICKED`; sala cheia → `ROOM_FULL`, exceto para quem já é membro, que reconecta com o mesmo `playerId` (R9) e, no lobby, com o perfil enviado. Se a sessão já tinha outra conexão na sala, ela recebe `session:replaced` (R5).
 - `room:leave`, `room:kick`, `room:updateSettings` e `player:updateProfile` de quem não está em sala → `NOT_IN_ROOM`; ações de anfitrião de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`.
 - `room:kick` com o próprio `playerId` ou um jogador que não está na sala → `INVALID_PAYLOAD`.
 - Durante a partida, quem entra é espectador (R10) e o `room:leave` de um participante não o remove: ele aparece desconectado e mantém a vaga (R15).

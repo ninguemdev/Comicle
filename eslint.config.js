@@ -21,7 +21,8 @@ const sharedImports = {
       message: '@comicle/shared não pode importar código de apps/* (arquitetura §3.1).',
     },
     {
-      regex: '^(?!zod(?:/|$)|vitest(?:/|$)|\\.{1,2}/)',
+      // Test libraries (vitest, fast-check) are devDependencies, used only by tests.
+      regex: '^(?!zod(?:/|$)|vitest(?:/|$)|fast-check(?:/|$)|\\.{1,2}/)',
       message: '@comicle/shared só pode depender de Zod em runtime (arquitetura §3.1).',
     },
   ],

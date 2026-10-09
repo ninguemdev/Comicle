@@ -21,6 +21,7 @@ Este documento transforma a [especificação de produto](./especificacao-produto
 | `THEME_WRITING_SECONDS` | 90 | Duração da etapa de temas |
 | `THEME_MIN_LENGTH` / `THEME_MAX_LENGTH` | 3 / 140 | Caracteres do tema (após normalização) |
 | `NICKNAME_MAX_LENGTH` | 20 | |
+| `TEXT_INPUT_MAX_LENGTH` | 1000 | Tamanho bruto máximo de qualquer campo de texto, antes da normalização (R1, R27); acima disso, `INVALID_PAYLOAD` |
 | `READING_BASE_SECONDS` / `READING_PER_PANEL_SECONDS` / `READING_MAX_SECONDS` | 15 / 5 / 60 | Tempo máximo de leitura (R35) |
 | `ROUND_CLOSING_MS` | 3000 | Janela para receber os quadros finais (R42) |
 | `AUTOSAVE_INTERVAL_MS` | 5000 | Intervalo mínimo entre autosaves |

@@ -24,7 +24,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T16 | [Apresentação no servidor](./T16-apresentacao-servidor.md) | T12 | ✅ |
 | T17 | [Apresentação no cliente](./T17-apresentacao-web.md) | T15, T16 | ✅ |
 | T18 | [Resiliência e reconexão](./T18-resiliencia-reconexao.md) | T17 | ✅ |
-| T19 | [Segurança e limites](./T19-seguranca-limites.md) | T17 | ⬜ |
+| T19 | [Segurança e limites](./T19-seguranca-limites.md) | T17 | ✅ |
 | T20 | [Testes ponta a ponta](./T20-e2e.md) | T18, T19 | ⬜ |
 | T21 | [Acessibilidade e polimento](./T21-acessibilidade-polimento.md) | T17 | ⬜ |
 | T22 | [Produção e deploy](./T22-producao-deploy.md) | T19 | ⬜ |

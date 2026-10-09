@@ -1,12 +1,18 @@
 import { z } from 'zod';
 
-import { NICKNAME_MAX_LENGTH, THEME_MAX_LENGTH, THEME_MIN_LENGTH } from '../constants';
+import {
+  NICKNAME_MAX_LENGTH,
+  TEXT_INPUT_MAX_LENGTH,
+  THEME_MAX_LENGTH,
+  THEME_MIN_LENGTH,
+} from '../constants';
 import { codePointLength, normalizeText } from '../text';
 
-/** Normalizes (R1) and checks the length in code points. */
+/** Normalizes (R1) and checks the length in code points; a huge raw input is refused first. */
 function normalizedText(min: number, max: number, message: string) {
   return z
     .string()
+    .max(TEXT_INPUT_MAX_LENGTH, message)
     .transform(normalizeText)
     .refine((text) => {
       const length = codePointLength(text);

@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 
+import { TEXT_INPUT_MAX_LENGTH } from '../constants';
 import { matchSettingsSchema } from './match-settings';
 import { playerProfileSchema } from './profile';
 import { roomCodeSchema } from './room-code';
@@ -25,7 +26,9 @@ export const roomJoinPayloadSchema = z.object({
 
 export const roomLeavePayloadSchema = emptyPayloadSchema;
 
-export const roomKickPayloadSchema = z.object({ playerId: z.string().min(1) });
+export const roomKickPayloadSchema = z.object({
+  playerId: z.string().min(1).max(TEXT_INPUT_MAX_LENGTH),
+});
 
 export const roomUpdateSettingsPayloadSchema = z.object({ settings: matchSettingsSchema });
 

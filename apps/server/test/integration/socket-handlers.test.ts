@@ -78,7 +78,11 @@ describe('handlers de socket', () => {
 
   it('rate limit: N+1 eventos na janela → o último recebe RATE_LIMITED', async () => {
     const { client } = await start({
-      socketRateLimits: { global: { capacity: 3, refillPerSecond: 1 }, perEvent: {} },
+      socketRateLimits: {
+        global: { capacity: 3, refillPerSecond: 1 },
+        perEvent: {},
+        failuresPerIp: {},
+      },
     });
 
     const acks = [];

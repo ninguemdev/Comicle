@@ -23,6 +23,8 @@ import { createRoomPublisher } from './modules/views/room-publisher';
 import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
+import { HELMET_OPTIONS } from './platform/http/security-headers';
+import { serializeError } from './platform/log-safety';
 import { createRequireGuest } from './platform/http/require-guest';
 import { newId, newSessionToken } from './platform/ids';
 import {
@@ -55,15 +57,23 @@ export interface App {
   guestSessions: GuestSessionStore;
 }
 
-// Never log tokens or images (AGENTS.md, Logs).
+// Never log tokens, images, themes or nicknames (AGENTS.md, Logs). Nothing logs a payload today;
+// these paths keep it that way if something ever does. Errors go through serializeError.
 const REDACTED_PATHS = [
   'req.headers.authorization',
+  'req.headers.cookie',
   'authorization',
   '*.authorization',
   'token',
   '*.token',
   'png',
   '*.png',
+  'text',
+  '*.text',
+  'nickname',
+  '*.nickname',
+  'themeText',
+  '*.themeText',
 ];
 
 export async function buildApp(deps: AppDeps): Promise<App> {
@@ -72,13 +82,15 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     logger: {
       level: config.LOG_LEVEL,
       redact: REDACTED_PATHS,
+      // Errors keep no query parameters or row values (themes, images): see log-safety.ts.
+      serializers: { err: serializeError },
       ...(config.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
       ...(deps.logDestination ? { stream: deps.logDestination } : {}),
     },
     trustProxy: config.TRUST_PROXY,
   });
 
-  await http.register(helmet);
+  await http.register(helmet, HELMET_OPTIONS);
   await http.register(cors, { origin: config.CORS_ORIGINS });
   // Routes opt in with `config.rateLimit` (sessions, room lookup).
   await http.register(rateLimit, { global: false });
@@ -165,6 +177,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     ],
     onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
     rateLimits: deps.socketRateLimits ?? DEFAULT_SOCKET_RATE_LIMITS,
+    trustProxy: config.TRUST_PROXY,
     authenticate,
   });
   socketRef.io = io;

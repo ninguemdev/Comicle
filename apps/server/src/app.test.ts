@@ -32,6 +32,24 @@ describe('buildApp', () => {
     });
   });
 
+  it('CSP: só a própria origem, imagens blob: para os quadros, sem eval nem upgrade de HTTP', async () => {
+    app = await buildApp(createTestDeps());
+
+    const response = await app.http.inject({ method: 'GET', url: '/healthz' });
+    const csp = String(response.headers['content-security-policy']).split(';');
+
+    expect(csp).toEqual(
+      expect.arrayContaining([
+        "default-src 'self'",
+        "script-src 'self'",
+        "object-src 'none'",
+        "img-src 'self' data: blob:",
+        "frame-ancestors 'self'",
+      ]),
+    );
+    expect(csp.join(';')).not.toMatch(/unsafe-eval|upgrade-insecure-requests/);
+  });
+
   it('aplica os cabeçalhos do helmet e o CORS configurado', async () => {
     app = await buildApp(createTestDeps());
 
