@@ -1,7 +1,15 @@
 import { defaultAvatar } from '@comicle/shared';
 import { describe, expect, it } from 'vitest';
 
-import { inMatch, testMatch, testMember, testRoom } from '../../../test/support/room-builders';
+import {
+  inMatch,
+  testMatch,
+  testMember,
+  testRoom,
+  testRoundMatch,
+  testStories,
+} from '../../../test/support/room-builders';
+import type { Match } from '../matches/match';
 import { buildPlayerView } from './build-player-view';
 
 describe('buildPlayerView no lobby', () => {
@@ -193,5 +201,128 @@ describe('buildPlayerView na rodada 0', () => {
     const json = JSON.stringify(buildPlayerView(drawingRoom(), 'caio', 0));
 
     expect(json).not.toContain('Tema de');
+  });
+});
+
+describe('buildPlayerView nas rodadas', () => {
+  /** ana, bia e caio jogam (nessa ordem de assentos); davi é espectador. */
+  function roundRoom(match: Match) {
+    const room = testRoom(
+      testMember('ana', { joinedAt: 0 }),
+      testMember('bia', { joinedAt: 1 }),
+      testMember('caio', { joinedAt: 2 }),
+      testMember('davi', { joinedAt: 3 }),
+    );
+    return inMatch(room, match);
+  }
+  const players = ['ana', 'bia', 'caio'];
+  const viewOf = (match: Match, playerId: string) => buildPlayerView(roundRoom(match), playerId, 0);
+  const taskOf = (match: Match, playerId: string) => viewOf(match, playerId).match?.task;
+
+  it('R36: na leitura, quem não confirmou vê o tema e os quadros anteriores da história recebida', () => {
+    // Round 1 (R31): ana reads bia's story, whose panel 0 caio drew.
+    const reading = testRoundMatch(players, 'round_reading', 1);
+
+    expect(taskOf(reading, 'ana')).toEqual({
+      kind: 'read_story',
+      status: 'reading',
+      theme: 'Tema de bia',
+      previousPanels: [
+        {
+          panelId: 'panel-0-bia',
+          position: 0,
+          artist: { playerId: 'caio', nickname: 'caio', avatar: defaultAvatar() },
+          status: 'complete',
+        },
+      ],
+    });
+  });
+
+  it('R36: depois de round:ready, a leitura só traz o tema', () => {
+    const reading = testRoundMatch(players, 'round_reading', 1, { ready: new Set(['ana']) });
+
+    expect(taskOf(reading, 'ana')).toEqual({
+      kind: 'read_story',
+      status: 'ready',
+      theme: 'Tema de bia',
+    });
+    expect(JSON.stringify(viewOf(reading, 'ana'))).not.toContain('panel-');
+  });
+
+  it('R58: na leitura, ninguém recebe quadros nem temas de histórias que não recebeu', () => {
+    // Round 1 (R31): bia reads caio's story.
+    const reading = testRoundMatch(players, 'round_reading', 1);
+    const json = JSON.stringify(viewOf(reading, 'bia'));
+
+    expect(json).toContain('panel-0-caio');
+    expect(json).not.toMatch(/panel-\d-(ana|bia)/);
+    expect(json).not.toMatch(/Tema de (ana|bia)/);
+    expect(JSON.stringify(viewOf(reading, 'davi'))).not.toMatch(/panel-|Tema de/);
+    expect(taskOf(reading, 'davi')).toEqual({ kind: 'spectate' });
+  });
+
+  it('R38/R58: a view de desenho nunca contém quadros; hasDraft e status acompanham o jogador', () => {
+    const drawing = testRoundMatch(players, 'round_drawing', 2, {
+      drafts: new Map([['ana', new Uint8Array([1])]]),
+      finals: new Map([['bia', { png: null, reason: 'done' }]]),
+    });
+
+    expect(taskOf(drawing, 'ana')).toEqual({
+      kind: 'draw_panel',
+      status: 'drawing',
+      theme: 'Tema de ana',
+      panelPosition: 2,
+      hasDraft: true,
+    });
+    expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', hasDraft: false });
+    for (const playerId of [...players, 'davi']) {
+      expect(JSON.stringify(viewOf(drawing, playerId))).not.toContain('panel-');
+    }
+  });
+
+  it('no fechamento os participantes esperam', () => {
+    const closing = testRoundMatch(players, 'round_closing', 0);
+
+    expect(taskOf(closing, 'ana')).toEqual({ kind: 'wait' });
+    expect(taskOf(closing, 'davi')).toEqual({ kind: 'spectate' });
+  });
+
+  it('o progresso conta quem confirmou a leitura e quem entregou o quadro', () => {
+    const reading = testRoundMatch(players, 'round_reading', 1, { ready: new Set(['bia']) });
+    const view = viewOf(reading, 'davi');
+    expect(view.match?.progress).toEqual({ done: 1, total: 3 });
+    expect(view.room.members.map((m) => m.progress)).toEqual([
+      'working',
+      'done',
+      'working',
+      'idle',
+    ]);
+
+    const closing = testRoundMatch(players, 'round_closing', 1, {
+      finals: new Map([
+        ['ana', { png: null, reason: 'done' }],
+        ['caio', { png: null, reason: 'timeout' }],
+      ]),
+    });
+    expect(viewOf(closing, 'davi').match?.progress).toEqual({ done: 2, total: 3 });
+  });
+
+  it('R45: na apresentação todos recebem watch, sem prazo', () => {
+    const presentation = testMatch(players, {
+      phase: 'presentation',
+      roundIndex: 2,
+      phaseDeadlineAt: null,
+      themes: new Map(),
+      stories: testStories(players, 3),
+    });
+
+    for (const playerId of [...players, 'davi']) {
+      expect(viewOf(presentation, playerId).match).toMatchObject({
+        phase: 'presentation',
+        phaseDeadlineAt: null,
+        task: { kind: 'watch' },
+        progress: { done: 0, total: 3 },
+      });
+    }
   });
 });

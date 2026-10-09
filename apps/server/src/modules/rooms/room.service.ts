@@ -32,6 +32,8 @@ export interface RoomServiceDeps {
   registry: RoomRegistry;
   broadcaster: RoomBroadcaster;
   publish: PublishRoom;
+  /** Someone connected or disconnected during a match (R37); runs inside the room's queue. */
+  onPresenceChange: (room: Room) => Promise<void>;
   log: FastifyBaseLogger;
 }
 
@@ -117,7 +119,7 @@ export class RoomService {
     return this.withMember(socketId, async (room, member) => {
       this.deps.registry.unbind(socketId);
       if (room.match !== null && isParticipant(room.match, member.playerId)) {
-        this.leaveSeat(room, member);
+        await this.leaveSeat(room, member);
         return {};
       }
       await this.removeMember(room, member);
@@ -145,12 +147,13 @@ export class RoomService {
   }
 
   /** R15 during a match: the participant shows as away and may come back with the same session. */
-  private leaveSeat(room: Room, member: Member): void {
+  private async leaveSeat(room: Room, member: Member): Promise<void> {
     member.connection = { disconnectedAt: this.deps.clock.now() };
     if (member.playerId === room.hostPlayerId) {
       this.handOverHost(room);
     }
     this.updateEmptiness(room);
+    await this.deps.onPresenceChange(room);
     this.deps.publish(room);
   }
 
@@ -196,7 +199,7 @@ export class RoomService {
     if (!binding || !room) {
       return;
     }
-    await room.runExclusive(() => {
+    await room.runExclusive(async () => {
       // A replaced or kicked socket was already unbound: nothing left to do for it.
       const member = room.members.get(binding.playerId);
       if (room.closed || !member || socketIdOf(member) !== socketId) {
@@ -220,6 +223,9 @@ export class RoomService {
         );
       }
       this.updateEmptiness(room);
+      if (room.match !== null) {
+        await this.deps.onPresenceChange(room);
+      }
       this.deps.publish(room);
     });
   }

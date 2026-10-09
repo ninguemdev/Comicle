@@ -1,20 +1,22 @@
-import type { Empty, Rng } from '@comicle/shared';
+import type { Empty, MatchAbortReason, Rng } from '@comicle/shared';
 import type { FastifyBaseLogger } from 'fastify';
 
 import type { Clock } from '../../platform/clock';
 import { shuffled } from '../../platform/random';
 import type { Scheduler } from '../../platform/scheduler';
+import { assertValidPanelImage } from '../drawing/panel-image';
 import { getGameMode } from '../game-modes/registry';
 import { assertCanAbortMatch, assertCanStartMatch } from '../rooms/host-policy';
-import type { Room } from '../rooms/room';
+import { socketIdOf, type Room } from '../rooms/room';
+import type { RoomBroadcaster } from '../rooms/room-broadcaster';
 import { runAsMember, scheduleInRoom } from '../rooms/room-access';
 import type { RoomRegistry } from '../rooms/room-registry';
 import { timerKeys } from '../rooms/timer-keys';
 import { FALLBACK_THEMES } from '../stories/fallback-themes';
-import type { StoryRepository } from '../stories/story-repository';
+import type { MatchStatus, NewPanel, StoryRepository } from '../stories/story-repository';
 import type { GameTimingConfig } from '../timing/game-timing';
 import type { PublishRoom } from '../views/room-publisher';
-import { newMatchRecord, type Match } from './match';
+import { newMatchRecord, type Match, type PanelSubmitReason } from './match';
 import {
   createMatchMachine,
   type MatchEffect,
@@ -30,6 +32,7 @@ export interface MatchServiceDeps {
   storyRepository: StoryRepository;
   timing: GameTimingConfig;
   registry: RoomRegistry;
+  broadcaster: RoomBroadcaster;
   publish: PublishRoom;
   /** The room is back in the lobby: lobby-only rules (R13) apply again. */
   onReturnToLobby: (room: Room) => void;
@@ -39,8 +42,14 @@ export interface MatchServiceDeps {
 /** arquitetura §4, Persistência: one retry, then the match is aborted (R57). */
 const PERSIST_ATTEMPTS = 2;
 
+export interface PanelSubmission {
+  roundIndex: number;
+  reason: PanelSubmitReason;
+  png: Uint8Array | null;
+}
+
 /**
- * Match lifecycle (R22–R30, R57): runs the phase machine inside the room's queue, then its
+ * Match lifecycle (R22–R45, R57): runs the phase machine inside the room's queue, then its
  * effects (timers, persistence), then publishes the new views.
  */
 export class MatchService {
@@ -80,6 +89,7 @@ export class MatchService {
           totalRounds,
         ),
         fallbackThemes: shuffled(FALLBACK_THEMES, rng),
+        panelIds: Array.from({ length: totalRounds }, () => participants.map(() => newId())),
         previousMatchId: room.lastMatchId,
       });
       return {};
@@ -90,7 +100,7 @@ export class MatchService {
   abort(socketId: string): Promise<Empty> {
     return this.asMember(socketId, async (room, playerId) => {
       assertCanAbortMatch(room, playerId);
-      await this.apply(room, { type: 'abort' });
+      await this.apply(room, { type: 'abort', reason: 'host' });
       return {};
     });
   }
@@ -111,6 +121,49 @@ export class MatchService {
     });
   }
 
+  /** R36, R37. */
+  confirmReading(socketId: string, roundIndex: number): Promise<Empty> {
+    return this.asMember(socketId, async (room, playerId) => {
+      await this.apply(room, {
+        type: 'round_ready',
+        playerId,
+        roundIndex,
+        connected: connectedPlayers(room),
+      });
+      return {};
+    });
+  }
+
+  /** R39. */
+  async autosavePanel(socketId: string, roundIndex: number, png: Uint8Array): Promise<Empty> {
+    assertValidPanelImage(png);
+    return this.asMember(socketId, async (room, playerId) => {
+      // Only `hasDraft` changes, which matters when (re)connecting and comes with that view;
+      // publishing here would send every member a view per autosave for nothing.
+      await this.transition(room, { type: 'panel_autosave', playerId, roundIndex, png });
+      return {};
+    });
+  }
+
+  /** R40–R44. */
+  async submitPanel(
+    socketId: string,
+    { roundIndex, reason, png }: PanelSubmission,
+  ): Promise<Empty> {
+    if (png !== null) {
+      assertValidPanelImage(png);
+    }
+    return this.asMember(socketId, async (room, playerId) => {
+      await this.apply(room, { type: 'panel_submit', playerId, roundIndex, reason, png });
+      return {};
+    });
+  }
+
+  /** R37: called by the rooms module, inside the room's queue, which publishes afterwards. */
+  async handlePresenceChange(room: Room): Promise<void> {
+    await this.transition(room, { type: 'presence_changed', connected: connectedPlayers(room) });
+  }
+
   private asMember<T>(
     socketId: string,
     task: (room: Room, playerId: string) => Promise<T>,
@@ -128,7 +181,7 @@ export class MatchService {
     this.setMatch(room, match);
     for (const effect of effects) {
       if (!(await this.runEffect(room, effect))) {
-        await this.transition(room, { type: 'abort' });
+        await this.transition(room, { type: 'abort', reason: 'persistence_failed' });
         return;
       }
     }
@@ -162,6 +215,19 @@ export class MatchService {
         return true;
       case 'persist_match':
         return this.persistMatch(room);
+      case 'persist_round':
+        return this.persistRound(room, effect.panels);
+      case 'set_match_status':
+        await this.setMatchStatus(room, effect.status);
+        return true;
+      case 'emit_collect':
+        this.toConnected(room, (socketId) => {
+          this.deps.broadcaster.sendCollect(socketId, effect.roundIndex);
+        });
+        return true;
+      case 'notify_aborted':
+        this.notifyAborted(room, effect.reason);
+        return true;
       case 'delete_match':
         await this.deleteMatch(room, effect.matchId);
         return true;
@@ -183,18 +249,68 @@ export class MatchService {
       return true;
     }
     const record = newMatchRecord(room.id, room.match);
+    return this.persist(room, 'failed to persist match', () =>
+      this.deps.storyRepository.createMatch(record),
+    );
+  }
+
+  /** R42: the panels of a round, all or nothing. */
+  private async persistRound(room: Room, panels: NewPanel[]): Promise<boolean> {
+    const matchId = room.match?.id;
+    if (matchId === undefined) {
+      return true;
+    }
+    return this.persist(room, 'failed to persist round', () =>
+      this.deps.storyRepository.saveRoundPanels(matchId, panels),
+    );
+  }
+
+  /** Tries `write` up to PERSIST_ATTEMPTS times; `false` when every attempt failed. */
+  private async persist(room: Room, message: string, write: () => Promise<void>): Promise<boolean> {
     for (let attempt = 1; attempt <= PERSIST_ATTEMPTS; attempt++) {
       try {
-        await this.deps.storyRepository.createMatch(record);
+        await write();
         return true;
       } catch (error) {
         this.deps.log.error(
-          { err: error, roomId: room.id, matchId: record.id, attempt },
-          'failed to persist match',
+          { err: error, roomId: room.id, matchId: room.match?.id, attempt },
+          message,
         );
       }
     }
     return false;
+  }
+
+  /** Only logged: the status is bookkeeping, the match goes on without it. */
+  private async setMatchStatus(room: Room, status: MatchStatus): Promise<void> {
+    const matchId = room.match?.id;
+    if (matchId === undefined) {
+      return;
+    }
+    try {
+      await this.deps.storyRepository.setMatchStatus(matchId, status);
+    } catch (error) {
+      this.deps.log.error(
+        { err: error, roomId: room.id, matchId, status },
+        'failed to set match status',
+      );
+    }
+  }
+
+  /** R57: sent before the lobby view, so clients know why the match ended. */
+  private notifyAborted(room: Room, reason: MatchAbortReason): void {
+    this.toConnected(room, (socketId) => {
+      this.deps.broadcaster.sendMatchAborted(socketId, reason);
+    });
+  }
+
+  private toConnected(room: Room, send: (socketId: string) => void): void {
+    for (const member of room.members.values()) {
+      const socketId = socketIdOf(member);
+      if (socketId !== null) {
+        send(socketId);
+      }
+    }
   }
 
   /**
@@ -212,4 +328,8 @@ export class MatchService {
       room.lastMatchId = null;
     }
   }
+}
+
+function connectedPlayers(room: Room): ReadonlySet<string> {
+  return new Set(room.connectedMembers().map((member) => member.playerId));
 }

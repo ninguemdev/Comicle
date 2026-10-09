@@ -20,11 +20,11 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 | `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | `expiresAt` em ms epoch do servidor (renovado a cada uso, R3); rate limit de 10/min por IP → `429 RATE_LIMITED` |
 | `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404 ROOM_NOT_FOUND` | Pré-checagem antes de entrar; o código é normalizado (R6) e um código mal formado responde como inexistente. `joinable` = sala não cheia (R9); a rota é anônima, então reconexão e expulsão (R12) só se resolvem no `room:join`. Rate limit de 30/min por IP (proteção contra varredura de códigos) |
-| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403` · `404` | Consulta `PanelAccessPolicy`; `Cache-Control: private, no-store` |
-| `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` | Último autosave do próprio jogador na rodada de desenho atual (R48) |
+| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
+| `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` · `403 NOT_IN_ROOM` · `404 ROOM_NOT_FOUND` | Último autosave do próprio jogador na rodada atual, em `round_drawing` ou `round_closing` (R48); `204` sem rascunho ou fora dessas fases. `Cache-Control: private, no-store` |
 | `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
 
-Erros HTTP usam o corpo `{ error: { code, message } }`, com os mesmos `ErrorCode` do realtime. Status por código: `INVALID_PAYLOAD` e `IMAGE_INVALID` 400 · `UNAUTHORIZED` 401 · `KICKED`, `NOT_IN_ROOM` e `NOT_HOST` 403 · `ROOM_NOT_FOUND` 404 · `ROOM_FULL`, `INVALID_STATE`, `NOT_ENOUGH_PLAYERS` e `DEADLINE_PASSED` 409 · `ROOM_CLOSED` 410 · `IMAGE_TOO_LARGE` 413 · `RATE_LIMITED` 429 · `INTERNAL` 500. Outros erros 4xx do Fastify (JSON malformado, por exemplo) saem como `INVALID_PAYLOAD` com o status original; nenhum erro expõe stack trace.
+Erros HTTP usam o corpo `{ error: { code, message } }`, com os mesmos `ErrorCode` do realtime. Status por código: `INVALID_PAYLOAD` e `IMAGE_INVALID` 400 · `UNAUTHORIZED` 401 · `KICKED`, `NOT_IN_ROOM`, `NOT_HOST` e `FORBIDDEN` 403 · `ROOM_NOT_FOUND` e `PANEL_NOT_FOUND` 404 · `ROOM_FULL`, `INVALID_STATE`, `NOT_ENOUGH_PLAYERS` e `DEADLINE_PASSED` 409 · `ROOM_CLOSED` 410 · `IMAGE_TOO_LARGE` 413 · `RATE_LIMITED` 429 · `INTERNAL` 500. Outros erros 4xx do Fastify (JSON malformado, por exemplo) saem como `INVALID_PAYLOAD` com o status original; nenhum erro expõe stack trace.
 
 O cliente carrega imagens com `fetch` + `Authorization` e cria `blob:` URLs (hook `usePanelImage`), revogando-as ao desmontar. O token nunca vai em query string.
 
@@ -47,7 +47,7 @@ type Ack<T> =
 
 ### Códigos de erro (`ErrorCode`)
 
-`INVALID_PAYLOAD` · `UNAUTHORIZED` · `RATE_LIMITED` · `ROOM_NOT_FOUND` · `ROOM_FULL` · `ROOM_CLOSED` · `KICKED` · `NOT_IN_ROOM` · `NOT_HOST` · `INVALID_STATE` · `NOT_ENOUGH_PLAYERS` · `DEADLINE_PASSED` · `IMAGE_INVALID` · `IMAGE_TOO_LARGE` · `INTERNAL`
+`INVALID_PAYLOAD` · `UNAUTHORIZED` · `RATE_LIMITED` · `ROOM_NOT_FOUND` · `ROOM_FULL` · `ROOM_CLOSED` · `KICKED` · `NOT_IN_ROOM` · `NOT_HOST` · `FORBIDDEN` · `PANEL_NOT_FOUND` · `INVALID_STATE` · `NOT_ENOUGH_PLAYERS` · `DEADLINE_PASSED` · `IMAGE_INVALID` · `IMAGE_TOO_LARGE` · `INTERNAL`
 
 `message` é em pt-BR e pode ser exibida ao usuário; o cliente decide o texto final pelo `code` (strings em `apps/web/src/strings/pt-BR.ts`).
 
@@ -90,6 +90,12 @@ Erros da partida e da etapa de temas:
 - `match:abort`: de outro membro → `NOT_HOST`; sem partida em andamento → `INVALID_STATE` (R57).
 - `theme:draft` e `theme:submit`: fora de `theme_writing`, de espectador ou depois do envio final → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED` (R61). O texto é normalizado (R1); no `theme:submit`, tamanho fora de `THEME_MIN_LENGTH`–`THEME_MAX_LENGTH` → `INVALID_PAYLOAD` (R27).
 
+Erros das rodadas:
+
+- `round:ready`: fora de `round_reading`, com outro `roundIndex` ou de espectador → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED`. Confirmar de novo é idempotente.
+- `panel:autosave` e `panel:submit` (R44): de espectador, com `roundIndex` de uma rodada futura, na leitura da rodada ou depois do próprio envio final → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo do desenho; a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
+- O `panel:autosave` não gera `room:view`: só mudaria o `hasDraft` do próprio jogador, que importa ao (re)conectar e chega com essa view.
+
 O servidor publica as `room:view` antes de responder o ack, então quem age recebe a view nova antes da resposta.
 
 Validação de imagem no servidor (`apps/server/src/modules/drawing/panel-image.ts`): assinatura PNG, chunk IHDR com `PANEL_WIDTH × PANEL_HEIGHT`, tamanho `≤ PANEL_MAX_BYTES`. Falha: `IMAGE_INVALID` ou `IMAGE_TOO_LARGE`.
@@ -102,6 +108,7 @@ Validação de imagem no servidor (`apps/server/src/modules/drawing/panel-image.
 |---|---|---|
 | `room:view` | `PlayerView` | Após cada mudança de estado relevante para o jogador, ao entrar e ao reconectar |
 | `round:collect` | `{ roundIndex }` | Início de `round_closing` (R42) |
+| `match:aborted` | `{ reason: 'host' \| 'persistence_failed' }` | A partida voltou ao lobby antes do fim: o anfitrião abortou ou o servidor não conseguiu gravar os temas ou uma rodada depois de uma nova tentativa (R57). Vai a todos os membros conectados, logo antes da `room:view` do lobby |
 | `room:removed` | `{ reason: 'kicked' \| 'closed' }` | Expulsão (R12) ou encerramento (R16) |
 | `session:replaced` | `{}` | Outra conexão da mesma sessão assumiu (R5) |
 

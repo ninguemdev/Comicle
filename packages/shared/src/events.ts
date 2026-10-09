@@ -82,9 +82,13 @@ export type ClientToServerEvents = {
 
 export type RoomRemovedReason = 'kicked' | 'closed';
 
+/** Why a match went back to the lobby before its end (R57). */
+export type MatchAbortReason = 'host' | 'persistence_failed';
+
 export interface ServerToClientEvents {
   'room:view': (view: PlayerView) => void;
   'round:collect': (payload: { roundIndex: number }) => void;
+  'match:aborted': (payload: { reason: MatchAbortReason }) => void;
   'room:removed': (payload: { reason: RoomRemovedReason }) => void;
   'session:replaced': (payload: Empty) => void;
 }

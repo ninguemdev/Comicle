@@ -1,14 +1,16 @@
-import type {
-  MatchView,
-  MemberProgress,
-  MemberRole,
-  MemberView,
-  PlayerTask,
-  PlayerView,
+import {
+  defaultAvatar,
+  type MatchView,
+  type MemberProgress,
+  type MemberRole,
+  type MemberView,
+  type PanelRef,
+  type PlayerTask,
+  type PlayerView,
 } from '@comicle/shared';
 
-import { storyForPlayer } from '../game-modes/game-mode';
-import { isParticipant, type Match } from '../matches/match';
+import { readablePanels } from '../drawing/panel-access-policy';
+import { assignedStory, isParticipant, seatOf, type Match, type PanelMeta } from '../matches/match';
 import { isConnected, type Member, type Room } from '../rooms/room';
 
 // The only place that decides what a player sees (R58, arquitetura §4 Projeção).
@@ -25,26 +27,51 @@ function hasSubmittedTheme(match: Match, playerId: string): boolean {
   return (match.themes.get(playerId)?.final ?? null) !== null;
 }
 
-/** Public progress in the current phase: never says what anyone wrote or drew. */
-function progressOf(match: Match | null, playerId: string): MemberProgress {
-  if (match === null || !isParticipant(match, playerId)) {
-    return 'idle';
-  }
+/** Whether the participant finished what the current phase asks; `null` when it asks nothing. */
+function isDone(match: Match, playerId: string): boolean | null {
   switch (match.phase) {
     case 'theme_writing':
-      return hasSubmittedTheme(match, playerId) ? 'done' : 'working';
+      return hasSubmittedTheme(match, playerId);
     case 'round_reading':
+      return match.round?.ready.has(playerId) ?? false;
     case 'round_drawing':
-      return 'working';
     case 'round_closing':
+      return match.round?.finals.has(playerId) ?? false;
     case 'presentation':
-      return 'idle';
+      return null;
     default:
       return match.phase satisfies never;
   }
 }
 
-function participantTask(match: Match, playerId: string): PlayerTask {
+/** Public progress in the current phase: never says what anyone wrote or drew. */
+function progressOf(match: Match | null, playerId: string): MemberProgress {
+  if (match === null || !isParticipant(match, playerId)) {
+    return 'idle';
+  }
+  const done = isDone(match, playerId);
+  if (done === null) {
+    return 'idle';
+  }
+  return done ? 'done' : 'working';
+}
+
+/** Credits of a panel: the nickname copied at the start and the artist's current avatar. */
+function panelRef(room: Room, match: Match, panel: PanelMeta): PanelRef {
+  const avatar = room.members.get(panel.artistPlayerId)?.profile.avatar ?? defaultAvatar();
+  return {
+    panelId: panel.id,
+    position: panel.position,
+    artist: {
+      playerId: panel.artistPlayerId,
+      nickname: seatOf(match, panel.artistPlayerId)?.nickname ?? '',
+      avatar,
+    },
+    status: panel.status,
+  };
+}
+
+function participantTask(room: Room, match: Match, playerId: string): PlayerTask {
   switch (match.phase) {
     case 'theme_writing': {
       const theme = match.themes.get(playerId);
@@ -56,21 +83,37 @@ function participantTask(match: Match, playerId: string): PlayerTask {
         draft: submitted ?? theme?.draft ?? '',
       };
     }
+    case 'round_reading': {
+      const story = assignedStory(match, playerId);
+      if (!story) {
+        return { kind: 'wait' };
+      }
+      // R36: the panels only until the player confirms; afterwards just the theme.
+      return match.round?.ready.has(playerId)
+        ? { kind: 'read_story', status: 'ready', theme: story.themeText }
+        : {
+            kind: 'read_story',
+            status: 'reading',
+            theme: story.themeText,
+            previousPanels: readablePanels(match, playerId).map((panel) =>
+              panelRef(room, match, panel),
+            ),
+          };
+    }
     case 'round_drawing': {
-      const storyIndex = storyForPlayer(match.plan, match.roundIndex, playerId);
-      const story = storyIndex === undefined ? undefined : match.stories[storyIndex];
+      const story = assignedStory(match, playerId);
       // R38: only the theme of the story being drawn; never its panels.
       return story
         ? {
             kind: 'draw_panel',
-            status: 'drawing',
+            status: match.round?.finals.has(playerId) ? 'submitted' : 'drawing',
             theme: story.themeText,
             panelPosition: match.roundIndex,
-            hasDraft: false,
+            // R48: whether `GET /api/rooms/:code/my-draft` has something to restore.
+            hasDraft: match.round?.drafts.has(playerId) ?? false,
           }
         : { kind: 'wait' };
     }
-    case 'round_reading':
     case 'round_closing':
       return { kind: 'wait' };
     case 'presentation':
@@ -80,18 +123,15 @@ function participantTask(match: Match, playerId: string): PlayerTask {
   }
 }
 
-function taskOf(match: Match, playerId: string): PlayerTask {
+function taskOf(room: Room, match: Match, playerId: string): PlayerTask {
   if (isParticipant(match, playerId)) {
-    return participantTask(match, playerId);
+    return participantTask(room, match, playerId);
   }
   return match.phase === 'presentation' ? { kind: 'watch' } : { kind: 'spectate' };
 }
 
-function matchView(match: Match, playerId: string): MatchView {
-  const done =
-    match.phase === 'theme_writing'
-      ? match.seats.filter((seat) => hasSubmittedTheme(match, seat.playerId)).length
-      : 0;
+function matchView(room: Room, match: Match, playerId: string): MatchView {
+  const done = match.seats.filter((seat) => isDone(match, seat.playerId) === true).length;
   return {
     matchId: match.id,
     phase: match.phase,
@@ -99,7 +139,7 @@ function matchView(match: Match, playerId: string): MatchView {
     totalRounds: match.totalRounds,
     phaseDeadlineAt: match.phaseDeadlineAt,
     progress: { done, total: match.seats.length },
-    task: taskOf(match, playerId),
+    task: taskOf(room, match, playerId),
     presentation: null,
   };
 }
@@ -135,6 +175,6 @@ export function buildPlayerView(room: Room, playerId: string, now: number): Play
       isHost: playerId === room.hostPlayerId,
       role: roleOf(room.match, playerId),
     },
-    match: room.match === null ? null : matchView(room.match, playerId),
+    match: room.match === null ? null : matchView(room, room.match, playerId),
   };
 }

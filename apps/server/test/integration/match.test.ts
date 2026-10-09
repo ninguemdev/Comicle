@@ -181,7 +181,9 @@ describe('partida: início e etapa de temas (integração)', () => {
 
     const drawing = await ana.views.waitFor(inPhase('round_drawing'));
     expect(drawing.match).toMatchObject({ roundIndex: 0, progress: { total: 3 } });
-    expect(hasTimer(':phase')).toBe(false);
+    // R34: the theme deadline gave way to the drawing deadline.
+    const phaseKey = server.scheduler.pendingKeys().find((key) => key.endsWith(':phase')) ?? '';
+    expect(server.scheduler.scheduledAt(phaseKey)).toBe(drawing.match?.phaseDeadlineAt);
 
     // reversingRng seats them as Caio, Bia, Ana; story i belongs to seat i.
     const record = persistedMatch(createMatch);
