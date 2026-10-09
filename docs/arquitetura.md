@@ -97,7 +97,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │           ├─ game-modes/           # GameMode + collaborative/ (distribuição)
 │           ├─ stories/              # repositórios, temas reserva
 │           ├─ drawing/              # panel-image, panel-access-policy, rotas de imagem
-│           ├─ timing/               # reading-time, GameTimingConfig
+│           ├─ timing/               # GameTimingConfig (perfis default e fast), time:sync
 │           ├─ presentation/         # cursor puro, serviço, handlers
 │           └─ views/                # buildPlayerView (projeção)
 ├─ packages/
@@ -146,7 +146,7 @@ Cada `Room` tem uma fila assíncrona (`runExclusive(fn)`, encadeamento de promis
 
 - `Clock { now(): number }` — `SystemClock` em produção.
 - `Scheduler { schedule(key, at, fn); cancel(key) }` — um timer por chave (`room:<id>:phase`, `room:<id>:host-transfer`…). Reagendar uma chave cancela a anterior. O callback entra na fila da sala.
-- `GameTimingConfig` agrupa as durações (`themeWritingMs`, `readingMs(roundIndex)`, `drawingMs(settings)`, `roundClosingMs`, graces e TTLs). Produção usa as constantes de `@comicle/shared`; testes usam milissegundos.
+- `GameTimingConfig` (`modules/timing/game-timing.ts`) agrupa as durações (`themeWritingMs`, `readingMs(roundIndex)`, `drawingMs(settings)`, `roundClosingMs`, graças e TTLs da sala). O perfil `default` usa as constantes de `@comicle/shared`; o `fast` (`GAME_TIMING_PROFILE=fast`, para E2E e testes manuais) encurta só as fases da partida: temas 20 s, leitura 5 s, desenho 20 s, fechamento 1 s. Testes de integração avançam o relógio com o `ManualScheduler`.
 - Prazos são instantes absolutos (`phaseDeadlineAt`). Nada conta segundos em loop.
 
 ### Máquina de fases
@@ -159,7 +159,7 @@ lobby ──start──▶ theme_writing ──▶ round_drawing (r=0) ──▶
 abort (qualquer fase) ──────────────────────────────────────────────────────────────▶ lobby
 ```
 
-`modules/matches/match-machine.ts` é puro: `(estado, evento, agora) → { estado, efeitos }`. Efeitos são dados (`schedule`, `persistRound`, `broadcast`, `emitCollect`) que o serviço executa. Isso deixa as transições testáveis sem rede, banco ou timers reais.
+`modules/matches/match-machine.ts` é puro: `(estado, evento, agora) → { estado, efeitos }`, criado com `createMatchMachine(timing)`. Ids, ordem dos assentos e temas reserva chegam prontos no evento `start` (o serviço os sorteia com o `Rng`), então a máquina não usa aleatoriedade. Efeitos são dados que o `MatchService` executa dentro de `runExclusive`: `schedule_phase` / `cancel_phase` (timer `room:<id>:phase`), `persist_match` e `delete_match`; a T12 acrescenta os da rodada (`persistRound`, `emitCollect`). Depois de cada transição o serviço publica as views. Isso deixa as transições testáveis sem rede, banco ou timers reais.
 
 ### Modos de jogo
 
@@ -184,7 +184,7 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 ### Persistência
 
 - Criação da sala → linha em `rooms`.
-- Início da partida → `matches`, `themes` (após a fase de temas) e `stories`.
+- Início da partida → só apaga a partida anterior da sala (R25). Fim da etapa de temas → `createMatch` grava `matches`, `themes` e `stories` de uma vez, com `started_at` do início; falha → mais uma tentativa → aborta a partida.
 - Fim de cada rodada → `saveRoundPanels` em uma transação; os rascunhos em memória daquela rodada são descartados.
 - Falha de banco ao persistir uma rodada: registra o erro, tenta mais uma vez; se falhar, aborta a partida (R57) com aviso aos jogadores. Nunca deixa a partida em estado inconsistente.
 

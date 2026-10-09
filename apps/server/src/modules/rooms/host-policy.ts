@@ -1,4 +1,7 @@
+import { MIN_PLAYERS } from '@comicle/shared';
+
 import { DomainError } from '../../platform/errors';
+import { isParticipant } from '../matches/match';
 import { isConnected, type Member, type Room } from './room';
 
 // Who may do what as host, and who becomes host (arquitetura §7: authorization in one place).
@@ -35,6 +38,26 @@ export function assertCanKick(room: Room, actorId: string, targetId: string): Me
   return target;
 }
 
+/** R22: only the host, only in the lobby, with at least `MIN_PLAYERS` members connected. */
+export function assertCanStartMatch(room: Room, actorId: string): void {
+  assertHost(room, actorId);
+  assertLobby(room);
+  if (room.connectedMembers().length < MIN_PLAYERS) {
+    throw new DomainError(
+      'NOT_ENOUGH_PLAYERS',
+      `São necessários pelo menos ${String(MIN_PLAYERS)} jogadores conectados.`,
+    );
+  }
+}
+
+/** R57: only the host, only during a match. */
+export function assertCanAbortMatch(room: Room, actorId: string): void {
+  assertHost(room, actorId);
+  if (room.match === null) {
+    throw new DomainError('INVALID_STATE', 'Não há partida em andamento.');
+  }
+}
+
 export interface HostChoice {
   playerId: string;
   /** Nobody is connected: the role goes to the first member who connects (R14). */
@@ -43,12 +66,16 @@ export interface HostChoice {
 
 /**
  * R14: after the host leaves or loses the role, it goes to the connected member who joined
- * first. With nobody connected, the current host keeps it (or the oldest member, if the host
- * left) until someone connects. `null` only for a room without members.
+ * first, participants of the match in progress first. With nobody connected, the current host
+ * keeps it (or the oldest member, if the host left) until someone connects. `null` only for a
+ * room without members.
  */
 export function nextHost(room: Room): HostChoice | null {
   const ordered = room.orderedMembers();
-  const connected = ordered.find(isConnected);
+  const { match } = room;
+  const connected =
+    (match && ordered.find((m) => isConnected(m) && isParticipant(match, m.playerId))) ??
+    ordered.find(isConnected);
   if (connected) {
     return { playerId: connected.playerId, pending: false };
   }

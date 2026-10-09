@@ -39,3 +39,14 @@ export class SeededRng implements Rng {
     return (t ^ (t >>> 14)) >>> 0;
   }
 }
+
+/** A new array with `items` in uniformly random order; `items` is left untouched. */
+export function shuffled<T>(items: readonly T[], rng: Rng): T[] {
+  const pool = [...items];
+  const result: T[] = [];
+  // Draws one remaining item at a time; quadratic, but lists here have at most a few dozen items.
+  while (pool.length > 0) {
+    result.push(...pool.splice(rng.nextInt(pool.length), 1));
+  }
+  return result;
+}

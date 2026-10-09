@@ -82,6 +82,13 @@ Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate l
 - `room:join`: sala inexistente → `ROOM_NOT_FOUND`; sala encerrando → `ROOM_CLOSED`; sessão expulsa → `KICKED`; sala cheia → `ROOM_FULL`, exceto para quem já é membro, que reconecta com o mesmo `playerId` (R9) e, no lobby, com o perfil enviado. Se a sessão já tinha outra conexão na sala, ela recebe `session:replaced` (R5).
 - `room:leave`, `room:kick`, `room:updateSettings` e `player:updateProfile` de quem não está em sala → `NOT_IN_ROOM`; ações de anfitrião de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`.
 - `room:kick` com o próprio `playerId` ou um jogador que não está na sala → `INVALID_PAYLOAD`.
+- Durante a partida, quem entra é espectador (R10) e o `room:leave` de um participante não o remove: ele aparece desconectado e mantém a vaga (R15).
+
+Erros da partida e da etapa de temas:
+
+- `match:start`: de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`; menos de `MIN_PLAYERS` membros conectados → `NOT_ENOUGH_PLAYERS` (R22).
+- `match:abort`: de outro membro → `NOT_HOST`; sem partida em andamento → `INVALID_STATE` (R57).
+- `theme:draft` e `theme:submit`: fora de `theme_writing`, de espectador ou depois do envio final → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED` (R61). O texto é normalizado (R1); no `theme:submit`, tamanho fora de `THEME_MIN_LENGTH`–`THEME_MAX_LENGTH` → `INVALID_PAYLOAD` (R27).
 
 O servidor publica as `room:view` antes de responder o ack, então quem age recebe a view nova antes da resposta.
 

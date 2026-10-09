@@ -1,25 +1,20 @@
-import {
-  EMPTY_ROOM_TTL_MS,
-  HOST_TRANSFER_GRACE_MS,
-  LOBBY_DISCONNECT_REMOVE_MS,
-  ROOM_MAX_AGE_MS,
-  type Empty,
-  type MatchSettings,
-  type PlayerProfile,
-  type Rng,
-} from '@comicle/shared';
+import { type Empty, type MatchSettings, type PlayerProfile, type Rng } from '@comicle/shared';
 import type { FastifyBaseLogger } from 'fastify';
 
 import type { Clock } from '../../platform/clock';
 import { DomainError } from '../../platform/errors';
 import type { Scheduler } from '../../platform/scheduler';
+import { isParticipant } from '../matches/match';
 import type { StoryRepository } from '../stories/story-repository';
+import type { GameTimingConfig } from '../timing/game-timing';
 import type { PublishRoom } from '../views/room-publisher';
 import { assertCanKick, assertCanUpdateSettings, assertLobby, nextHost } from './host-policy';
-import { Room, socketIdOf, type Member } from './room';
+import { isConnected, Room, socketIdOf, type Member } from './room';
 import type { RoomBroadcaster } from './room-broadcaster';
 import { generateUniqueRoomCode } from './room-code';
+import { runAsMember, scheduleInRoom } from './room-access';
 import type { RoomRegistry } from './room-registry';
+import { timerKeys } from './timer-keys';
 
 /** The connection asking for something: its socket and the guest session behind it. */
 export interface RoomActor {
@@ -33,22 +28,11 @@ export interface RoomServiceDeps {
   rng: Rng;
   newId: () => string;
   storyRepository: StoryRepository;
+  timing: GameTimingConfig;
   registry: RoomRegistry;
   broadcaster: RoomBroadcaster;
   publish: PublishRoom;
   log: FastifyBaseLogger;
-}
-
-/** One timer per key (arquitetura §4, Tempo); every key of a room starts with its ID. */
-const timerKeys = {
-  hostTransfer: (room: Room) => `room:${room.id}:host-transfer`,
-  removal: (room: Room, playerId: string) => `room:${room.id}:remove:${playerId}`,
-  empty: (room: Room) => `room:${room.id}:empty`,
-  maxAge: (room: Room) => `room:${room.id}:max-age`,
-};
-
-function notInRoom(): DomainError {
-  return new DomainError('NOT_IN_ROOM', 'Você não está nesta sala.');
 }
 
 /**
@@ -85,7 +69,9 @@ export class RoomService {
         registry.unbind(actor.socketId);
         throw error;
       }
-      this.schedule(room, timerKeys.maxAge(room), now + ROOM_MAX_AGE_MS, () => this.close(room));
+      this.schedule(room, timerKeys.maxAge(room), now + this.deps.timing.roomMaxAgeMs, () =>
+        this.close(room),
+      );
       this.deps.publish(room);
       return { roomCode: code };
     });
@@ -123,13 +109,49 @@ export class RoomService {
     });
   }
 
-  /** R15 (lobby): the member is removed; R14 if it was the host. */
+  /**
+   * R15: in the lobby the member is removed; during a match a participant keeps their seat and
+   * only goes away, and a spectator is removed. R14 if it was the host.
+   */
   leave(socketId: string): Promise<Empty> {
     return this.withMember(socketId, async (room, member) => {
       this.deps.registry.unbind(socketId);
+      if (room.match !== null && isParticipant(room.match, member.playerId)) {
+        this.leaveSeat(room, member);
+        return {};
+      }
       await this.removeMember(room, member);
       return {};
     });
+  }
+
+  /** R13 again after a match: members still away are removed if they do not come back. */
+  scheduleLobbyRemovals(room: Room): void {
+    const now = this.deps.clock.now();
+    for (const member of room.members.values()) {
+      if (!isConnected(member)) {
+        this.scheduleRemoval(room, member, now);
+      }
+    }
+  }
+
+  private scheduleRemoval(room: Room, member: Member, from: number): void {
+    this.schedule(
+      room,
+      timerKeys.removal(room, member.playerId),
+      from + this.deps.timing.lobbyDisconnectRemoveMs,
+      () => this.removeIfStillAway(room, member.playerId),
+    );
+  }
+
+  /** R15 during a match: the participant shows as away and may come back with the same session. */
+  private leaveSeat(room: Room, member: Member): void {
+    member.connection = { disconnectedAt: this.deps.clock.now() };
+    if (member.playerId === room.hostPlayerId) {
+      this.handOverHost(room);
+    }
+    this.updateEmptiness(room);
+    this.deps.publish(room);
   }
 
   /** R12. */
@@ -183,16 +205,19 @@ export class RoomService {
       this.deps.registry.unbind(socketId);
       const now = this.deps.clock.now();
       member.connection = { disconnectedAt: now };
-      this.schedule(
-        room,
-        timerKeys.removal(room, member.playerId),
-        now + LOBBY_DISCONNECT_REMOVE_MS,
-        () => this.removeIfStillAway(room, member.playerId),
-      );
+      // R13 is a lobby rule: during a match the member keeps their place (R46).
+      if (room.status === 'lobby') {
+        this.scheduleRemoval(room, member, now);
+      }
       if (member.playerId === room.hostPlayerId) {
-        this.schedule(room, timerKeys.hostTransfer(room), now + HOST_TRANSFER_GRACE_MS, () => {
-          this.transferHostIfStillAway(room);
-        });
+        this.schedule(
+          room,
+          timerKeys.hostTransfer(room),
+          now + this.deps.timing.hostTransferGraceMs,
+          () => {
+            this.transferHostIfStillAway(room);
+          },
+        );
       }
       this.updateEmptiness(room);
       this.deps.publish(room);
@@ -299,7 +324,9 @@ export class RoomService {
     }
     if (room.emptySince === null) {
       room.emptySince = this.deps.clock.now();
-      this.schedule(room, key, room.emptySince + EMPTY_ROOM_TTL_MS, () => this.close(room));
+      this.schedule(room, key, room.emptySince + this.deps.timing.emptyRoomTtlMs, () =>
+        this.close(room),
+      );
     }
   }
 
@@ -317,6 +344,7 @@ export class RoomService {
       timerKeys.hostTransfer(room),
       timerKeys.empty(room),
       timerKeys.maxAge(room),
+      timerKeys.phase(room),
     ]) {
       scheduler.cancel(key);
     }
@@ -336,29 +364,15 @@ export class RoomService {
     }
   }
 
-  /** Timer whose task runs in the room's queue, like any other mutation. */
   private schedule(room: Room, key: string, at: number, task: () => void | Promise<void>): void {
-    this.deps.scheduler.schedule(key, at, () => room.runExclusive(task));
+    scheduleInRoom(this.deps.scheduler, room, key, at, task);
   }
 
-  /** Runs `task` in the room's queue for the member this socket speaks for. */
-  private async withMember<T>(
+  private withMember<T>(
     socketId: string,
     task: (room: Room, member: Member) => T | Promise<T>,
   ): Promise<T> {
-    const binding = this.deps.registry.binding(socketId);
-    const room = binding && this.deps.registry.byId(binding.roomId);
-    if (!binding || !room) {
-      throw notInRoom();
-    }
-    return room.runExclusive(() => {
-      const member = room.members.get(binding.playerId);
-      // Checked again inside the queue: a kick or a close may have run in between.
-      if (room.closed || !member || this.deps.registry.binding(socketId) === undefined) {
-        throw notInRoom();
-      }
-      return task(room, member);
-    });
+    return runAsMember(this.deps.registry, socketId, task);
   }
 
   private assertOutsideRooms(socketId: string): void {

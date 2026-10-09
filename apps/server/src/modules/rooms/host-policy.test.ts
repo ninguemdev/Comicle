@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { testMember, testRoom } from '../../../test/support/room-builders';
+import { inMatch, testMatch, testMember, testRoom } from '../../../test/support/room-builders';
 import { DomainError } from '../../platform/errors';
-import { assertCanKick, assertCanUpdateSettings, assertHost, nextHost } from './host-policy';
+import {
+  assertCanAbortMatch,
+  assertCanKick,
+  assertCanStartMatch,
+  assertCanUpdateSettings,
+  assertHost,
+  nextHost,
+} from './host-policy';
 
 function errorCode(action: () => unknown): string | undefined {
   try {
@@ -97,5 +104,78 @@ describe('host-policy', () => {
     lobby.members.clear();
 
     expect(nextHost(lobby)).toBeNull();
+  });
+});
+
+describe('host-policy na partida', () => {
+  it('R22: só o anfitrião inicia, só no lobby, com pelo menos 2 conectados', () => {
+    const lobby = testRoom(testMember('ana'), testMember('bia'), testMember('caio'));
+    expect(
+      errorCode(() => {
+        assertCanStartMatch(lobby, 'ana');
+      }),
+    ).toBeUndefined();
+    expect(
+      errorCode(() => {
+        assertCanStartMatch(lobby, 'bia');
+      }),
+    ).toBe('NOT_HOST');
+
+    const alone = testRoom(testMember('ana'), testMember('bia', { connected: false }));
+    expect(
+      errorCode(() => {
+        assertCanStartMatch(alone, 'ana');
+      }),
+    ).toBe('NOT_ENOUGH_PLAYERS');
+
+    inMatch(lobby, testMatch(['ana', 'bia']));
+    expect(
+      errorCode(() => {
+        assertCanStartMatch(lobby, 'ana');
+      }),
+    ).toBe('INVALID_STATE');
+  });
+
+  it('R57: só o anfitrião aborta, só com partida em andamento', () => {
+    const room = testRoom(testMember('ana'), testMember('bia'));
+    expect(
+      errorCode(() => {
+        assertCanAbortMatch(room, 'ana');
+      }),
+    ).toBe('INVALID_STATE');
+
+    inMatch(room, testMatch(['ana', 'bia']));
+    expect(
+      errorCode(() => {
+        assertCanAbortMatch(room, 'bia');
+      }),
+    ).toBe('NOT_HOST');
+    expect(
+      errorCode(() => {
+        assertCanAbortMatch(room, 'ana');
+      }),
+    ).toBeUndefined();
+  });
+
+  it('R14: durante a partida, a função vai primeiro para um participante conectado', () => {
+    const room = testRoom(
+      testMember('ana', { joinedAt: 0, connected: false }),
+      testMember('espectador', { joinedAt: 1 }),
+      testMember('bia', { joinedAt: 2 }),
+    );
+    inMatch(room, testMatch(['ana', 'bia']));
+
+    expect(nextHost(room)).toEqual({ playerId: 'bia', pending: false });
+  });
+
+  it('R14: sem participante conectado, a função vai para um espectador conectado', () => {
+    const room = testRoom(
+      testMember('ana', { joinedAt: 0, connected: false }),
+      testMember('espectador', { joinedAt: 1 }),
+      testMember('bia', { joinedAt: 2, connected: false }),
+    );
+    inMatch(room, testMatch(['ana', 'bia']));
+
+    expect(nextHost(room)).toEqual({ playerId: 'espectador', pending: false });
   });
 });

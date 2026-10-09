@@ -1,7 +1,7 @@
 import { activeOptions, isValidAvatar, randomAvatar } from '@comicle/shared';
 import { describe, expect, it } from 'vitest';
 
-import { cryptoRng, SeededRng } from './random';
+import { cryptoRng, SeededRng, shuffled } from './random';
 
 function sample(next: (max: number) => number, max: number, count: number): number[] {
   return Array.from({ length: count }, () => next(max));
@@ -71,5 +71,30 @@ describe('randomAvatar com SeededRng', () => {
     }
 
     expect(seen).toEqual(new Set([null, ...activeOptions('hat').map((option) => option.id)]));
+  });
+});
+
+describe('shuffled', () => {
+  it('devolve uma permutação sem alterar a entrada', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8];
+    const result = shuffled(items, new SeededRng(5));
+
+    expect(items).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect([...result].sort((a, b) => a - b)).toEqual(items);
+  });
+
+  it('a mesma semente produz a mesma ordem', () => {
+    const items = ['a', 'b', 'c', 'd', 'e'];
+
+    expect(shuffled(items, new SeededRng(9))).toEqual(shuffled(items, new SeededRng(9)));
+  });
+
+  it('todas as permutações de 3 itens aparecem', () => {
+    const rng = new SeededRng(11);
+    const seen = new Set(
+      Array.from({ length: 200 }, () => shuffled(['a', 'b', 'c'], rng).join('')),
+    );
+
+    expect(seen.size).toBe(6);
   });
 });

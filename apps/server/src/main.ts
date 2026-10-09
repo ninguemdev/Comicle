@@ -5,6 +5,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import { buildApp } from './app';
 import { ConfigError, loadConfig } from './config/env';
 import { DrizzleStoryRepository } from './modules/stories/drizzle-story.repository';
+import { gameTimingFor } from './modules/timing/game-timing';
 import { SystemClock } from './platform/clock';
 import { createDatabase } from './platform/db/client';
 import { runMigrations } from './platform/db/migrate';
@@ -47,6 +48,7 @@ const { http } = await buildApp({
   rng: cryptoRng,
   storyRepository,
   checkDatabase: database.ping,
+  timing: gameTimingFor(config.GAME_TIMING_PROFILE),
 });
 logRef.log = http.log;
 

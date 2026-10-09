@@ -6,6 +6,8 @@ import {
   type RoomStatus,
 } from '@comicle/shared';
 
+import type { Match } from '../matches/match';
+
 // Room aggregate (docs/modelo-de-dados.md §1). Pure: time arrives as `now`.
 
 export type MemberConnection = { socketId: string } | { disconnectedAt: number };
@@ -55,6 +57,10 @@ export class Room {
   readonly bannedGuestIds = new Set<string>();
   status: RoomStatus = 'lobby';
   settings: MatchSettings = defaultMatchSettings();
+  /** The match in progress; `null` in the lobby. */
+  match: Match | null = null;
+  /** R25: the latest match whose content is still stored, deleted when the next one starts. */
+  lastMatchId: string | null = null;
   /** Always a member of the room. */
   hostPlayerId: string;
   /** R14: the role is waiting for the first member to connect (nobody was connected). */

@@ -5,6 +5,8 @@ import type { Rng } from '@comicle/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config/env';
+import { matchHandlers } from './modules/matches/match.handlers';
+import { MatchService } from './modules/matches/match.service';
 import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
 import { GuestSessionStore } from './modules/guest-identity/session-store';
 import { createSocketBroadcaster, roomHandlers } from './modules/rooms/room.handlers';
@@ -12,6 +14,7 @@ import { RoomRegistry } from './modules/rooms/room-registry';
 import { registerRoomRoutes } from './modules/rooms/room.routes';
 import { RoomService } from './modules/rooms/room.service';
 import type { StoryRepository } from './modules/stories/story-repository';
+import type { GameTimingConfig } from './modules/timing/game-timing';
 import { timeSyncHandlers } from './modules/timing/time-sync.handlers';
 import { createRoomPublisher } from './modules/views/room-publisher';
 import type { Clock } from './platform/clock';
@@ -35,6 +38,8 @@ export interface AppDeps {
   scheduler: Scheduler;
   rng: Rng;
   storyRepository: StoryRepository;
+  /** Durations of rooms and matches (`gameTimingFor(config.GAME_TIMING_PROFILE)` in production). */
+  timing: GameTimingConfig;
   /** Throws when the database is unreachable (`/healthz`). */
   checkDatabase: () => Promise<void>;
   /** Handlers on top of the modules' own (tests register test-only events here). */
@@ -112,15 +117,31 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     }
     return socketRef.io;
   });
+  const publish = createRoomPublisher(clock, broadcaster);
   const roomService = new RoomService({
     clock,
     scheduler: deps.scheduler,
     rng: deps.rng,
     newId,
     storyRepository: deps.storyRepository,
+    timing: deps.timing,
     registry: rooms,
     broadcaster,
-    publish: createRoomPublisher(clock, broadcaster),
+    publish,
+    log: http.log,
+  });
+  const matchService = new MatchService({
+    clock,
+    scheduler: deps.scheduler,
+    rng: deps.rng,
+    newId,
+    storyRepository: deps.storyRepository,
+    timing: deps.timing,
+    registry: rooms,
+    publish,
+    onReturnToLobby: (room) => {
+      roomService.scheduleLobbyRemovals(room);
+    },
     log: http.log,
   });
   const io = createSocketServer(http.server, {
@@ -130,6 +151,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     handlers: [
       ...timeSyncHandlers(clock),
       ...roomHandlers(roomService),
+      ...matchHandlers(matchService),
       ...(deps.extraSocketHandlers ?? []),
     ],
     onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
