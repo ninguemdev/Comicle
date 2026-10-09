@@ -197,15 +197,19 @@ export class MatchService {
     return false;
   }
 
-  /** R25, R57. A failure is only logged: closing the room (R16) or the next boot (R17) cleans up. */
+  /**
+   * R25, R57. A failure is only logged: an aborted match stays as `lastMatchId`, so the next
+   * start tries again (R25); closing the room (R16) or the next boot (R17) cleans up the rest.
+   */
   private async deleteMatch(room: Room, matchId: string): Promise<void> {
-    if (room.lastMatchId === matchId) {
-      room.lastMatchId = null;
-    }
     try {
       await this.deps.storyRepository.deleteMatch(matchId);
     } catch (error) {
       this.deps.log.error({ err: error, roomId: room.id, matchId }, 'failed to delete match');
+      return;
+    }
+    if (room.lastMatchId === matchId) {
+      room.lastMatchId = null;
     }
   }
 }
