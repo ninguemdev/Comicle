@@ -22,7 +22,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T14 | [Página de HQ](./T14-pagina-hq.md) | T06 | ✅ |
 | T15 | [Fluxo da partida no cliente](./T15-fluxo-partida-web.md) | T09, T12, T13, T14 | ✅ |
 | T16 | [Apresentação no servidor](./T16-apresentacao-servidor.md) | T12 | ✅ |
-| T17 | [Apresentação no cliente](./T17-apresentacao-web.md) | T15, T16 | ⬜ |
+| T17 | [Apresentação no cliente](./T17-apresentacao-web.md) | T15, T16 | ✅ |
 | T18 | [Resiliência e reconexão](./T18-resiliencia-reconexao.md) | T17 | ⬜ |
 | T19 | [Segurança e limites](./T19-seguranca-limites.md) | T17 | ⬜ |
 | T20 | [Testes ponta a ponta](./T20-e2e.md) | T18, T19 | ⬜ |

@@ -2,16 +2,12 @@ import type { MatchView, PlayerView } from '@comicle/shared';
 import { useState } from 'react';
 
 import { strings } from '../../strings/pt-BR';
+import { PresentationScreen } from '../presentation/presentation-screen';
 import { DrawingScreen } from './drawing-screen';
 import { MatchHeader } from './match-header';
 import { PrepareScreen } from './prepare-screen';
 import { ReadingScreen } from './reading-screen';
-import {
-  PresentationPlaceholder,
-  SpectatorScreen,
-  TransitionScreen,
-  WaitingScreen,
-} from './simple-screens';
+import { SpectatorScreen, TransitionScreen, WaitingScreen } from './simple-screens';
 import { ThemeScreen } from './theme-screen';
 
 interface DrawingTask {
@@ -53,8 +49,8 @@ export function screenFor(match: MatchView): MatchScreenId {
 /** Phase and round, for screen readers (interface.md §6). */
 function announcement(match: MatchView): string {
   const phase = strings.match.phases[match.phase];
-  const inRounds = match.roundIndex >= 0 && match.phase !== 'presentation';
-  return strings.match.announce(phase, inRounds ? match.roundIndex + 1 : null, match.totalRounds);
+  const round = match.roundIndex >= 0 ? match.roundIndex + 1 : null;
+  return strings.match.announce(phase, round, match.totalRounds);
 }
 
 function ScreenBody({
@@ -64,7 +60,7 @@ function ScreenBody({
 }: {
   view: PlayerView;
   match: MatchView;
-  screen: Exclude<MatchScreenId, 'drawing'>;
+  screen: Exclude<MatchScreenId, 'drawing' | 'presentation'>;
 }) {
   const { task } = match;
   switch (screen) {
@@ -88,8 +84,6 @@ function ScreenBody({
       return <TransitionScreen />;
     case 'spectator':
       return <SpectatorScreen view={view} />;
-    case 'presentation':
-      return <PresentationPlaceholder />;
     default:
       return screen satisfies never;
   }
@@ -110,6 +104,14 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
     // Derived state, set during render: the next render already has it.
     setDrawing({ roundIndex, theme: task.theme });
   }
+  if (screen === 'presentation') {
+    // Full screen with its own header: the host ends it with presentation:end (R56), which keeps
+    // the content, so the header's "Encerrar partida" (R57, deletes it) is not offered (D30).
+    return match.presentation ? (
+      <PresentationScreen presentation={match.presentation} isHost={view.me.isHost} />
+    ) : null;
+  }
+
   const stillSending =
     screen === 'transition' && drawing?.roundIndex === roundIndex && sentRound !== roundIndex;
   const live = (

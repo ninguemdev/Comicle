@@ -18,36 +18,38 @@ export interface PanelFrameProps {
   width: number;
   /** R55: the artist's nickname under the panel. */
   showCredit?: boolean;
+  /** A thumbnail: too small for the placeholder texts, which stay in the accessible name. */
+  compact?: boolean;
 }
 
-function Placeholder({ label, text }: { label: string; text: string }) {
+function Placeholder({ label, text }: { label: string; text: string | null }) {
   return (
     <div
       role="img"
       aria-label={label}
       className={`flex size-full items-center justify-center p-3 text-center font-bold text-muted ${HALFTONE}`}
     >
-      <span aria-hidden="true">{text}</span>
+      {text !== null && <span aria-hidden="true">{text}</span>}
     </div>
   );
 }
 
-function PanelImage({ panel, alt }: { panel: PanelRef; alt: string }) {
+function PanelImage({ panel, alt, compact }: { panel: PanelRef; alt: string; compact: boolean }) {
   const image = usePanelImage(panel.panelId);
   switch (image.status) {
     case 'ready':
       return <img src={image.url} alt={alt} className="size-full object-cover" draggable={false} />;
     case 'loading':
-      return <Placeholder label={alt} text={texts.loading} />;
+      return <Placeholder label={alt} text={compact ? null : texts.loading} />;
     case 'error':
-      return <Placeholder label={alt} text={texts.loadFailed} />;
+      return <Placeholder label={alt} text={compact ? null : texts.loadFailed} />;
     default:
       return image satisfies never;
   }
 }
 
 /** One panel of a comic page: the drawing, its number and, optionally, who drew it. */
-export function PanelFrame({ panel, width, showCredit = false }: PanelFrameProps) {
+export function PanelFrame({ panel, width, showCredit = false, compact = false }: PanelFrameProps) {
   const number = panel.position + 1;
   const { nickname } = panel.artist;
   const alt = texts.panelAlt(number, nickname);
@@ -56,9 +58,9 @@ export function PanelFrame({ panel, width, showCredit = false }: PanelFrameProps
       <div className="relative aspect-[4/3] w-full overflow-hidden border-comic bg-paper">
         {panel.status === 'empty' ? (
           // R55: an empty panel says whose it was.
-          <Placeholder label={alt} text={texts.notDrawn(nickname)} />
+          <Placeholder label={alt} text={compact ? null : texts.notDrawn(nickname)} />
         ) : (
-          <PanelImage panel={panel} alt={alt} />
+          <PanelImage panel={panel} alt={alt} compact={compact} />
         )}
         <span
           aria-hidden="true"

@@ -65,13 +65,3 @@ export function SpectatorScreen({ view }: { view: PlayerView }) {
     </div>
   );
 }
-
-/** The presentation arrives with T17; until then the match ends here. */
-export function PresentationPlaceholder() {
-  return (
-    <div className="flex flex-col gap-4">
-      <h2 className="font-display text-4xl tracking-wide">{texts.presentation.title}</h2>
-      <SpeechBubble>{texts.presentation.soon}</SpeechBubble>
-    </div>
-  );
-}
