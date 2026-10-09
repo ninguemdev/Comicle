@@ -63,7 +63,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 ├─ apps/
 │  ├─ web/
 │  │  ├─ public/avatars/<categoria>/<id>.svg · _template.svg · _template.png
-│  │  ├─ scripts/                   # avatars:check, avatars:generate e o motor das artes (avatars/)
+│  │  ├─ scripts/                   # avatars:check, avatars:generate (gabarito) e as regras das artes (avatars/)
 │  │  └─ src/
 │  │     ├─ main.tsx · app.tsx · router.tsx · app-layout.tsx · boot.ts
 │  │     ├─ config/env.ts            # VITE_* validados com Zod

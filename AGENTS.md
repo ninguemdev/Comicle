@@ -20,7 +20,7 @@ Em caso de dúvida, nesta ordem:
 | [`docs/modelo-de-dados.md`](docs/modelo-de-dados.md) | Estado em memória, tabelas, retenção |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Stack, estrutura, camadas, testes, configuração |
 | [`docs/interface.md`](docs/interface.md) | Identidade visual, telas, página de HQ, editor de desenho |
-| [`docs/avatares.md`](docs/avatares.md) | Catálogo, renderização e artes provisórias |
+| [`docs/avatares.md`](docs/avatares.md) | Catálogo, renderização e artes |
 | [`docs/avatares-guia-de-artes.md`](docs/avatares-guia-de-artes.md) | Guia para desenhar as artes: estilo, tamanhos, gabarito, zonas |
 | [`docs/decisoes.md`](docs/decisoes.md) | Decisões tomadas e seus motivos |
 | [`docs/tasks/`](docs/tasks/README.md) | O que fazer agora, critérios de aceite, status |
@@ -54,7 +54,7 @@ docs/             especificação, regras, arquitetura, tasks
 | `pnpm lint` · `pnpm typecheck` · `pnpm format` | Qualidade |
 | `pnpm db:generate` · `pnpm db:migrate` | Migrações Drizzle |
 | `pnpm avatars:check` | Valida catálogo e artes de avatar |
-| `pnpm avatars:generate` | Regera as artes provisórias e o gabarito (nunca sobrescreve arte definitiva) |
+| `pnpm avatars:generate` | Regera o gabarito das artes de avatar |
 | `pnpm --filter @comicle/server <script>` | Script de um pacote só |
 
 Os comandos existem a partir da T01. Antes de dizer que algo funciona, rode-os.

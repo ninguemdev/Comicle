@@ -17,7 +17,7 @@ import {
 const avatar: AvatarConfig = {
   head: 'head-square',
   eyes: 'eyes-wide',
-  mouth: 'mouth-open',
+  mouth: 'mouth-sad',
   cheeks: 'cheeks-blush',
   hat: 'hat-cap',
   faceAccessory: 'face-accessory-glasses',
@@ -30,11 +30,10 @@ function sequenceRng(start: number): Rng {
 }
 
 describe('catálogo', () => {
-  it('tem as 6 categorias com 4 a 6 opções provisórias cada', () => {
+  it('tem as 6 categorias, cada uma com pelo menos 4 opções', () => {
     const { categories } = avatarCatalogSchema.parse(catalogJson);
     for (const category of AVATAR_CATEGORIES) {
       expect(categories[category].options.length, category).toBeGreaterThanOrEqual(4);
-      expect(categories[category].options.length, category).toBeLessThanOrEqual(6);
     }
   });
 
@@ -50,7 +49,7 @@ describe('catálogo', () => {
   });
 
   it('findAvatarOption encontra só opções da categoria pedida', () => {
-    expect(findAvatarOption('hat', 'hat-cap')?.file).toBe('hat/hat-cap.svg');
+    expect(findAvatarOption('hat', 'hat-cap')?.file).toBe('hat/hat-cap.png');
     expect(findAvatarOption('head', 'hat-cap')).toBeUndefined();
   });
 
