@@ -97,3 +97,49 @@ jobs:
           name: playwright-traces
           path: test-results/
           retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: comicle
+          POSTGRES_PASSWORD: comicle
+          POSTGRES_DB: comicle
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U comicle -d comicle"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the production image
+        run: docker build -t comicle:ci .
+      - name: Start the container
+        run: >-
+          docker run -d --name comicle --network host
+          -e DATABASE_URL=postgres://comicle:comicle@localhost:5432/comicle
+          comicle:ci
+      - name: /healthz answers
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/healthz; then exit 0; fi
+            sleep 2
+          done
+          docker logs comicle
+          exit 1
+      - name: The web build is served, with the fallback for client routes
+        run: curl -fsS http://localhost:3000/sala/K7PQ2M | grep -q '<div id="root">'
+      - name: SIGTERM stops it cleanly in under 10 s
+        run: |
+          start=$(date +%s)
+          docker stop --time 10 comicle
+          elapsed=$(( $(date +%s) - start ))
+          code=$(docker inspect -f '{{.State.ExitCode}}' comicle)
+          echo "stopped in ${elapsed}s with exit code ${code}"
+          docker logs comicle | tail -n 5
+          test "$code" = 0 && test "$elapsed" -lt 10
