@@ -4,11 +4,12 @@ import type { FastifyBaseLogger } from 'fastify';
 import type { Clock } from '../../platform/clock';
 import { DomainError } from '../../platform/errors';
 import type { Scheduler } from '../../platform/scheduler';
+import { isParticipant } from '../matches/match';
 import type { StoryRepository } from '../stories/story-repository';
 import type { GameTimingConfig } from '../timing/game-timing';
 import type { PublishRoom } from '../views/room-publisher';
 import { assertCanKick, assertCanUpdateSettings, assertLobby, nextHost } from './host-policy';
-import { Room, socketIdOf, type Member } from './room';
+import { isConnected, Room, socketIdOf, type Member } from './room';
 import type { RoomBroadcaster } from './room-broadcaster';
 import { generateUniqueRoomCode } from './room-code';
 import { runAsMember, scheduleInRoom } from './room-access';
@@ -108,13 +109,49 @@ export class RoomService {
     });
   }
 
-  /** R15 (lobby): the member is removed; R14 if it was the host. */
+  /**
+   * R15: in the lobby the member is removed; during a match a participant keeps their seat and
+   * only goes away, and a spectator is removed. R14 if it was the host.
+   */
   leave(socketId: string): Promise<Empty> {
     return this.withMember(socketId, async (room, member) => {
       this.deps.registry.unbind(socketId);
+      if (room.match !== null && isParticipant(room.match, member.playerId)) {
+        this.leaveSeat(room, member);
+        return {};
+      }
       await this.removeMember(room, member);
       return {};
     });
+  }
+
+  /** R13 again after a match: members still away are removed if they do not come back. */
+  scheduleLobbyRemovals(room: Room): void {
+    const now = this.deps.clock.now();
+    for (const member of room.members.values()) {
+      if (!isConnected(member)) {
+        this.scheduleRemoval(room, member, now);
+      }
+    }
+  }
+
+  private scheduleRemoval(room: Room, member: Member, from: number): void {
+    this.schedule(
+      room,
+      timerKeys.removal(room, member.playerId),
+      from + this.deps.timing.lobbyDisconnectRemoveMs,
+      () => this.removeIfStillAway(room, member.playerId),
+    );
+  }
+
+  /** R15 during a match: the participant shows as away and may come back with the same session. */
+  private leaveSeat(room: Room, member: Member): void {
+    member.connection = { disconnectedAt: this.deps.clock.now() };
+    if (member.playerId === room.hostPlayerId) {
+      this.handOverHost(room);
+    }
+    this.updateEmptiness(room);
+    this.deps.publish(room);
   }
 
   /** R12. */
@@ -168,12 +205,10 @@ export class RoomService {
       this.deps.registry.unbind(socketId);
       const now = this.deps.clock.now();
       member.connection = { disconnectedAt: now };
-      this.schedule(
-        room,
-        timerKeys.removal(room, member.playerId),
-        now + this.deps.timing.lobbyDisconnectRemoveMs,
-        () => this.removeIfStillAway(room, member.playerId),
-      );
+      // R13 is a lobby rule: during a match the member keeps their place (R46).
+      if (room.status === 'lobby') {
+        this.scheduleRemoval(room, member, now);
+      }
       if (member.playerId === room.hostPlayerId) {
         this.schedule(
           room,

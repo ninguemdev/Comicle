@@ -5,6 +5,8 @@ import type { Rng } from '@comicle/shared';
 import Fastify, { type FastifyInstance } from 'fastify';
 
 import type { AppConfig } from './config/env';
+import { matchHandlers } from './modules/matches/match.handlers';
+import { MatchService } from './modules/matches/match.service';
 import { registerGuestIdentityRoutes } from './modules/guest-identity/guest-identity.routes';
 import { GuestSessionStore } from './modules/guest-identity/session-store';
 import { createSocketBroadcaster, roomHandlers } from './modules/rooms/room.handlers';
@@ -115,6 +117,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     }
     return socketRef.io;
   });
+  const publish = createRoomPublisher(clock, broadcaster);
   const roomService = new RoomService({
     clock,
     scheduler: deps.scheduler,
@@ -124,7 +127,21 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     timing: deps.timing,
     registry: rooms,
     broadcaster,
-    publish: createRoomPublisher(clock, broadcaster),
+    publish,
+    log: http.log,
+  });
+  const matchService = new MatchService({
+    clock,
+    scheduler: deps.scheduler,
+    rng: deps.rng,
+    newId,
+    storyRepository: deps.storyRepository,
+    timing: deps.timing,
+    registry: rooms,
+    publish,
+    onReturnToLobby: (room) => {
+      roomService.scheduleLobbyRemovals(room);
+    },
     log: http.log,
   });
   const io = createSocketServer(http.server, {
@@ -134,6 +151,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     handlers: [
       ...timeSyncHandlers(clock),
       ...roomHandlers(roomService),
+      ...matchHandlers(matchService),
       ...(deps.extraSocketHandlers ?? []),
     ],
     onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
