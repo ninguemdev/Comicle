@@ -6,6 +6,7 @@ import { Dialog } from '../../ui/dialog';
 import { DrawingCanvas } from './drawing-canvas';
 import { DrawingDocument, type DrawingTool, type NewStroke } from './engine/drawing-document';
 import { exportPng } from './engine/export';
+import { loadImage } from './load-image';
 import { BRUSH_SIZES, DEFAULT_BRUSH_SIZE, DEFAULT_COLOR, type BrushSize } from './engine/palette';
 import { Toolbar } from './toolbar';
 import { useDrawingShortcuts } from './use-drawing-shortcuts';
@@ -19,7 +20,7 @@ export interface DrawingEditorHandle {
 
 export interface DrawingEditorProps {
   /** R48: the restored draft, drawn under the new strokes and never undone. */
-  baseImageUrl?: string;
+  baseImageUrl?: string | undefined;
   disabled: boolean;
   /** The drawing changed (stroke, undo, redo or clear); `revision` only grows (R39). */
   onChange: (revision: number) => void;
@@ -50,11 +51,8 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
       return;
     }
     let current = true;
-    const image = new Image();
-    image.src = baseImageUrl;
-    image
-      .decode()
-      .then(() => {
+    loadImage(baseImageUrl)
+      .then((image) => {
         if (current) {
           doc.setBaseImage(image);
           setRevision(doc.revision);
