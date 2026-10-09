@@ -240,8 +240,37 @@ export const strings = {
     },
     transition: 'Recolhendo quadros e passando as histórias adiante…',
     presentation: {
-      title: 'Fim da criação!',
-      soon: 'A apresentação das histórias chega em breve.',
+      storyOf: (story: number, total: number) => `História ${String(story)} de ${String(total)}`,
+      hostLeading: 'O anfitrião está conduzindo',
+      themeBy: (nickname: string) => `Tema de ${nickname}`,
+      revealed: 'Quadros já revelados',
+      full: 'HQ completa',
+      finished: 'Fim das histórias!',
+      finishedWaiting: 'O anfitrião vai levar todo mundo de volta ao lobby.',
+      newMatch: 'Nova partida',
+      /** Announced to screen readers at every step (interface.md §6). */
+      announce: {
+        theme: (story: number, total: number) =>
+          `História ${String(story)} de ${String(total)}: tema`,
+        panel: (story: number, total: number, panel: number) =>
+          `História ${String(story)} de ${String(total)}: quadro ${String(panel)}`,
+        full: (story: number, total: number) =>
+          `História ${String(story)} de ${String(total)}: HQ completa`,
+        finished: 'Fim das histórias',
+      },
+      controls: 'Controles da apresentação',
+      prev: 'Voltar',
+      next: 'Avançar',
+      showFull: 'Ver HQ completa',
+      nextStory: 'Próxima história',
+      stories: 'Histórias',
+      storiesTitle: 'Histórias já apresentadas',
+      storyItem: (story: number, theme: string) => `${String(story)}. ${theme}`,
+      end: 'Encerrar',
+      endTitle: 'Encerrar a apresentação?',
+      endBody: 'Todos voltam ao lobby, e as histórias que faltam não serão mostradas.',
+      endConfirm: 'Encerrar',
+      shortcuts: '→ ou Espaço avança · ← volta · F mostra a HQ completa',
     },
   },
   comic: {

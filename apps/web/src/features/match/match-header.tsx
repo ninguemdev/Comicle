@@ -8,15 +8,18 @@ import { AbortMatchButton } from './abort-match-button';
 
 const texts = strings.match;
 
-/** "Quadro 2 de 4" once the rounds started; nothing during the themes or the presentation. */
+/** "Quadro 2 de 4" once the rounds started; nothing during the themes. */
 export function roundLabel(match: MatchView): string | null {
-  if (match.roundIndex < 0 || match.phase === 'presentation') {
+  if (match.roundIndex < 0) {
     return null;
   }
   return texts.panelOf(match.roundIndex + 1, match.totalRounds);
 }
 
-/** Phase, round, timer, progress and, for the host, the way out (R57). */
+/**
+ * Phase, round, timer, progress and, for the host, the way out (R57). The presentation has its
+ * own header (PresentationScreen).
+ */
 export function MatchHeader({ view, match }: { view: PlayerView; match: MatchView }) {
   const clockOffsetMs = useRoomStore((state) => state.clockOffsetMs);
   const label = roundLabel(match);
@@ -27,9 +30,7 @@ export function MatchHeader({ view, match }: { view: PlayerView; match: MatchVie
         {label !== null && <p className="font-bold text-muted">{label}</p>}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        {match.phase !== 'presentation' && (
-          <ProgressPill done={match.progress.done} total={match.progress.total} />
-        )}
+        <ProgressPill done={match.progress.done} total={match.progress.total} />
         {match.phaseDeadlineAt !== null && (
           <Timer deadlineAt={match.phaseDeadlineAt} offsetMs={clockOffsetMs} />
         )}

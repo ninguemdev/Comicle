@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 
+import { isTextEntry } from '../../lib/keyboard';
 import type { DrawingTool } from './engine/drawing-document';
 
 // Keyboard shortcuts of the editor (interface.md §4, Ferramentas). "Concluir" (Ctrl/⌘+Enter)
@@ -15,19 +16,6 @@ export interface DrawingShortcutActions {
 
 const TOOL_KEYS: Readonly<Record<string, DrawingTool>> = { b: 'brush', e: 'eraser' };
 const SIZE_KEYS: Readonly<Record<string, -1 | 1>> = { '[': -1, ']': 1 };
-
-/** Typing in a field must never draw, erase or undo. */
-function isTextEntry(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  return (
-    target.isContentEditable ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    (target instanceof HTMLInputElement && target.type !== 'color')
-  );
-}
 
 /** The action a key press asks for, or null when the editor should let it through. */
 function actionFor(event: KeyboardEvent, actions: DrawingShortcutActions): (() => void) | null {
