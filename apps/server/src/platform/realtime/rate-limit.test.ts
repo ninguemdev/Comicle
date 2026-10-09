@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { FakeClock } from '../../../test/support/fake-clock';
-import { SocketRateLimiter } from './rate-limit';
+import { DEFAULT_SOCKET_RATE_LIMITS, FailureRateLimiter, SocketRateLimiter } from './rate-limit';
 
 function limiter(clock: FakeClock) {
   return new SocketRateLimiter(
     {
       global: { capacity: 3, refillPerSecond: 1 },
       perEvent: { 'panel:autosave': { capacity: 1, refillPerSecond: 0.5 } },
+      failuresPerIp: {},
     },
     clock,
   );
@@ -64,5 +65,37 @@ describe('SocketRateLimiter', () => {
     expect(subject.tryConsume('theme:draft')).toBe(true);
     expect(subject.tryConsume('theme:draft')).toBe(true);
     expect(subject.tryConsume('theme:draft')).toBe(false);
+  });
+});
+
+describe('FailureRateLimiter', () => {
+  const MINUTE = 60_000;
+
+  it('room:join: 10 falhas por minuto por IP; a 11ª tentativa é recusada até repor', () => {
+    const clock = new FakeClock();
+    const subject = new FailureRateLimiter(DEFAULT_SOCKET_RATE_LIMITS.failuresPerIp, clock);
+
+    for (let i = 0; i < 10; i++) {
+      expect(subject.allows('room:join', '10.0.0.1')).toBe(true);
+      subject.recordFailure('room:join', '10.0.0.1');
+    }
+    expect(subject.allows('room:join', '10.0.0.1')).toBe(false);
+    // Another IP and another event are not affected.
+    expect(subject.allows('room:join', '10.0.0.2')).toBe(true);
+    expect(subject.allows('room:create', '10.0.0.1')).toBe(true);
+
+    clock.advance(MINUTE / 10);
+    expect(subject.allows('room:join', '10.0.0.1')).toBe(true);
+  });
+
+  it('eventos sem limite de falhas nunca são recusados', () => {
+    const subject = new FailureRateLimiter(
+      DEFAULT_SOCKET_RATE_LIMITS.failuresPerIp,
+      new FakeClock(),
+    );
+    for (let i = 0; i < 100; i++) {
+      subject.recordFailure('theme:submit', '10.0.0.1');
+    }
+    expect(subject.allows('theme:submit', '10.0.0.1')).toBe(true);
   });
 });

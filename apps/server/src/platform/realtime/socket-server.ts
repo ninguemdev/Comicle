@@ -7,8 +7,8 @@ import type { Clock } from '../clock';
 import type { AuthenticateToken } from '../http/require-guest';
 import { createSocketAuthMiddleware } from './auth-middleware';
 import type { ConnectionContext, SocketHandler } from './define-handler';
-import { SocketRateLimiter, type SocketRateLimitConfig } from './rate-limit';
-import type { AppSocketServer } from './socket-types';
+import { FailureRateLimiter, SocketRateLimiter, type SocketRateLimitConfig } from './rate-limit';
+import type { AppSocket, AppSocketServer } from './socket-types';
 
 /** Fits PANEL_MAX_BYTES plus the event envelope (protocolo §2). */
 const MAX_HTTP_BUFFER_BYTES = 3 * 1024 * 1024;
@@ -19,9 +19,18 @@ export interface SocketServerOptions {
   log: FastifyBaseLogger;
   handlers: readonly SocketHandler[];
   rateLimits: SocketRateLimitConfig;
+  /** Behind a reverse proxy, the client address comes from `X-Forwarded-For` (TRUST_PROXY). */
+  trustProxy: boolean;
   authenticate: AuthenticateToken;
   /** Called once per connection when it drops; failures are logged. */
   onDisconnect?: (connection: ConnectionContext) => Promise<void>;
+}
+
+/** The client's address, for limits per IP. */
+function clientAddress(socket: AppSocket, trustProxy: boolean): string {
+  const forwarded = socket.handshake.headers['x-forwarded-for'];
+  const first = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0]?.trim();
+  return trustProxy && first ? first : socket.handshake.address;
 }
 
 /** Socket.IO attached straight to Fastify's HTTP server (no third-party plugin). */
@@ -36,12 +45,15 @@ export function createSocketServer(
   });
 
   io.use(createSocketAuthMiddleware(options.authenticate));
+  const failureLimiter = new FailureRateLimiter(options.rateLimits.failuresPerIp, options.clock);
 
   io.on('connection', (socket) => {
     const connection = {
       socket,
       log: options.log.child({ socketId: socket.id, guestId: socket.data.guestId }),
       rateLimiter: new SocketRateLimiter(options.rateLimits, options.clock),
+      failureLimiter,
+      ip: clientAddress(socket, options.trustProxy),
     };
     for (const handler of options.handlers) {
       handler.attach(connection);

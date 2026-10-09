@@ -165,6 +165,7 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     ],
     onDisconnect: ({ socket }) => roomService.handleDisconnect(socket.id),
     rateLimits: deps.socketRateLimits ?? DEFAULT_SOCKET_RATE_LIMITS,
+    trustProxy: config.TRUST_PROXY,
     authenticate,
   });
   socketRef.io = io;

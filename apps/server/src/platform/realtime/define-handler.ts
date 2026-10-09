@@ -10,7 +10,7 @@ import {
 import type { FastifyBaseLogger } from 'fastify';
 
 import { DomainError } from '../errors';
-import type { SocketRateLimiter } from './rate-limit';
+import type { FailureRateLimiter, SocketRateLimiter } from './rate-limit';
 import type { AppSocket } from './socket-types';
 
 export interface HandlerContext {
@@ -20,6 +20,10 @@ export interface HandlerContext {
 
 export interface ConnectionContext extends HandlerContext {
   rateLimiter: SocketRateLimiter;
+  /** Shared by every connection: failed attempts per IP. */
+  failureLimiter: FailureRateLimiter;
+  /** Client address (the proxy's `X-Forwarded-For` when TRUST_PROXY is on). */
+  ip: string;
 }
 
 export type EventHandler<E extends ClientEventName> = (
@@ -56,9 +60,20 @@ export function defineHandler<E extends ClientEventName>(
   const schema = clientEventSchemas[event];
 
   async function respond(payload: unknown, context: ConnectionContext): Promise<Ack<unknown>> {
-    if (!context.rateLimiter.tryConsume(event)) {
+    if (
+      !context.failureLimiter.allows(event, context.ip) ||
+      !context.rateLimiter.tryConsume(event)
+    ) {
       return fail('RATE_LIMITED', MESSAGES.rateLimited);
     }
+    const ack = await handle(payload, context);
+    if (!ack.ok) {
+      context.failureLimiter.recordFailure(event, context.ip);
+    }
+    return ack;
+  }
+
+  async function handle(payload: unknown, context: ConnectionContext): Promise<Ack<unknown>> {
     const parsed = schema.safeParse(payload);
     if (!parsed.success) {
       return fail('INVALID_PAYLOAD', MESSAGES.invalidPayload);
