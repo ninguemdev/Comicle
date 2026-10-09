@@ -24,6 +24,8 @@ function fakeSocket() {
     view?: ServerToClientEvents['room:view'];
     removed?: ServerToClientEvents['room:removed'];
     replaced?: ServerToClientEvents['session:replaced'];
+    collect?: ServerToClientEvents['round:collect'];
+    aborted?: ServerToClientEvents['match:aborted'];
   } = {};
   const client = {
     connect: vi.fn(),
@@ -41,6 +43,8 @@ function fakeSocket() {
       if (event === 'room:view') server.view = listener;
       if (event === 'room:removed') server.removed = listener;
       if (event === 'session:replaced') server.replaced = listener;
+      if (event === 'round:collect') server.collect = listener;
+      if (event === 'match:aborted') server.aborted = listener;
       return () => undefined;
     }),
   } satisfies Record<keyof SocketClient, unknown>;
@@ -211,5 +215,45 @@ describe('room-store', () => {
       ok: false,
       error: { code: 'INTERNAL' },
     });
+  });
+
+  it('ações da partida emitem o evento certo', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    const { actions } = store.getState();
+    const png = new Uint8Array([1]);
+
+    await actions.abortMatch();
+    await actions.draftTheme('Um gato');
+    await actions.submitTheme('Um gato');
+    await actions.confirmReading(1);
+    await actions.autosavePanel(1, png);
+    await actions.submitPanel(1, 'timeout', null);
+
+    expect(socket.client.emitWithAck.mock.calls).toEqual([
+      ['match:abort', {}],
+      ['theme:draft', { text: 'Um gato' }],
+      ['theme:submit', { text: 'Um gato' }],
+      ['round:ready', { roundIndex: 1 }],
+      ['panel:autosave', { roundIndex: 1, png }],
+      ['panel:submit', { roundIndex: 1, reason: 'timeout', png: null }],
+    ]);
+  });
+
+  it('R42, R57: round:collect e match:aborted viram sinais numerados, mesmo repetidos', () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+
+    socket.server.collect?.({ roundIndex: 2 });
+    const first = store.getState().collect;
+    socket.server.collect?.({ roundIndex: 2 });
+    const second = store.getState().collect;
+    socket.server.aborted?.({ reason: 'persistence_failed' });
+
+    expect(first?.payload).toEqual({ roundIndex: 2 });
+    expect(second?.seq).toBeGreaterThan(first?.seq ?? Infinity);
+    expect(store.getState().matchAborted?.payload).toEqual({ reason: 'persistence_failed' });
   });
 });
