@@ -35,6 +35,14 @@
 :root {
   --border-ink: 3px solid var(--color-ink);
   --gutter-comic: 12px;
+  /* Height of the connection banner, set by ConnectionBanner; full-screen views start below it. */
+  --connection-banner-height: 0px;
+}
+
+/* Full-screen views (drawing, presentation): the connection banner never covers their header. */
+@utility full-screen {
+  position: fixed;
+  inset: var(--connection-banner-height) 0 0 0;
 }
 
 @media (min-width: 640px) {

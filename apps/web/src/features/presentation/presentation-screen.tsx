@@ -74,7 +74,7 @@ export function PresentationScreen({
   });
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
+    <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
       <p aria-live="polite" className="sr-only">
         {announcement(presentation)}
       </p>

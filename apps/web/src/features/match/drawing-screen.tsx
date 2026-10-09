@@ -98,7 +98,7 @@ export function DrawingScreen({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col gap-2 bg-paper p-2 sm:p-3">
+    <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-3">
       <header className="flex flex-wrap items-center gap-2">
         <span className="font-display text-2xl tracking-wide">{roundLabel(match)}</span>
         <button
