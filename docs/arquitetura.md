@@ -233,11 +233,54 @@ Em dev, o Vite faz proxy de `/api` e `/socket.io` para `localhost:3000`.
 
 ## 7. Segurança
 
-- Payloads validados com Zod em toda entrada (HTTP e socket); tamanhos máximos nos schemas.
-- Rate limit: HTTP via `@fastify/rate-limit` (sessões: 10/min por IP; `GET /api/rooms/:code`: 30/min por IP). Socket: token bucket por conexão (20 eventos/s; `panel:autosave` 1 a cada 2 s; `room:join` com falha: 10/min por IP).
-- Autorização centralizada: `host-policy.ts` (ações de anfitrião) e `panel-access-policy.ts` (imagens). Ambos puros e testados.
+Verificado na T19 ([D33](./decisoes.md)); os testes ficam em `apps/server/test/integration/security.test.ts`, nas matrizes `privacy-matrix.test.ts` e `image-access-matrix.test.ts` e no teste de propriedade `packages/shared/src/schemas/events.property.test.ts`.
+
+**Validação e robustez**
+
+- Payloads validados com Zod em toda entrada (HTTP e socket). Entrada malformada responde `INVALID_PAYLOAD` (ou o erro de domínio), nunca `INTERNAL`: teste de propriedade com `fast-check` sobre todos os schemas, sobre os 16 eventos em três situações do socket (fora de sala, anfitrião no lobby, participante desenhando) e sobre as rotas HTTP.
+- Evento sem callback de ack é ignorado.
+
+**Limites de tamanho**
+
+| O quê | Limite | Efeito |
+|---|---|---|
+| Campo de texto bruto (apelido, tema, rascunho, código, `playerId`) | `TEXT_INPUT_MAX_LENGTH` (1000), antes da normalização | `INVALID_PAYLOAD` |
+| Apelido e tema, depois de normalizar | `NICKNAME_MAX_LENGTH` (20) e `THEME_MAX_LENGTH` (140) code points | `INVALID_PAYLOAD` |
+| Imagem | `PANEL_MAX_BYTES` (2 MiB), PNG `PANEL_WIDTH` × `PANEL_HEIGHT` | `IMAGE_TOO_LARGE` ou `IMAGE_INVALID` |
+| Mensagem do Socket.IO | `maxHttpBufferSize` 3 MiB | a conexão de quem mandou cai |
+| Anexos binários por pacote | 10 (limite do parser do Socket.IO) | a conexão de quem mandou cai |
+| Corpo HTTP | 1 MiB (padrão do Fastify); só `POST /api/guest-sessions` aceita corpo, e o ignora | `INVALID_PAYLOAD` |
+
+**Limites de taxa** (todos com teste)
+
+| Categoria | Limite | Resposta |
+|---|---|---|
+| `POST /api/guest-sessions` | 10/min por IP | `429 RATE_LIMITED` |
+| `GET /api/rooms/:code` (varredura de códigos) | 30/min por IP | `429 RATE_LIMITED` |
+| Eventos do socket | 20/s por conexão (token bucket) | `RATE_LIMITED` |
+| `panel:autosave` | 1 a cada 2 s por conexão | `RATE_LIMITED` |
+| `room:join` com falha (varredura de códigos) | 10/min por IP, somando as conexões | `RATE_LIMITED`, até para o código certo, até repor |
+
+Atrás de um proxy reverso, com `TRUST_PROXY=true`, o IP vem do `X-Forwarded-For` (HTTP e socket).
+
+**Autorização e privacidade**
+
+- Autorização centralizada: `host-policy.ts` (ações de anfitrião) e `panel-access-policy.ts` (imagens), ambos puros e testados. Matriz: cada ação exclusiva do anfitrião × anfitrião, membro, espectador e não membro, no lobby e na apresentação; só o anfitrião age, e nada muda quando outro tenta.
+- Privacidade (R58): matriz sobre partidas geradas pela máquina de fases (2 a 5 jogadores, todas as fases, navegação aleatória na apresentação). Nenhuma `PlayerView` contém tema ou quadro além do permitido; mutações na projeção confirmaram que a matriz acusa o vazamento.
+- Imagens (R59): matriz sobre as mesmas partidas, todo `panelId` (desenhado ou não) × todo jogador e espectador × todo momento. Quem não é membro da sala recebe 403 mesmo para um quadro revelado (`DrawingService`).
+
+**Cabeçalhos**
+
+- `@fastify/helmet` com as opções de `platform/http/security-headers.ts`: os padrões (`default-src 'self'`, `script-src 'self'`, `object-src 'none'`, `frame-ancestors 'self'`…), `img-src 'self' data: blob:` (imagens dos quadros e rascunho do desenho chegam por URLs `blob:`) e sem `upgrade-insecure-requests` (quebraria uma instalação servida em HTTP simples). Validado com o build de produção do web servido com esses cabeçalhos: uma partida completa, com WebSocket e imagens, sem nenhuma mensagem no console.
+
+**Logs**
+
 - Tokens só em hash no servidor; nunca em logs, URLs ou mensagens de erro.
-- `@fastify/helmet` com CSP compatível com o build do Vite.
+- `pino.redact` cobre autorização, cookies, tokens, imagens (`png`), temas (`text`, `themeText`) e apelidos.
+- Erros passam pelo serializador de `platform/log-safety.ts`: tipo, código (SQLSTATE), a primeira linha da mensagem sem os `params:` do Drizzle e a pilha; nada do `detail` do pg nem de propriedades extras. Teste de ponta a ponta com o banco falhando: nenhum log contém token, tema, apelido ou imagem.
+
+**Interface**
+
 - Conteúdo de usuário (nicknames, temas) é sempre renderizado como texto; nada de `dangerouslySetInnerHTML`.
 - Limitação conhecida: é impossível impedir que um jogador guarde uma imagem já exibida no próprio navegador. O jogo garante que o servidor e a interface não a forneçam fora das regras (R36, R59).
 
