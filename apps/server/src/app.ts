@@ -24,6 +24,7 @@ import type { Clock } from './platform/clock';
 import { registerErrorHandler } from './platform/http/error-handler';
 import { registerHealthRoute } from './platform/http/health.routes';
 import { HELMET_OPTIONS } from './platform/http/security-headers';
+import { serializeError } from './platform/log-safety';
 import { createRequireGuest } from './platform/http/require-guest';
 import { newId, newSessionToken } from './platform/ids';
 import {
@@ -73,6 +74,8 @@ export async function buildApp(deps: AppDeps): Promise<App> {
     logger: {
       level: config.LOG_LEVEL,
       redact: REDACTED_PATHS,
+      // Errors keep no query parameters or row values (themes, images): see log-safety.ts.
+      serializers: { err: serializeError },
       ...(config.NODE_ENV === 'development' ? { transport: { target: 'pino-pretty' } } : {}),
       ...(deps.logDestination ? { stream: deps.logDestination } : {}),
     },
