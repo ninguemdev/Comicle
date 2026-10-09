@@ -51,7 +51,7 @@ docs/             especificação, regras, arquitetura, tasks
 | `pnpm dev` | Web em `:5173` e servidor em `:3000` |
 | `pnpm test` | Testes unitários e de integração (sem banco) |
 | `pnpm test:db` | Testes de repositório contra o Postgres |
-| `pnpm e2e` | Playwright (a partir da T20) |
+| `pnpm e2e` | Playwright: sobe server e web sozinho (precisa do Postgres; Chromium via `pnpm exec playwright install chromium`) |
 | `pnpm lint` · `pnpm typecheck` · `pnpm format` | Qualidade |
 | `pnpm db:generate` · `pnpm db:migrate` | Migrações Drizzle |
 | `pnpm avatars:check` | Valida catálogo e artes de avatar |

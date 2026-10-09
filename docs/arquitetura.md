@@ -227,7 +227,7 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 | `VITE_SERVER_URL` | vazio (mesma origem) | URL do servidor quando hospedado separado |
 | `VITE_BASE_PATH` | `/` | `base` do Vite e `basename` do router |
 
-Em dev, o Vite faz proxy de `/api` e `/socket.io` para `localhost:3000`.
+Em dev, o Vite faz proxy de `/api` e `/socket.io` para `localhost:3000`. A variável de ambiente `API_PROXY_TARGET` (lida pelo `vite.config.ts`, sem prefixo `VITE_`) troca esse destino; a suíte E2E a usa.
 
 ---
 
@@ -294,7 +294,7 @@ Atrás de um proxy reverso, com `TRUST_PROXY=true`, o IP vem do `X-Forwarded-For
 | Integração realtime | `apps/server/test/integration/*.test.ts` — `buildApp` + `socket.io-client` + repositório em memória + `timing` curto | Vitest | `pnpm test` |
 | Repositórios | `*.db.test.ts` contra Postgres real | Vitest | `pnpm test:db` (CI com serviço Postgres) |
 | Componentes web | `*.test.tsx` | Vitest + Testing Library + jsdom | `pnpm test` |
-| Ponta a ponta | `e2e/*.spec.ts`, 3 contextos de navegador | Playwright | `pnpm e2e` |
+| Ponta a ponta | `e2e/*.spec.ts`, um contexto de navegador por jogador | Playwright (Chromium) | `pnpm e2e` (job `e2e` no CI, com Postgres como serviço) |
 
 Diretrizes:
 
@@ -302,6 +302,12 @@ Diretrizes:
 - Teste comportamento observável (view publicada, ack, resposta HTTP), não detalhes internos.
 - Sem `sleep` com tempo real em testes de domínio: use relógio e scheduler controláveis ou `vi.useFakeTimers()`.
 - Snapshots só para dados pequenos e estáveis; nunca para árvores de componentes inteiras.
+
+**Suíte E2E** (T20, D35). `pnpm e2e` sobe sozinho dois processos (`webServer` do `playwright.config.ts`): o servidor em `:3100` com `GAME_TIMING_PROFILE=fast` e o banco `comicle_test`, e o **build de produção** do web em `:5273` (`vite preview`, com proxy para o servidor). As portas são diferentes das de `pnpm dev`, então os dois convivem. Pré-requisitos locais: `docker compose up -d` e, uma vez, `pnpm exec playwright install chromium`.
+
+- Cada jogador é um `browser.newContext()` (`localStorage` e sessão próprios); os helpers ficam em `e2e/support/` (`createPlayer`, `createRoom`, `drawSomething`, `advanceUntilPhase`…). Seletores por papel e texto acessível, com os textos vindos de `strings/pt-BR.ts`.
+- O servidor E2E roda com `TRUST_PROXY=true` e cada jogador manda um `X-Forwarded-For` próprio: os limites por IP da T19 (10 sessões e 10 `room:join` com falha por minuto) valem para o jogador, não para a suíte inteira.
+- Em falha, o CI publica o relatório HTML (`playwright-report/`) e os traces (`test-results/`).
 
 ---
 

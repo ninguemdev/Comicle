@@ -62,7 +62,7 @@ pnpm dev                     # web: http://localhost:5173 · server: http://loca
 |---|---|
 | `pnpm test` | testes unitários e de integração |
 | `pnpm test:db` | testes contra o PostgreSQL |
-| `pnpm e2e` | testes ponta a ponta |
+| `pnpm e2e` | testes ponta a ponta (precisa do Postgres e do Chromium: `pnpm exec playwright install chromium`) |
 | `pnpm lint` · `pnpm typecheck` · `pnpm format` | qualidade |
 | `pnpm avatars:check` | valida o catálogo e as artes de avatar |
 | `pnpm avatars:generate` | regera o gabarito das artes de avatar |
