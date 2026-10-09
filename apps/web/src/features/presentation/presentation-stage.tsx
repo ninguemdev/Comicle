@@ -48,7 +48,7 @@ function RevealedStrip({ panels, current }: { panels: readonly PanelRef[]; curre
               : 'opacity-70'
           }
         >
-          <PanelFrame panel={panel} width={THUMBNAIL_WIDTH} />
+          <PanelFrame panel={panel} width={THUMBNAIL_WIDTH} compact />
         </li>
       ))}
     </ul>

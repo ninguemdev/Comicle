@@ -118,6 +118,9 @@ describe('PresentationScreen: vistas', () => {
     expect(within(page).getByRole('img', { name: 'Quadro 2 de Caio' }).textContent).toBe(
       'Caio não desenhou a tempo',
     );
+    // The thumbnail is too small for the text; it keeps the accessible name.
+    const strip = screen.getByRole('list', { name: 'Quadros já revelados' });
+    expect(within(strip).getByRole('img', { name: 'Quadro 2 de Caio' }).textContent).toBe('');
   });
 
   it('full mostra a HQ completa com créditos de todos os quadros', async () => {
