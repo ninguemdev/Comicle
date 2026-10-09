@@ -93,6 +93,8 @@ export function mockRoomActions() {
     confirmReading: vi.fn(() => Promise.resolve(ok({}))),
     autosavePanel: vi.fn(() => Promise.resolve(ok({}))),
     submitPanel: vi.fn(() => Promise.resolve(ok({}))),
+    navigatePresentation: vi.fn(() => Promise.resolve(ok({}))),
+    endPresentation: vi.fn(() => Promise.resolve(ok({}))),
   };
 }
 

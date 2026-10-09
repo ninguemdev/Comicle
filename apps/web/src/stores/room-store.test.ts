@@ -230,6 +230,8 @@ describe('room-store', () => {
     await actions.confirmReading(1);
     await actions.autosavePanel(1, png);
     await actions.submitPanel(1, 'timeout', null);
+    await actions.navigatePresentation({ action: 'goToStory', storyIndex: 2 });
+    await actions.endPresentation();
 
     expect(socket.client.emitWithAck.mock.calls).toEqual([
       ['match:abort', {}],
@@ -238,6 +240,8 @@ describe('room-store', () => {
       ['round:ready', { roundIndex: 1 }],
       ['panel:autosave', { roundIndex: 1, png }],
       ['panel:submit', { roundIndex: 1, reason: 'timeout', png: null }],
+      ['presentation:navigate', { action: 'goToStory', storyIndex: 2 }],
+      ['presentation:end', {}],
     ]);
   });
 

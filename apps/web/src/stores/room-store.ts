@@ -31,6 +31,9 @@ export type RoomExit = RoomRemovedReason | 'replaced';
 
 export type PanelSubmitReason = ClientEventPayload<'panel:submit'>['reason'];
 
+/** R52: what the host asks of the presentation cursor. */
+export type PresentationAction = ClientEventPayload<'presentation:navigate'>;
+
 /**
  * A one-off message from the server, numbered so the same message twice still changes state
  * (two rounds collected, two matches aborted).
@@ -75,6 +78,10 @@ interface RoomState {
       reason: PanelSubmitReason,
       png: Uint8Array | null,
     ): Promise<Ack<Empty>>;
+    /** R52: host only; the server answers NOT_HOST otherwise. */
+    navigatePresentation(action: PresentationAction): Promise<Ack<Empty>>;
+    /** R56: back to the lobby. */
+    endPresentation(): Promise<Ack<Empty>>;
   };
 }
 
@@ -217,6 +224,12 @@ export function createRoomStore(deps: RoomStoreDeps) {
         },
         submitPanel(roundIndex, reason, png) {
           return emit('panel:submit', { roundIndex, reason, png });
+        },
+        navigatePresentation(action) {
+          return emit('presentation:navigate', action);
+        },
+        endPresentation() {
+          return emit('presentation:end', {});
         },
       },
     };
