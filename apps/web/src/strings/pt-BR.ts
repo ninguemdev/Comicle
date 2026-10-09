@@ -1,4 +1,10 @@
-import { MAX_PLAYERS, MIN_PLAYERS, type ErrorCode } from '@comicle/shared';
+import {
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  type ErrorCode,
+  type MatchAbortReason,
+  type MatchPhase,
+} from '@comicle/shared';
 
 import type { DrawingColorId } from '../features/drawing/engine/palette';
 
@@ -165,6 +171,78 @@ export const strings = {
   },
   navigation: {
     backHome: 'Voltar ao início',
+  },
+  match: {
+    phases: {
+      theme_writing: 'Temas',
+      round_reading: 'Leitura',
+      round_drawing: 'Desenho',
+      round_closing: 'Recolhendo quadros',
+      presentation: 'Apresentação',
+    } satisfies Record<MatchPhase, string>,
+    /** Announced to screen readers when the phase or the round changes (interface.md §6). */
+    announce: (phase: string, round: number | null, total: number) =>
+      round === null ? phase : `${phase}: rodada ${String(round)} de ${String(total)}`,
+    panelOf: (position: number, total: number) => `Quadro ${String(position)} de ${String(total)}`,
+    abort: 'Encerrar partida',
+    abortTitle: 'Encerrar a partida?',
+    abortBody: 'Todos voltam ao lobby e tudo o que foi feito nesta partida é apagado.',
+    abortConfirm: 'Encerrar',
+    cancel: 'Cancelar',
+    aborted: {
+      host: 'O anfitrião encerrou a partida.',
+      persistence_failed: 'Não deu para salvar a partida, então todos voltaram ao lobby.',
+    } satisfies Record<MatchAbortReason, string>,
+    theme: {
+      title: 'Qual é a história?',
+      label: 'Seu tema',
+      placeholder: 'Uma ideia curta e desenhável',
+      counter: (length: number, max: number) => `${String(length)}/${String(max)}`,
+      tooShort: (min: number) => `Escreva pelo menos ${String(min)} caracteres.`,
+      tooLong: (max: number) => `Use no máximo ${String(max)} caracteres.`,
+      inspiration: 'Precisa de uma ideia?',
+      examples: [
+        'Um dragão que tem medo de fogo',
+        'A primeira pizzaria da Lua',
+        'Um gato que vira prefeito da cidade',
+        'O dia em que a gravidade tirou folga',
+        'Um robô aprendendo a dançar forró',
+        'Piratas procurando o controle remoto perdido',
+      ],
+      submit: 'Pronto',
+    },
+    reading: {
+      title: 'Leia a história',
+      warning: 'Depois de começar, você não verá estes quadros de novo.',
+      start: 'Começar a desenhar',
+    },
+    prepare: {
+      message: 'Guarde bem na memória… você não verá estes quadros de novo!',
+      waiting: 'Esperando os outros terminarem de ler.',
+    },
+    drawing: {
+      theme: 'Tema',
+      showTheme: 'Mostrar o tema inteiro',
+      hideTheme: 'Recolher o tema',
+      submit: 'Concluir',
+      submitting: 'Enviando…',
+      confirmTitle: 'Concluir agora?',
+      confirmBody:
+        'Ainda falta mais da metade do tempo. Depois de concluir, não dá para voltar ao quadro.',
+      confirm: 'Concluir',
+      keepDrawing: 'Continuar desenhando',
+      collecting: 'Tempo esgotado! Enviando o seu quadro…',
+    },
+    waiting: {
+      received: 'Recebido!',
+      missing: 'Ainda faltam:',
+      everyoneDone: 'Todo mundo terminou. Já vai começar!',
+    },
+    transition: 'Recolhendo quadros e passando as histórias adiante…',
+    presentation: {
+      title: 'Fim da criação!',
+      soon: 'A apresentação das histórias chega em breve.',
+    },
   },
   comic: {
     page: 'Página de HQ',

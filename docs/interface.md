@@ -45,9 +45,11 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 | Preparação | `read_story`, `status = 'ready'` | `SpeechBubble` "Guarde bem na memória…", progresso dos demais. Sem quadros |
 | Desenho | `task.kind = 'draw_panel'`, `status = 'drawing'` | Canvas ocupando o máximo de espaço, barra de ferramentas compacta, timer, "Quadro 3 de 5", tema em uma linha recolhível |
 | Espera | `draw_panel/submitted`, `write_theme/submitted`, `wait` | Confirmação "Recebido!", progresso, lista de quem falta. Nunca mostra desenhos de outros |
-| Transição | `phase = 'round_closing'` | "Recolhendo quadros e passando as histórias adiante…" |
+| Transição | `phase = 'round_closing'` | "Recolhendo quadros e passando as histórias adiante…". Quem ainda não tinha concluído continua no editor, desabilitado e com o aviso "Tempo esgotado! Enviando o seu quadro…", até o envio sair (R42) |
 | Espectador | `task.kind = 'spectate'` | "Partida em andamento — você entra na próxima", lista de jogadores |
 | Apresentação | `phase = 'presentation'` | Ver §5 |
+
+Durante a partida, um cabeçalho mostra a fase, "Quadro X de Y", o progresso, o timer e, para o anfitrião, **Encerrar partida** (discreto, com confirmação, R57). Quando a partida é encerrada, todos voltam ao lobby com um aviso do motivo (`match:aborted`). O desenho ocupa a tela inteira, com o tema numa linha recolhível.
 
 Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela. Já os motivos para não estar na sala trocam a tela por uma mensagem com volta ao início: sala inexistente ou código mal formado, sala cheia, expulsão, sala encerrada e sessão aberta em outra aba (R5, R9, R12, R16).
 

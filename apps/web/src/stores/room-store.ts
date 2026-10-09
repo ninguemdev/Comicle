@@ -5,6 +5,7 @@ import {
   type ClientEventName,
   type ClientEventPayload,
   type Empty,
+  type MatchAbortReason,
   type PlayerProfile,
   type PlayerView,
   type RoomRemovedReason,
@@ -28,6 +29,17 @@ export type SettingsInput = ClientEventPayload<'room:updateSettings'>['settings'
 /** Why the player is no longer in the room: removed by the server or replaced by another tab (R5). */
 export type RoomExit = RoomRemovedReason | 'replaced';
 
+export type PanelSubmitReason = ClientEventPayload<'panel:submit'>['reason'];
+
+/**
+ * A one-off message from the server, numbered so the same message twice still changes state
+ * (two rounds collected, two matches aborted).
+ */
+export interface ServerSignal<T> {
+  readonly seq: number;
+  readonly payload: T;
+}
+
 interface RoomState {
   /** Last `room:view`: the only source of game state on the client (arquitetura §5). */
   view: PlayerView | null;
@@ -36,6 +48,10 @@ interface RoomState {
   connection: ConnectionStatus;
   /** Server clock minus local clock (protocolo §6). */
   clockOffsetMs: number;
+  /** R42: the server asked for the panels still on screen. */
+  collect: ServerSignal<{ roundIndex: number }> | null;
+  /** R57: the match went back to the lobby before its end. */
+  matchAborted: ServerSignal<{ reason: MatchAbortReason }> | null;
   actions: {
     /**
      * Opens the socket once per page. Later calls only matter after the connection gave up
@@ -49,6 +65,16 @@ interface RoomState {
     kick(playerId: string): Promise<Ack<Empty>>;
     updateSettings(settings: SettingsInput): Promise<Ack<Empty>>;
     startMatch(): Promise<Ack<Empty>>;
+    abortMatch(): Promise<Ack<Empty>>;
+    draftTheme(text: string): Promise<Ack<Empty>>;
+    submitTheme(text: string): Promise<Ack<Empty>>;
+    confirmReading(roundIndex: number): Promise<Ack<Empty>>;
+    autosavePanel(roundIndex: number, png: Uint8Array): Promise<Ack<Empty>>;
+    submitPanel(
+      roundIndex: number,
+      reason: PanelSubmitReason,
+      png: Uint8Array | null,
+    ): Promise<Ack<Empty>>;
   };
 }
 
@@ -61,6 +87,7 @@ export interface RoomStoreDeps {
 export function createRoomStore(deps: RoomStoreDeps) {
   let client: SocketClient | null = null;
   let stopTimeSync: (() => void) | null = null;
+  let signals = 0;
 
   return create<RoomState>()((set, get) => {
     async function requestTimeSample(socket: SocketClient): Promise<TimeSample | null> {
@@ -115,6 +142,8 @@ export function createRoomStore(deps: RoomStoreDeps) {
       exit: null,
       connection: 'connecting',
       clockOffsetMs: 0,
+      collect: null,
+      matchAborted: null,
       actions: {
         connect(token) {
           if (client !== null) {
@@ -139,6 +168,12 @@ export function createRoomStore(deps: RoomStoreDeps) {
           client.on('session:replaced', () => {
             leftRoom('replaced');
           });
+          client.on('round:collect', (payload) => {
+            set({ collect: { seq: ++signals, payload } });
+          });
+          client.on('match:aborted', (payload) => {
+            set({ matchAborted: { seq: ++signals, payload } });
+          });
           client.connect();
         },
         createRoom(profile) {
@@ -162,9 +197,26 @@ export function createRoomStore(deps: RoomStoreDeps) {
         updateSettings(settings) {
           return emit('room:updateSettings', { settings });
         },
-        // The server handles `match:start` from T11 on; until then the ack reports the failure.
         startMatch() {
           return emit('match:start', {});
+        },
+        abortMatch() {
+          return emit('match:abort', {});
+        },
+        draftTheme(text) {
+          return emit('theme:draft', { text });
+        },
+        submitTheme(text) {
+          return emit('theme:submit', { text });
+        },
+        confirmReading(roundIndex) {
+          return emit('round:ready', { roundIndex });
+        },
+        autosavePanel(roundIndex, png) {
+          return emit('panel:autosave', { roundIndex, png });
+        },
+        submitPanel(roundIndex, reason, png) {
+          return emit('panel:submit', { roundIndex, reason, png });
         },
       },
     };

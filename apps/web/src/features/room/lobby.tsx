@@ -6,7 +6,6 @@ import { env } from '../../config/env';
 import { useRoomStore } from '../../stores/room-store';
 import { errorMessages, strings } from '../../strings/pt-BR';
 import { Button, buttonClassName } from '../../ui/button';
-import { Card } from '../../ui/card';
 import { Dialog } from '../../ui/dialog';
 import { PlayerChip } from '../../ui/player-chip';
 import { Toast, type ToastTone } from '../../ui/toast';
@@ -209,33 +208,6 @@ export function Lobby({ view }: { view: PlayerView }) {
       {notice !== null && (
         <Toast message={notice.message} tone={notice.tone} onDismiss={dismissNotice} />
       )}
-    </div>
-  );
-}
-
-/** R10: a simple waiting screen while a match is running (the full one comes in T15). */
-export function SpectatorScreen({ view }: { view: PlayerView }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <h1 className="font-display text-5xl tracking-wide break-all">
-        {texts.title(view.room.code)}
-      </h1>
-      <Card>
-        <p className="text-lg font-semibold">{texts.spectating}</p>
-      </Card>
-      <ul className="flex flex-wrap gap-3">
-        {view.room.members.map((member) => (
-          <li key={member.playerId} className="max-w-full">
-            <PlayerChip
-              nickname={member.nickname}
-              avatar={member.avatar}
-              isHost={member.isHost}
-              isSelf={member.playerId === view.me.playerId}
-              connected={member.connected}
-            />
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
