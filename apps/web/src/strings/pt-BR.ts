@@ -1,5 +1,7 @@
 import { MAX_PLAYERS, MIN_PLAYERS, type ErrorCode } from '@comicle/shared';
 
+import type { DrawingColorId } from '../features/drawing/engine/palette';
+
 const SECONDS_PER_MINUTE = 60;
 
 /** 90 → "1 min 30 s". */
@@ -163,6 +165,57 @@ export const strings = {
   },
   navigation: {
     backHome: 'Voltar ao início',
+  },
+  drawing: {
+    canvas: 'Área de desenho',
+    toolbar: 'Ferramentas de desenho',
+    tools: 'Ferramenta',
+    history: 'Histórico',
+    brush: 'Pincel (B)',
+    eraser: 'Borracha (E)',
+    colors: 'Cores',
+    showColors: 'Escolher cor',
+    customColor: 'Cor livre',
+    colorNames: {
+      black: 'Preto',
+      white: 'Branco',
+      gray: 'Cinza',
+      silver: 'Cinza-claro',
+      red: 'Vermelho',
+      orange: 'Laranja',
+      yellow: 'Amarelo',
+      green: 'Verde',
+      cyan: 'Ciano',
+      blue: 'Azul',
+      indigo: 'Anil',
+      purple: 'Roxo',
+      pink: 'Rosa',
+      brown: 'Marrom',
+      skin: 'Pele',
+      darkBrown: 'Marrom-escuro',
+    } satisfies Record<DrawingColorId, string>,
+    sizes: 'Espessura ([ e ])',
+    size: (pixels: number) => `Espessura ${String(pixels)}`,
+    undo: 'Desfazer (Ctrl+Z)',
+    redo: 'Refazer (Ctrl+Shift+Z)',
+    clear: 'Limpar',
+    clearTitle: 'Limpar o quadro?',
+    clearBody: 'Tudo o que está na tela some. Dá para desfazer depois.',
+    clearConfirm: 'Limpar',
+    cancel: 'Cancelar',
+  },
+  devEditor: {
+    title: 'Editor de desenho',
+    intro: 'Editor isolado da partida, visível só em desenvolvimento.',
+    export: 'Exportar PNG',
+    empty: 'Quadro vazio: nada a exportar.',
+    exported: (width: number, height: number, bytes: number) =>
+      `PNG de ${String(width)}×${String(height)}, ${(bytes / 1024).toFixed(1)} KB`,
+    preview: 'PNG exportado',
+    useAsBase: 'Usar como base',
+    disable: 'Desabilitar',
+    enable: 'Habilitar',
+    revision: (revision: number) => `Revisão ${String(revision)}`,
   },
   devUi: {
     title: 'Componentes',
