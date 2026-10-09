@@ -6,9 +6,10 @@ import {
   type PresentationStep,
   type PresentationView,
 } from '@comicle/shared';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useRoomStore } from '../../stores/room-store';
 import { matchView, setUpStores } from '../../test/room-fixtures';
 import { PanelImageLoaderContext, type PanelImageLoader } from '../comic/use-panel-image';
 import { MatchScreen } from '../match/match-screen';
@@ -227,6 +228,22 @@ describe('PresentationScreen: controles', () => {
 
     fireEvent.keyDown(screen.getByRole('button', { name: 'Voltar' }), { key: ' ' });
 
+    expect(actions.navigatePresentation).not.toHaveBeenCalled();
+  });
+
+  it('T18: sem conexão, controles e atalhos do anfitrião esperam a conexão', () => {
+    const actions = renderScreen(presentation({ kind: 'panel', position: 0 }, 1));
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+
+    const bar = screen.getByRole('navigation', { name: 'Controles da apresentação' });
+    expect(
+      within(bar)
+        .getAllByRole('button')
+        .every((button) => (button as HTMLButtonElement).disabled),
+    ).toBe(true);
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(actions.navigatePresentation).not.toHaveBeenCalled();
   });
 

@@ -1,4 +1,4 @@
-import { AUTOSAVE_INTERVAL_MS, type PlayerView } from '@comicle/shared';
+import { AUTOSAVE_INTERVAL_MS, fail, ok, type PlayerView } from '@comicle/shared';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useImperativeHandle } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -169,6 +169,83 @@ describe('tela de desenho', () => {
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/rooms/K7PQ2M/my-draft');
     expect(editor.props?.baseImageUrl).toBe('blob:rascunho');
+  });
+
+  it('T18: quadro que caiu sem conexão é reenviado quando o jogador volta à sala', async () => {
+    const { actions, onSent } = renderDrawing(drawingView({ deadlineIn: 3000 }));
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+    actions.submitPanel.mockResolvedValueOnce(fail('INTERNAL', 'Sem conexão com o servidor.'));
+
+    await advance(3000);
+    expect(actions.submitPanel).toHaveBeenCalledTimes(1);
+    expect(onSent).not.toHaveBeenCalled();
+
+    // Connected again, but not back in the room yet: nothing goes.
+    act(() => {
+      useRoomStore.setState({ connection: 'connected' });
+    });
+    await advance(0);
+    expect(actions.submitPanel).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      useRoomStore.setState((state) => ({ joins: state.joins + 1 }));
+    });
+    await advance(0);
+    expect(actions.submitPanel).toHaveBeenCalledTimes(2);
+    expect(actions.submitPanel).toHaveBeenLastCalledWith(1, 'timeout', editor.png);
+    expect(onSent).toHaveBeenCalledWith(1);
+  });
+
+  it('T18: reenviado e recusado (já recebido ou fora do prazo) conta como entregue', async () => {
+    const { actions, onSent } = renderDrawing(drawingView({ deadlineIn: 10_000 }));
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+    actions.submitPanel.mockResolvedValueOnce(fail('INTERNAL', 'Sem conexão com o servidor.'));
+    act(() => {
+      useRoomStore.setState({ connection: 'connected' });
+    });
+    fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+    await advance(0);
+    expect(onSent).not.toHaveBeenCalled();
+
+    actions.submitPanel.mockResolvedValueOnce(fail('INVALID_STATE', 'Você já concluiu.'));
+    act(() => {
+      useRoomStore.setState((state) => ({ connection: 'connected', joins: state.joins + 1 }));
+    });
+    await advance(0);
+    expect(actions.submitPanel).toHaveBeenNthCalledWith(1, 1, 'done', editor.png);
+    expect(actions.submitPanel).toHaveBeenNthCalledWith(2, 1, 'done', editor.png);
+    expect(onSent).toHaveBeenCalledWith(1);
+  });
+
+  it('T18: sem conexão, Concluir fica desabilitado e o editor segue desenhando', () => {
+    renderDrawing(drawingView());
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+
+    expect(screen.getByRole('button', { name: 'Concluir' })).toHaveProperty('disabled', true);
+    expect(editor.props?.disabled).toBe(false);
+  });
+
+  it('R39, T18: autosave que falhou é tentado de novo no próximo intervalo', async () => {
+    const { actions } = renderDrawing(drawingView());
+    actions.autosavePanel.mockResolvedValueOnce(fail('INTERNAL', 'Sem conexão com o servidor.'));
+    actions.autosavePanel.mockResolvedValue(ok({}));
+
+    change(1);
+    await advance(AUTOSAVE_INTERVAL_MS);
+    await advance(AUTOSAVE_INTERVAL_MS);
+    expect(actions.autosavePanel).toHaveBeenCalledTimes(2);
+
+    await advance(AUTOSAVE_INTERVAL_MS);
+    expect(actions.autosavePanel).toHaveBeenCalledTimes(2);
   });
 
   it('sem hasDraft, nada é buscado', async () => {

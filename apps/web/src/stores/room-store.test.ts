@@ -31,7 +31,7 @@ function fakeSocket() {
     connect: vi.fn(),
     disconnect: vi.fn(),
     reconnectWithToken: vi.fn(),
-    emitWithAck: vi.fn((event: string, payload: { clientSentAt?: number }) =>
+    emitWithAck: vi.fn((event: string, payload: { clientSentAt?: number }): Promise<unknown> =>
       Promise.resolve(
         event === 'time:sync'
           ? { ok: true, data: { clientSentAt: payload.clientSentAt, serverNow: 5000 } }
@@ -61,6 +61,13 @@ function fakeSocket() {
       return options;
     },
     pushView: (view: PlayerView) => server.view?.(view),
+    /** The socket is up, as after its `connect` event. */
+    online: () => {
+      if (options === null) throw new Error('socket não criado');
+      options.onStatusChange('connected');
+    },
+    /** Events the store emitted, without the clock samples taken on connecting. */
+    actionCalls: () => client.emitWithAck.mock.calls.filter(([event]) => event !== 'time:sync'),
     server,
   };
 }
@@ -151,6 +158,7 @@ describe('room-store', () => {
     const socket = fakeSocket();
     const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
     store.getState().actions.connect('tok');
+    socket.online();
     const profile = { nickname: 'Ana', avatar: defaultAvatar() };
     const { actions } = store.getState();
 
@@ -164,7 +172,7 @@ describe('room-store', () => {
     });
     expect(await actions.startMatch()).toEqual({ ok: true, data: {} });
 
-    expect(socket.client.emitWithAck.mock.calls.map(([event]) => event)).toEqual([
+    expect(socket.actionCalls().map(([event]) => event)).toEqual([
       'room:create',
       'room:join',
       'room:kick',
@@ -181,11 +189,61 @@ describe('room-store', () => {
     const socket = fakeSocket();
     const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
     store.getState().actions.connect('tok');
+    socket.online();
     socket.pushView(VIEW);
 
     await store.getState().actions.leaveRoom();
 
     expect(store.getState().view).toBeNull();
+  });
+
+  it('sem conexão, a ação falha na hora e nada vai para o socket', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    socket.online();
+    socket.options().onStatusChange('reconnecting');
+
+    expect(await store.getState().actions.confirmReading(1)).toMatchObject({
+      ok: false,
+      error: { code: 'INTERNAL' },
+    });
+    expect(socket.actionCalls()).toEqual([]);
+  });
+
+  it('cada room:join aceito conta uma entrada na sala', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    socket.online();
+    const profile = { nickname: 'Ana', avatar: defaultAvatar() };
+
+    await store.getState().actions.joinRoom('K7PQ2M', profile);
+    await store.getState().actions.joinRoom('K7PQ2M', profile);
+
+    expect(store.getState().joins).toBe(2);
+  });
+
+  it('R16, R17: a sala em que o jogador estava sumiu ao reentrar → sai com o motivo closed', async () => {
+    const socket = fakeSocket();
+    const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
+    store.getState().actions.connect('tok');
+    socket.online();
+    const profile = { nickname: 'Ana', avatar: defaultAvatar() };
+    socket.client.emitWithAck.mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        error: { code: 'ROOM_NOT_FOUND', message: 'Sala não encontrada.' },
+      }),
+    );
+
+    // A code typed by hand that does not exist is only an error, not an exit.
+    await store.getState().actions.joinRoom('ZZZZZZ', profile);
+    expect(store.getState().exit).toBeNull();
+
+    socket.pushView(VIEW);
+    await store.getState().actions.joinRoom('K7PQ2M', profile);
+    expect(store.getState()).toMatchObject({ view: null, exit: 'closed', joins: 0 });
   });
 
   it('R12, R16, R5: room:removed e session:replaced apagam a view e guardam o motivo', async () => {
@@ -221,6 +279,7 @@ describe('room-store', () => {
     const socket = fakeSocket();
     const store = createRoomStore({ createSocketClient: socket.create, renewSession: vi.fn() });
     store.getState().actions.connect('tok');
+    socket.online();
     const { actions } = store.getState();
     const png = new Uint8Array([1]);
 
@@ -233,7 +292,7 @@ describe('room-store', () => {
     await actions.navigatePresentation({ action: 'goToStory', storyIndex: 2 });
     await actions.endPresentation();
 
-    expect(socket.client.emitWithAck.mock.calls).toEqual([
+    expect(socket.actionCalls()).toEqual([
       ['match:abort', {}],
       ['theme:draft', { text: 'Um gato' }],
       ['theme:submit', { text: 'Um gato' }],

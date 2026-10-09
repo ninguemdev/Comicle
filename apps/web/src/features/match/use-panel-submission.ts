@@ -25,25 +25,46 @@ export interface PanelSubmissionOptions {
 }
 
 /**
+ * The panel never reached the server: the socket was down, it came back (and the player re-joined)
+ * while the ack was pending, or the new socket was not in the room yet.
+ */
+function lostOnTheWay(ack: Ack<Empty>, joinsAtSend: number): boolean {
+  if (ack.ok) {
+    return false;
+  }
+  const { connection, joins } = useRoomStore.getState();
+  return connection !== 'connected' || joins !== joinsAtSend || ack.error.code === 'NOT_IN_ROOM';
+}
+
+/**
  * R40–R42: hands the panel in exactly once, whichever comes first: **Concluir**, the local timer
- * reaching 0, or `round:collect` for this round.
+ * reaching 0, or `round:collect` for this round. A panel lost to a dropped connection goes again
+ * as soon as the player is back in the room (T18); by then, if the round no longer takes it, the
+ * screen has already moved on with the view.
  */
 export function usePanelSubmission(options: PanelSubmissionOptions) {
   const { editor, roundIndex, deadlineAt, offsetMs } = options;
   const [status, setStatus] = useState<SubmissionStatus>('idle');
   /** Locked before any `await`, so two triggers in the same tick still send once. */
   const locked = useRef(false);
+  /** Lost on the way: sent again on the next `room:join`. */
+  const pending = useRef<PanelSubmitReason | null>(null);
 
-  async function submit(reason: PanelSubmitReason): Promise<void> {
-    if (locked.current) {
-      return;
-    }
-    locked.current = true;
-    setStatus('sending');
+  async function send(reason: PanelSubmitReason, retry: boolean): Promise<void> {
+    const joinsAtSend = useRoomStore.getState().joins;
     // R40: a blank canvas goes without an image.
     const png = (await editor.current?.exportPng()) ?? null;
     const ack = await options.send(roundIndex, reason, png);
-    if (ack.ok || reason === 'timeout') {
+    if (lostOnTheWay(ack, joinsAtSend)) {
+      pending.current = reason;
+      if (useRoomStore.getState().joins !== joinsAtSend) {
+        // Already back in the room while the ack was pending.
+        resend();
+      }
+      return;
+    }
+    // A retry refused by the server means the panel is in, or the round no longer takes it.
+    if (ack.ok || reason === 'timeout' || retry) {
       setStatus('sent');
       options.onSent(roundIndex);
       return;
@@ -51,6 +72,24 @@ export function usePanelSubmission(options: PanelSubmissionOptions) {
     locked.current = false;
     setStatus('idle');
     options.onError(ack);
+  }
+
+  async function submit(reason: PanelSubmitReason): Promise<void> {
+    if (locked.current) {
+      return;
+    }
+    locked.current = true;
+    setStatus('sending');
+    await send(reason, false);
+  }
+
+  function resend(): void {
+    const reason = pending.current;
+    if (reason === null) {
+      return;
+    }
+    pending.current = null;
+    void send(reason, true);
   }
 
   const submitOnTimeout = useEffectEvent(() => {
@@ -68,6 +107,8 @@ export function usePanelSubmission(options: PanelSubmissionOptions) {
     };
   }, [deadlineAt, offsetMs]);
 
+  const resendOnJoin = useEffectEvent(resend);
+
   // R42: only signals that arrive while this screen is open, for this round.
   useEffect(
     () =>
@@ -77,6 +118,9 @@ export function usePanelSubmission(options: PanelSubmissionOptions) {
           state.collect?.payload.roundIndex === roundIndex
         ) {
           submitOnTimeout();
+        }
+        if (state.joins !== previous.joins) {
+          resendOnJoin();
         }
       }),
     [roundIndex],

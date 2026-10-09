@@ -194,6 +194,7 @@ A v1 registra só `collaborative`. O modo individual (v2) entra como nova implem
 ## 5. Cliente em detalhe
 
 - **Boot** (`boot.ts`): lê `comicle.session`; valida com `GET /api/guest-sessions/me`; se a resposta for 401, cria nova (outras falhas mantêm o token e mostram a faixa de conexão com "Tentar de novo"). Conecta o socket. Mede o deslocamento de tempo a cada conexão e reconexão. Se o socket recusar o token (`connect_error` `UNAUTHORIZED`), a `room-store` pede sessão nova à `session-store` e reconecta.
+- **Reconexão**: a `RoomSession` repete o `room:join` a cada (re)conexão; a `room-store` conta as entradas aceitas (`joins`), recusa ações sem conexão e transforma o sumiço da sala em saída `closed`. Botões que mandam ações usam `useOnline()`. Matriz completa em [cenários de reconexão](./cenarios-de-reconexao.md).
 - **Envelope único**: `lib/http-client` e `lib/socket-client` sempre resolvem um `Ack` e nunca rejeitam. Falha de rede, resposta fora do schema e ack sem resposta em 10 s (`ACK_TIMEOUT_MS`) viram `INTERNAL`. O texto exibido vem do mapa `errorMessages` de `strings/pt-BR.ts`, pelo código.
 - **Rotas**: `/` (início), `/perfil` (personalização), `/sala/:code` (lobby, partida e apresentação são estados da mesma rota, decididos pela `PlayerView`), 404 no estilo do jogo para o resto e `/dev/ui` (vitrine do design system) só em desenvolvimento.
 - **`MatchScreen`** escolhe a tela pela `task.kind` e `phase`. Não existe navegação manual entre fases.

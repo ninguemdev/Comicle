@@ -1,7 +1,7 @@
 import type { PanelRef } from '@comicle/shared';
 import { useState } from 'react';
 
-import { useRoomStore } from '../../stores/room-store';
+import { useOnline, useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { ComicPage } from '../comic/comic-page';
@@ -21,6 +21,7 @@ export function ReadingScreen({
   roundIndex: number;
 }) {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const [sending, setSending] = useState(false);
   const { report, toast } = useActionError();
 
@@ -38,7 +39,7 @@ export function ReadingScreen({
         <ComicPage panels={panels} />
       </div>
       <p className="font-bold">{texts.reading.warning}</p>
-      <Button onClick={() => void start()} disabled={sending} className="self-end">
+      <Button onClick={() => void start()} disabled={sending || !online} className="self-end">
         {texts.reading.start}
       </Button>
       {toast}

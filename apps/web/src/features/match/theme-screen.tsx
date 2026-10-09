@@ -7,7 +7,7 @@ import {
 } from '@comicle/shared';
 import { useEffect, useId, useRef, useState } from 'react';
 
-import { useRoomStore } from '../../stores/room-store';
+import { useOnline, useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { SpeechBubble } from '../../ui/speech-bubble';
@@ -45,6 +45,7 @@ function themeLength(text: string): number {
 /** R26–R28: the player writes the theme of their story; drafts are saved as they type. */
 export function ThemeScreen({ draft }: { draft: string }) {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const fieldId = useId();
   const hintId = useId();
   // R49: back from a reconnection, the field starts with the saved draft.
@@ -57,19 +58,22 @@ export function ThemeScreen({ draft }: { draft: string }) {
   const tooLong = length > THEME_MAX_LENGTH;
   const valid = length >= THEME_MIN_LENGTH && !tooLong;
 
-  // R28: one `theme:draft` per pause in typing.
+  // R28: one `theme:draft` per pause in typing; R49: a draft lost offline goes again once online.
   useEffect(() => {
-    if (text === lastSaved.current || themeLength(text) > THEME_MAX_LENGTH) {
+    if (!online || text === lastSaved.current || themeLength(text) > THEME_MAX_LENGTH) {
       return;
     }
     const timeout = setTimeout(() => {
-      lastSaved.current = text;
-      void actions.draftTheme(text);
+      void actions.draftTheme(text).then((ack) => {
+        if (ack.ok) {
+          lastSaved.current = text;
+        }
+      });
     }, THEME_DRAFT_DEBOUNCE_MS);
     return () => {
       clearTimeout(timeout);
     };
-  }, [actions, text]);
+  }, [actions, online, text]);
 
   async function submit(): Promise<void> {
     setSending(true);
@@ -120,7 +124,7 @@ export function ThemeScreen({ draft }: { draft: string }) {
       <SpeechBubble>
         <span className="text-muted">{texts.inspiration}</span> {example}
       </SpeechBubble>
-      <Button type="submit" disabled={!valid || sending} className="self-end">
+      <Button type="submit" disabled={!valid || sending || !online} className="self-end">
         {texts.submit}
       </Button>
       {toast}

@@ -1,7 +1,7 @@
 import type { PresentationView } from '@comicle/shared';
 import { useState } from 'react';
 
-import { useRoomStore, type PresentationAction } from '../../stores/room-store';
+import { useOnline, useRoomStore, type PresentationAction } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { useActionError } from '../match/use-action-error';
 import { HostControls } from './host-controls';
@@ -49,6 +49,7 @@ export function PresentationScreen({
   isHost: boolean;
 }) {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const [dialogOpen, setDialogOpen] = useState(false);
   const { report, toast } = useActionError();
 
@@ -60,7 +61,7 @@ export function PresentationScreen({
     void actions.endPresentation().then(report);
   }
 
-  usePresentationShortcuts(isHost && !dialogOpen, {
+  usePresentationShortcuts(isHost && online && !dialogOpen, {
     next: () => {
       navigate({ action: 'next' });
     },
@@ -73,7 +74,7 @@ export function PresentationScreen({
   });
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
+    <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
       <p aria-live="polite" className="sr-only">
         {announcement(presentation)}
       </p>
@@ -84,11 +85,17 @@ export function PresentationScreen({
         {!isHost && <p className="font-bold text-muted">{texts.hostLeading}</p>}
       </header>
       <div key={stageKey(presentation)} className="min-h-0 flex-1 motion-safe:animate-pop">
-        <PresentationStage presentation={presentation} isHost={isHost} onNewMatch={end} />
+        <PresentationStage
+          presentation={presentation}
+          isHost={isHost}
+          online={online}
+          onNewMatch={end}
+        />
       </div>
       {isHost && (
         <HostControls
           presentation={presentation}
+          online={online}
           onNavigate={navigate}
           onEnd={end}
           onDialogChange={setDialogOpen}

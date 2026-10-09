@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useRoomStore } from '../../stores/room-store';
+import { useOnline, useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
@@ -11,6 +11,7 @@ const texts = strings.match;
 /** R57: the host ends the match, after confirming; discreet so nobody hits it by accident. */
 export function AbortMatchButton() {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const [confirming, setConfirming] = useState(false);
   const { report, toast } = useActionError();
 
@@ -24,6 +25,7 @@ export function AbortMatchButton() {
       <Button
         variant="ghost"
         className="min-h-0 px-2 py-1 text-sm"
+        disabled={!online}
         onClick={() => {
           setConfirming(true);
         }}
@@ -46,7 +48,7 @@ export function AbortMatchButton() {
             >
               {texts.cancel}
             </Button>
-            <Button variant="danger" onClick={() => void confirm()}>
+            <Button variant="danger" disabled={!online} onClick={() => void confirm()}>
               {texts.abortConfirm}
             </Button>
           </>

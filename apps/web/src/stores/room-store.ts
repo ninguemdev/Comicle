@@ -5,6 +5,7 @@ import {
   type ClientEventName,
   type ClientEventPayload,
   type Empty,
+  type ErrorCode,
   type MatchAbortReason,
   type PlayerProfile,
   type PlayerView,
@@ -55,6 +56,11 @@ interface RoomState {
   collect: ServerSignal<{ roundIndex: number }> | null;
   /** R57: the match went back to the lobby before its end. */
   matchAborted: ServerSignal<{ reason: MatchAbortReason }> | null;
+  /**
+   * Counts the `room:join` acks that succeeded: a new value means the player is (back) in the
+   * room and an action that failed while offline may be sent again (T18).
+   */
+  joins: number;
   actions: {
     /**
      * Opens the socket once per page. Later calls only matter after the connection gave up
@@ -91,6 +97,11 @@ export interface RoomStoreDeps {
   renewSession(): Promise<string | null>;
 }
 
+/** A room the player was in no longer exists. */
+function isGone(code: ErrorCode): boolean {
+  return code === 'ROOM_NOT_FOUND' || code === 'ROOM_CLOSED';
+}
+
 export function createRoomStore(deps: RoomStoreDeps) {
   let client: SocketClient | null = null;
   let stopTimeSync: (() => void) | null = null;
@@ -125,7 +136,9 @@ export function createRoomStore(deps: RoomStoreDeps) {
       event: E,
       payload: ClientEventPayload<E>,
     ): Promise<Ack<ClientEventAckData[E]>> {
-      if (client === null) {
+      // Offline, an action fails at once: Socket.IO would buffer it and send it on reconnecting,
+      // before the `room:join` that puts the socket back in the room.
+      if (client === null || get().connection !== 'connected') {
         return Promise.resolve(fail('INTERNAL', strings.connection.offline));
       }
       return client.emitWithAck(event, payload);
@@ -151,6 +164,7 @@ export function createRoomStore(deps: RoomStoreDeps) {
       clockOffsetMs: 0,
       collect: null,
       matchAborted: null,
+      joins: 0,
       actions: {
         connect(token) {
           if (client !== null) {
@@ -187,9 +201,17 @@ export function createRoomStore(deps: RoomStoreDeps) {
           set({ exit: null });
           return emit('room:create', { profile });
         },
-        joinRoom(roomCode, profile) {
+        async joinRoom(roomCode, profile) {
           set({ exit: null });
-          return emit('room:join', { roomCode, profile });
+          const wasInRoom = get().view?.room.code === roomCode;
+          const ack = await emit('room:join', { roomCode, profile });
+          if (ack.ok) {
+            set((state) => ({ joins: state.joins + 1 }));
+          } else if (wasInRoom && isGone(ack.error.code)) {
+            // The room ended while we were away (R16), or the server restarted (R17).
+            leftRoom('closed');
+          }
+          return ack;
         },
         async leaveRoom() {
           const ack = await emit('room:leave', {});
@@ -240,3 +262,8 @@ export const useRoomStore = createRoomStore({
   createSocketClient,
   renewSession: () => useSessionStore.getState().actions.renew(),
 });
+
+/** Actions need the socket: while it reconnects, buttons that send something are disabled. */
+export function useOnline(): boolean {
+  return useRoomStore((state) => state.connection === 'connected');
+}

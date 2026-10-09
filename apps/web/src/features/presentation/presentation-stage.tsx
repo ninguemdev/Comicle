@@ -89,12 +89,22 @@ function FullView({ story }: { story: Story }) {
 }
 
 /** `finished`: the end, and for the host the way back to the lobby (R56). */
-function FinishedView({ isHost, onNewMatch }: { isHost: boolean; onNewMatch: () => void }) {
+function FinishedView({
+  isHost,
+  online,
+  onNewMatch,
+}: {
+  isHost: boolean;
+  online: boolean;
+  onNewMatch: () => void;
+}) {
   return (
     <div className="flex size-full flex-col items-center justify-center gap-6 p-4 text-center">
       <h2 className="font-display text-6xl tracking-wide sm:text-8xl">{texts.finished}</h2>
       {isHost ? (
-        <Button onClick={onNewMatch}>{texts.newMatch}</Button>
+        <Button onClick={onNewMatch} disabled={!online}>
+          {texts.newMatch}
+        </Button>
       ) : (
         <SpeechBubble>{texts.finishedWaiting}</SpeechBubble>
       )}
@@ -105,12 +115,19 @@ function FinishedView({ isHost, onNewMatch }: { isHost: boolean; onNewMatch: () 
 export interface PresentationStageProps {
   presentation: PresentationView;
   isHost: boolean;
+  /** Offline, the way back to the lobby waits for the connection. */
+  online: boolean;
   onNewMatch: () => void;
 }
 
-export function PresentationStage({ presentation, isHost, onNewMatch }: PresentationStageProps) {
+export function PresentationStage({
+  presentation,
+  isHost,
+  online,
+  onNewMatch,
+}: PresentationStageProps) {
   if (presentation.status === 'finished') {
-    return <FinishedView isHost={isHost} onNewMatch={onNewMatch} />;
+    return <FinishedView isHost={isHost} online={online} onNewMatch={onNewMatch} />;
   }
   const { story, step } = presentation;
   switch (step.kind) {

@@ -1,7 +1,7 @@
 import type { MatchView, PlayerView } from '@comicle/shared';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
-import { useRoomStore } from '../../stores/room-store';
+import { useOnline, useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
@@ -41,6 +41,7 @@ export function DrawingScreen({
   onSent,
 }: DrawingScreenProps) {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const offsetMs = useRoomStore((state) => state.clockOffsetMs);
   const editor = useRef<DrawingEditorHandle>(null);
   const [revision, setRevision] = useState(0);
@@ -70,7 +71,8 @@ export function DrawingScreen({
 
   /** R40: confirmation only while more than half of the time is left. */
   function requestDone(): void {
-    if (disabled) {
+    // Offline the editor keeps drawing; only handing in waits for the connection.
+    if (disabled || !online) {
       return;
     }
     const left = phaseDeadlineAt === null ? 0 : secondsLeft(phaseDeadlineAt, offsetMs);
@@ -96,7 +98,7 @@ export function DrawingScreen({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col gap-2 bg-paper p-2 sm:p-3">
+    <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-3">
       <header className="flex flex-wrap items-center gap-2">
         <span className="font-display text-2xl tracking-wide">{roundLabel(match)}</span>
         <button
@@ -114,7 +116,7 @@ export function DrawingScreen({
           <span className={`font-bold ${themeOpen ? '' : 'truncate'}`}>{theme}</span>
         </button>
         {phaseDeadlineAt !== null && <Timer deadlineAt={phaseDeadlineAt} offsetMs={offsetMs} />}
-        <Button onClick={requestDone} disabled={disabled}>
+        <Button onClick={requestDone} disabled={disabled || !online}>
           {submission.status === 'idle' ? texts.submit : texts.submitting}
         </Button>
         {view.me.isHost && <AbortMatchButton />}

@@ -20,6 +20,7 @@ Em caso de dúvida, nesta ordem:
 | [`docs/modelo-de-dados.md`](docs/modelo-de-dados.md) | Estado em memória, tabelas, retenção |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Stack, estrutura, camadas, testes, configuração |
 | [`docs/interface.md`](docs/interface.md) | Identidade visual, telas, página de HQ, editor de desenho |
+| [`docs/cenarios-de-reconexao.md`](docs/cenarios-de-reconexao.md) | Quedas, recarregamentos e reinício do servidor em cada fase |
 | [`docs/avatares.md`](docs/avatares.md) | Catálogo, renderização e artes |
 | [`docs/avatares-guia-de-artes.md`](docs/avatares-guia-de-artes.md) | Guia para desenhar as artes: estilo, tamanhos, gabarito, zonas |
 | [`docs/decisoes.md`](docs/decisoes.md) | Decisões tomadas e seus motivos |
