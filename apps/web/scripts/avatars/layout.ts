@@ -1,5 +1,7 @@
 import type { AvatarCategory } from '@comicle/shared';
 
+import { DRAWING_COLORS } from '../../src/features/drawing/engine/palette';
+
 // Standard frame of every avatar art. docs/avatares-guia-de-artes.md repeats these numbers for
 // the artist; change both together.
 
@@ -38,24 +40,7 @@ export const BRUSH = {
 export const INK = '#16161D';
 
 /** Fill colors: the 16 fixed colors of the drawing editor (interface.md §4). */
-export const PALETTE = {
-  black: '#000000',
-  white: '#FFFFFF',
-  gray: '#7F7F7F',
-  silver: '#C3C3C3',
-  red: '#E53935',
-  orange: '#FB8C00',
-  yellow: '#FDD835',
-  green: '#43A047',
-  cyan: '#00ACC1',
-  blue: '#1E88E5',
-  indigo: '#3949AB',
-  purple: '#8E24AA',
-  pink: '#EC407A',
-  brown: '#8D6E63',
-  skin: '#F5CBA7',
-  darkBrown: '#5D4037',
-} as const;
+export const PALETTE = DRAWING_COLORS;
 
 /** Where the features sit, so any eyes, mouth or cheeks fit any head. */
 export const ANCHORS = {

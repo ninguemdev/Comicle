@@ -8,7 +8,7 @@ import { HomePage } from './features/home/home-page';
 import { ProfilePage } from './features/profile/profile-page';
 import { RoomPage } from './features/room/room-page';
 
-/** `/dev/ui` exists only in development; the import keeps it out of the production bundle. */
+/** `/dev/*` exists only in development; the import keeps it out of the production bundle. */
 const devRoutes: RouteObject[] = import.meta.env.DEV
   ? [
       {
@@ -16,6 +16,13 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
         lazy: async () => {
           const { DevUiPage } = await import('./features/dev-ui/dev-ui-page');
           return { Component: DevUiPage };
+        },
+      },
+      {
+        path: 'dev/editor',
+        lazy: async () => {
+          const { DevEditorPage } = await import('./features/drawing/dev-editor-page');
+          return { Component: DevEditorPage };
         },
       },
     ]
