@@ -1,6 +1,7 @@
 import { useCallback, useId, useState, type SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 
+import { useDocumentTitle } from '../../lib/document-title';
 import { useProfileStore } from '../../stores/profile-store';
 import { useRoomStore } from '../../stores/room-store';
 import { errorMessages, strings } from '../../strings/pt-BR';
@@ -86,6 +87,7 @@ export function HomePage() {
   const dismissError = useCallback(() => {
     setError(null);
   }, []);
+  useDocumentTitle(null);
 
   async function handleCreate() {
     // R4: a room needs a saved nickname; the profile screen returns here afterwards.

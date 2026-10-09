@@ -1,10 +1,12 @@
 import { Link } from 'react-router';
 
+import { useDocumentTitle } from '../../lib/document-title';
 import { strings } from '../../strings/pt-BR';
 import { buttonClassName } from '../../ui/button';
 import { SpeechBubble } from '../../ui/speech-bubble';
 
 export function NotFoundPage() {
+  useDocumentTitle(strings.notFound.title);
   return (
     <div className="flex flex-col items-center gap-6 py-6 text-center">
       <p

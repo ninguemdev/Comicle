@@ -7,6 +7,7 @@ import {
 import { useId, useRef, useState, type SubmitEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 
+import { useDocumentTitle } from '../../lib/document-title';
 import { cryptoRng } from '../../lib/random';
 import { useProfileStore } from '../../stores/profile-store';
 import { strings } from '../../strings/pt-BR';
@@ -53,6 +54,7 @@ export function ProfilePage() {
   const inputId = useId();
   const counterId = useId();
   const errorId = useId();
+  useDocumentTitle(strings.profile.title);
 
   const length = codePointLength(normalizeText(nickname));
   const problem = nicknameProblem(nickname);

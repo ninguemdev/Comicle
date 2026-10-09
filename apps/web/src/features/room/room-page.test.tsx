@@ -29,6 +29,7 @@ function renderAt(path = `/sala/${ROOM_CODE}`) {
 describe('sala no cliente', () => {
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'clipboard');
+    vi.unstubAllGlobals();
   });
 
   it('entra na sala ao conectar, com o código normalizado e o perfil salvo', () => {
@@ -231,6 +232,19 @@ describe('sala no cliente', () => {
     expect(screen.getByRole('heading', { name: title })).toBeInstanceOf(HTMLHeadingElement);
   });
 
+  it('o título da aba acompanha a sala: código no lobby, fase na partida', () => {
+    // The theme screen checks prefers-reduced-motion before rotating its examples.
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    setUpStores(lobbyView());
+    renderAt();
+    expect(document.title).toBe(`Sala ${ROOM_CODE} · Comicle`);
+
+    act(() => {
+      useRoomStore.setState({ view: matchView() });
+    });
+    expect(document.title).toBe('Temas · Comicle');
+  });
+
   it('código mal formado mostra sala não encontrada sem tentar entrar', () => {
     const actions = setUpStores(null);
 
@@ -240,6 +254,7 @@ describe('sala no cliente', () => {
       HTMLHeadingElement,
     );
     expect(actions.joinRoom).not.toHaveBeenCalled();
+    expect(document.title).toBe('Sala não encontrada · Comicle');
   });
 
   it('R10: sala em partida mostra a tela de espectador a quem não joga', () => {

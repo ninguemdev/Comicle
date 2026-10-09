@@ -10,26 +10,6 @@ import { usePresentationShortcuts } from './use-presentation-shortcuts';
 
 const texts = strings.match.presentation;
 
-/** What screen readers hear at each step (interface.md §6). */
-function announcement(presentation: PresentationView): string {
-  if (presentation.status === 'finished') {
-    return texts.announce.finished;
-  }
-  const story = presentation.storyIndex + 1;
-  const total = presentation.storyCount;
-  const { step } = presentation;
-  switch (step.kind) {
-    case 'theme':
-      return texts.announce.theme(story, total);
-    case 'panel':
-      return texts.announce.panel(story, total, step.position + 1);
-    case 'full':
-      return texts.announce.full(story, total);
-    default:
-      return step satisfies never;
-  }
-}
-
 /** Changes whenever the stage shows something else, so the reveal animation plays again. */
 function stageKey(presentation: PresentationView): string {
   const { status, storyIndex, step } = presentation;
@@ -75,9 +55,6 @@ export function PresentationScreen({
 
   return (
     <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
-      <p aria-live="polite" className="sr-only">
-        {announcement(presentation)}
-      </p>
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-3xl tracking-wide">
           {texts.storyOf(presentation.storyIndex + 1, presentation.storyCount)}

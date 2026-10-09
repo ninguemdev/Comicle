@@ -17,7 +17,7 @@ export function ThemeSwitch() {
         {THEME_PREFERENCES.map((option) => (
           <label
             key={option}
-            className="cursor-pointer px-3 py-1 font-bold has-checked:bg-pop-yellow has-focus-visible:outline-4 has-focus-visible:outline-pop-yellow [&:not(:first-child)]:border-l-3 [&:not(:first-child)]:border-ink"
+            className="cursor-pointer px-3 py-1 font-bold has-checked:bg-pop-yellow has-checked:text-night has-focus-visible:outline-4 has-focus-visible:outline-pop-yellow [&:not(:first-child)]:border-l-3 [&:not(:first-child)]:border-ink"
           >
             <input
               type="radio"

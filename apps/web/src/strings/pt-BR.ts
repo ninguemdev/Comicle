@@ -23,7 +23,7 @@ function formatDuration(seconds: number): string {
 
 /** Final text of each error code; the server `message` is only a fallback (protocolo §2). */
 export const errorMessages = {
-  INVALID_PAYLOAD: 'Algo no pedido não estava certo. Tente de novo.',
+  INVALID_PAYLOAD: 'Algo não saiu como esperado. Tente de novo.',
   UNAUTHORIZED: 'Sua sessão expirou. Recarregue a página.',
   RATE_LIMITED: 'Calma! Muitas ações seguidas. Aguarde um instante.',
   ROOM_NOT_FOUND: 'Sala não encontrada. Confira o código.',
@@ -33,26 +33,27 @@ export const errorMessages = {
   NOT_IN_ROOM: 'Você não está nesta sala.',
   NOT_HOST: 'Só o anfitrião pode fazer isso.',
   FORBIDDEN: 'Você não pode ver isso agora.',
-  PANEL_NOT_FOUND: 'Quadro não encontrado.',
+  PANEL_NOT_FOUND: 'Este quadro não existe mais.',
   INVALID_STATE: 'Isso não pode ser feito agora.',
   NOT_ENOUGH_PLAYERS: `Precisa de pelo menos ${String(MIN_PLAYERS)} jogadores.`,
   DEADLINE_PASSED: 'O tempo acabou.',
-  IMAGE_INVALID: 'Não foi possível ler o desenho.',
-  IMAGE_TOO_LARGE: 'O desenho ficou grande demais para enviar.',
+  IMAGE_INVALID: 'Não deu para ler o desenho. Tente de novo.',
+  IMAGE_TOO_LARGE: 'O desenho ficou pesado demais para enviar.',
   INTERNAL: 'Algo deu errado. Tente de novo.',
 } as const satisfies Record<ErrorCode, string>;
 
 export const strings = {
   app: {
     title: 'Comicle',
+    screenTitle: (screen: string) => `${screen} · Comicle`,
     tagline: 'Histórias em quadrinhos feitas a muitas mãos',
   },
   connection: {
     reconnecting: 'Reconectando…',
-    offline: 'Sem conexão com o servidor.',
+    offline: 'Sem conexão com o jogo.',
     retry: 'Tentar de novo',
-    serverUnreachable: 'Não foi possível falar com o servidor.',
-    ackTimeout: 'O servidor demorou para responder. Tente de novo.',
+    serverUnreachable: 'Não deu para conectar ao jogo. Confira sua internet.',
+    ackTimeout: 'O jogo demorou para responder. Tente de novo.',
   },
   ui: {
     close: 'Fechar',
@@ -108,6 +109,8 @@ export const strings = {
   },
   room: {
     title: (code: string) => `Sala ${code}`,
+    /** Announced when the room is back in the lobby (interface.md §6). */
+    announceLobby: 'De volta ao lobby',
     joining: 'Entrando na sala…',
     inviteLabel: 'Link de convite',
     copyInvite: 'Copiar convite',
@@ -164,7 +167,7 @@ export const strings = {
       },
       failed: {
         title: 'Não deu para entrar',
-        message: 'Algo deu errado ao entrar na sala.',
+        message: 'Algo deu errado ao entrar na sala. Tente de novo.',
       },
     },
   },
@@ -173,7 +176,7 @@ export const strings = {
     title: 'Página não encontrada',
     bubble: 'Ops! Esta página saiu do quadrinho.',
   },
-  routeError: {
+  crash: {
     title: 'Algo deu errado',
     bubble: 'Um borrão de tinta estragou esta página.',
   },

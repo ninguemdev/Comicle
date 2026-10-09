@@ -103,7 +103,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
             type="button"
             onClick={onClose}
             aria-label={strings.ui.close}
-            className="-mt-1 -mr-1 rounded-full p-2 hover:bg-pop-yellow"
+            className="-mt-1 -mr-1 rounded-full p-2 hover:bg-pop-yellow hover:text-night"
           >
             <CloseIcon />
           </button>

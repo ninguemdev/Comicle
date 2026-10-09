@@ -308,6 +308,7 @@ Diretrizes:
 - Cada jogador é um `browser.newContext()` (`localStorage` e sessão próprios); os helpers ficam em `e2e/support/` (`createPlayer`, `createRoom`, `drawSomething`, `advanceUntilPhase`…). Seletores por papel e texto acessível, com os textos vindos de `strings/pt-BR.ts`.
 - O servidor E2E roda com `TRUST_PROXY=true` e cada jogador manda um `X-Forwarded-For` próprio: os limites por IP da T19 (10 sessões e 10 `room:join` com falha por minuto) valem para o jogador, não para a suíte inteira.
 - Em falha, o CI publica o relatório HTML (`playwright-report/`) e os traces (`test-results/`).
+- `e2e/screens.spec.ts` (T21, D36) percorre todas as telas em 360×640, 768×1024, 1440×900 e no modo escuro: `@axe-core/playwright` (WCAG 2.1 A e AA) sem violações críticas ou sérias, nenhuma rolagem lateral e o anel de foco visível em cada parada do `Tab`. As capturas de cada tela e a ordem do foco vão como anexos para o relatório HTML, que o CI publica em toda execução.
 
 ---
 

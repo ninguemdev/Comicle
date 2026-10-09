@@ -1,7 +1,6 @@
 import type { MatchView, PlayerView } from '@comicle/shared';
 import { useState } from 'react';
 
-import { strings } from '../../strings/pt-BR';
 import { PresentationScreen } from '../presentation/presentation-screen';
 import { DrawingScreen } from './drawing-screen';
 import { MatchHeader } from './match-header';
@@ -44,13 +43,6 @@ export function screenFor(match: MatchView): MatchScreenId {
     default:
       return task satisfies never;
   }
-}
-
-/** Phase and round, for screen readers (interface.md §6). */
-function announcement(match: MatchView): string {
-  const phase = strings.match.phases[match.phase];
-  const round = match.roundIndex >= 0 ? match.roundIndex + 1 : null;
-  return strings.match.announce(phase, round, match.totalRounds);
 }
 
 function ScreenBody({
@@ -114,32 +106,22 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
 
   const stillSending =
     screen === 'transition' && drawing?.roundIndex === roundIndex && sentRound !== roundIndex;
-  const live = (
-    <p aria-live="polite" className="sr-only">
-      {announcement(match)}
-    </p>
-  );
-
   if (screen === 'drawing' || stillSending) {
     return (
-      <>
-        {live}
-        <DrawingScreen
-          key={roundIndex}
-          view={view}
-          match={match}
-          theme={task.kind === 'draw_panel' ? task.theme : (drawing?.theme ?? '')}
-          hasDraft={task.kind === 'draw_panel' ? task.hasDraft : false}
-          closing={stillSending}
-          onSent={setSentRound}
-        />
-      </>
+      <DrawingScreen
+        key={roundIndex}
+        view={view}
+        match={match}
+        theme={task.kind === 'draw_panel' ? task.theme : (drawing?.theme ?? '')}
+        hasDraft={task.kind === 'draw_panel' ? task.hasDraft : false}
+        closing={stillSending}
+        onSent={setSentRound}
+      />
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {live}
       <MatchHeader view={view} match={match} />
       <div
         key={`${match.phase}:${String(roundIndex)}:${screen}`}

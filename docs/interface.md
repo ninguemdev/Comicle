@@ -164,3 +164,9 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 - `aria-live="polite"` para mudanças de fase e progresso; o timer anuncia apenas 30 s, 10 s e o fim.
 - Avatares têm `alt` com o nickname; quadros têm `alt` "Quadro {n} de {artista}".
 - Idioma do documento `pt-BR`.
+- Uma única região `aria-live` por sala (`RoomAnnouncer`), montada do lobby ao fim da apresentação, anuncia a fase e a rodada, cada passo da apresentação e a volta ao lobby. Uma região criada junto com o texto costuma não ser lida, por isso ela não é recriada a cada troca de tela.
+- Página de HQ que rola (quadros no tamanho mínimo) vira uma região focável, para rolar pelo teclado.
+- Título da aba por tela: "Comicle" no início, "{tela} · Comicle" nas demais ("Seu perfil", "Sala K7PQ2M" no lobby, a fase durante a partida, o motivo nas telas de problema).
+- Erros de renderização mostram a tela "Algo deu errado", com volta ao início (recarga completa): o `errorElement` do roteador cobre as rotas, e um `ErrorBoundary` em volta do app cobre o resto.
+- Favicon em SVG (balão amarelo com um "C" de nanquim), `description`, `theme-color` claro e escuro e Open Graph básico no `index.html`.
+- Verificação automática: `e2e/screens.spec.ts` (ver [arquitetura §8](./arquitetura.md#8-testes)).

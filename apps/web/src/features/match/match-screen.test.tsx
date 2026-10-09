@@ -64,14 +64,6 @@ describe('MatchScreen', () => {
 
     expect(screen.queryByRole('button', { name: 'Encerrar partida' })).toBeNull();
   });
-
-  it('anuncia a fase e a rodada', () => {
-    const view = matchView({ phase: 'round_reading', roundIndex: 1, task: read('ready') });
-    setUpStores(view);
-    render(<MatchScreen view={view} match={view.match ?? never()} />);
-
-    expect(screen.getByText('Leitura: rodada 2 de 3')).toBeTruthy();
-  });
 });
 
 function never(): never {
