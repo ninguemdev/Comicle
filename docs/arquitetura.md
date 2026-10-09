@@ -108,6 +108,7 @@ Qualquer dependência fora desta lista precisa de justificativa no PR e de entra
 │     └─ avatar/catalog.json + catalog.ts
 ├─ e2e/                              # Playwright
 ├─ docker/postgres/init/             # scripts de init do Postgres local (cria comicle_test)
+├─ Dockerfile · docker-compose.prod.yml  # imagem de produção e exemplo de deploy (docs/deploy.md)
 ├─ docs/
 └─ .claude/ · .githooks/ · .github/
 ```
@@ -314,8 +315,9 @@ Diretrizes:
 
 ## 9. Produção e integração com o site
 
-- Um container: o servidor serve a API, o Socket.IO e, se `SERVE_WEB_DIST` estiver definido, o build estático do web sob `PUBLIC_BASE_PATH` (com fallback para `index.html`).
+- Um container: o servidor serve a API, o Socket.IO e, se `SERVE_WEB_DIST` estiver definido, o build estático do web sob `PUBLIC_BASE_PATH` (`platform/http/web-static.ts`): `assets/` com cache de um ano (`immutable`), o resto com `no-cache` e fallback para `index.html` nos caminhos sem extensão. A API, o Socket.IO e o `/healthz` ficam sempre na raiz, qualquer que seja o `PUBLIC_BASE_PATH`.
 - Alternativa: hospedar o web no site principal (build com `VITE_BASE_PATH=/jogos/quadrinhos/` e `VITE_SERVER_URL` apontando para o servidor) e liberar a origem em `CORS_ORIGINS`.
 - O jogo não depende de contas do site; mantém as próprias sessões de convidado.
 - Instância única (estado em memória). Escalar horizontalmente exigiria adaptador Redis do Socket.IO e estado compartilhado — fora do escopo da v1 ([D2](./decisoes.md)).
 - Desligamento gracioso: em `SIGTERM`, para de aceitar conexões, avisa os clientes e fecha o pool do banco.
+- Imagem, variáveis, proxy reverso, integração com o site, backup e logs: [deploy](./deploy.md).

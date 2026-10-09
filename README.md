@@ -4,7 +4,7 @@ Jogo multiplayer de navegador para criar **histórias em quadrinhos coletivas** 
 
 Cada jogador escreve uma ideia. As histórias circulam pela sala em rodadas: você lê os quadros que vieram antes, memoriza, confirma — e aí desenha a continuação **sem poder olhar de novo**. No fim, o anfitrião revela cada história quadro a quadro e depois como uma página de HQ completa. Sem cadastro, sem pontuação: a graça é ver como a memória imperfeita do grupo transforma as histórias.
 
-**Status:** em desenvolvimento — veja o [andamento das tasks](docs/tasks/README.md).
+**Status:** v1 completa — as 22 tasks estão em [docs/tasks](docs/tasks/README.md).
 
 ---
 
@@ -45,8 +45,6 @@ docs/             especificação, regras, arquitetura e tasks
 
 ## Rodando localmente
 
-> Os comandos abaixo ficam disponíveis a partir da task T01.
-
 Pré-requisitos: Node.js 24 (`nvm use`), pnpm 10 (`corepack enable`), Docker.
 
 ```bash
@@ -68,6 +66,16 @@ pnpm dev                     # web: http://localhost:5173 · server: http://loca
 | `pnpm avatars:generate` | regera o gabarito das artes de avatar |
 
 Para testar com várias pessoas na mesma rede, abra o endereço da sua máquina na rede local (`pnpm dev` expõe o Vite com `--host`) ou use janelas anônimas para simular jogadores.
+
+## Deploy
+
+Uma imagem Docker com o servidor e o web, mais um PostgreSQL:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build   # http://localhost:3000
+```
+
+Cada tag `v*` publica a imagem em `ghcr.io/ninguemdev/comicle`. Variáveis, proxy reverso (nginx com WebSocket), integração com um site existente em `/jogos/quadrinhos/`, backup e logs em [`docs/deploy.md`](docs/deploy.md).
 
 ## Desenvolvendo com o Claude Code
 
