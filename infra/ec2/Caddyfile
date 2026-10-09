@@ -1,0 +1,23 @@
+# Origin of https://dionel.site/comicle/ (docs/deploy.md §9). Only Cloudflare talks to it: the
+# certificate is a Cloudflare Origin CA one, trusted by Cloudflare and nobody else.
+
+{$ORIGIN_HOST} {
+	tls /certs/origin.pem /certs/origin.key
+
+	# Cloudflare's ranges (https://www.cloudflare.com/ips/) plus the host itself, for checks over SSM.
+	@outsider not remote_ip 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32 private_ranges
+
+	# The site's other paths stay with the portfolio; /comicle itself is redirected by the app.
+	@game path /comicle /comicle/* /api/* /socket.io/*
+
+	# route keeps this order; Caddy would otherwise sort the directives.
+	route {
+		respond @outsider 403
+		reverse_proxy @game app:3000 {
+			# Cloudflare sets CF-Connecting-IP itself, while a client can prepend to X-Forwarded-For;
+			# the app reads X-Forwarded-For (TRUST_PROXY), so it gets only the trusted address.
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+		}
+		respond 404
+	}
+}
