@@ -227,8 +227,12 @@ Ordem de desenho, de baixo para cima: **cabeça → bochechas → olhos → boca
 ### Acessório facial · pasta `face-accessory/` · opcional, no máximo um
 
 - Fica por cima de olhos e boca e pode cobri-los em parte (bigode, tapa-olho).
-- Óculos: lentes centradas nos olhos, com raio de pelo menos 50, para cobrir qualquer olho; as hastes vão até a lateral da zona.
-- Bigode: entre y ~285 e ~335, acima da linha da boca.
+- **Não estique a arte para preencher a zona.** A zona é só o limite; cada acessório se ancora no ponto do rosto que ele usa, com o próprio tamanho.
+- Óculos (comuns, escuros, disfarce): lentes centradas nos olhos, (196, 250) e (316, 250), com raio de pelo menos 50, para cobrir qualquer olho; as hastes vão até a lateral da zona.
+- Tapa-olho e monóculo: centrados num olho (tapa-olho no esquerdo, monóculo no direito); a alça do tapa-olho termina dentro da cabeça.
+- Bigode: entre y ~285 e ~335, acima da linha da boca, com cerca de 170 de largura.
+- Máscara e bandana: cobrem nariz e boca, começando logo abaixo dos olhos (y ~290); não sobem sobre os olhos.
+- Nariz de palhaço e curativo: no nariz, por volta de (256, 294).
 
 ### Chapéu · pasta `hat/` · opcional
 
