@@ -3,7 +3,7 @@ import { useCallback, useId, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { env } from '../../config/env';
-import { useRoomStore } from '../../stores/room-store';
+import { useOnline, useRoomStore } from '../../stores/room-store';
 import { errorMessages, strings } from '../../strings/pt-BR';
 import { Button, buttonClassName } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
@@ -67,6 +67,7 @@ function startBlockedReason(view: PlayerView): string | null {
 /** Lobby (interface.md §2): invite, players, settings and the host's controls. */
 export function Lobby({ view }: { view: PlayerView }) {
   const actions = useRoomStore((state) => state.actions);
+  const online = useOnline();
   const navigate = useNavigate();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [kickTarget, setKickTarget] = useState<MemberView | null>(null);
@@ -125,6 +126,7 @@ export function Lobby({ view }: { view: PlayerView }) {
                     <Button
                       variant="ghost"
                       className="min-h-9 px-2 py-0 text-sm"
+                      disabled={!online}
                       aria-label={texts.kick(member.nickname)}
                       onClick={() => {
                         setKickTarget(member);
@@ -156,14 +158,14 @@ export function Lobby({ view }: { view: PlayerView }) {
           >
             {texts.editProfile}
           </Link>
-          <Button variant="ghost" onClick={() => void handleLeave()}>
+          <Button variant="ghost" disabled={!online} onClick={() => void handleLeave()}>
             {texts.leave}
           </Button>
         </div>
         {me.isHost && (
           <div className="flex flex-col items-stretch gap-2 sm:items-end">
             <Button
-              disabled={blockedReason !== null}
+              disabled={blockedReason !== null || !online}
               aria-describedby={blockedReason === null ? undefined : reasonId}
               onClick={() => {
                 void actions.startMatch().then(reportFailure);
@@ -196,7 +198,7 @@ export function Lobby({ view }: { view: PlayerView }) {
             >
               {texts.cancel}
             </Button>
-            <Button variant="danger" onClick={() => void confirmKick()}>
+            <Button variant="danger" disabled={!online} onClick={() => void confirmKick()}>
               {texts.kickConfirm}
             </Button>
           </>

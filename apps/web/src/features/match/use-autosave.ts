@@ -1,4 +1,4 @@
-import { AUTOSAVE_INTERVAL_MS } from '@comicle/shared';
+import { AUTOSAVE_INTERVAL_MS, type Ack } from '@comicle/shared';
 import { useEffect, useEffectEvent, useRef, type RefObject } from 'react';
 
 import type { DrawingEditorHandle } from '../drawing/drawing-editor';
@@ -9,7 +9,7 @@ export interface AutosaveOptions {
   revision: number;
   /** Off once the panel is handed in. */
   enabled: boolean;
-  save: (png: Uint8Array) => Promise<unknown>;
+  save: (png: Uint8Array) => Promise<Ack<unknown>>;
 }
 
 /** R39: every AUTOSAVE_INTERVAL_MS, the current PNG, but only if the drawing changed. */
@@ -26,10 +26,10 @@ export function useAutosave({ editor, revision, enabled, save }: AutosaveOptions
     try {
       const png = await editor.current?.exportPng();
       // An emptied canvas has nothing to save; the server keeps the previous draft.
-      if (png) {
-        await save(png);
+      // A failed save (offline, T18) is tried again at the next tick, changed or not.
+      if (!png || (await save(png)).ok) {
+        saved.current = revision;
       }
-      saved.current = revision;
     } finally {
       busy.current = false;
     }

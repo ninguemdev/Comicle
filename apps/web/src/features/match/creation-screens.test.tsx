@@ -1,7 +1,8 @@
-import { defaultAvatar, THEME_DRAFT_DEBOUNCE_MS, type PlayerView } from '@comicle/shared';
+import { defaultAvatar, fail, THEME_DRAFT_DEBOUNCE_MS, type PlayerView } from '@comicle/shared';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useRoomStore } from '../../stores/room-store';
 import { matchView, setUpStores } from '../../test/room-fixtures';
 import { MatchScreen } from './match-screen';
 
@@ -65,6 +66,34 @@ describe('tela de temas', () => {
       vi.advanceTimersByTime(THEME_DRAFT_DEBOUNCE_MS * 2);
     });
     expect(actions.draftTheme).not.toHaveBeenCalled();
+  });
+
+  it('R49, T18: rascunho que não chegou ao servidor vai de novo quando a conexão volta', async () => {
+    vi.useFakeTimers();
+    const actions = setUpStores(matchView());
+    actions.draftTheme.mockResolvedValueOnce(fail('INTERNAL', 'Sem conexão com o servidor.'));
+    renderMatch(matchView());
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Seu tema' }), {
+      target: { value: 'Um gato no telhado' },
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(THEME_DRAFT_DEBOUNCE_MS);
+    });
+    expect(actions.draftTheme).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+    });
+    expect(screen.getByRole('button', { name: 'Pronto' })).toHaveProperty('disabled', true);
+    act(() => {
+      useRoomStore.setState({ connection: 'connected' });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(THEME_DRAFT_DEBOUNCE_MS);
+    });
+    expect(actions.draftTheme).toHaveBeenCalledTimes(2);
+    expect(actions.draftTheme).toHaveBeenLastCalledWith('Um gato no telhado');
   });
 
   it('R27: Pronto só com 3 a 140 caracteres', () => {

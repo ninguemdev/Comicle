@@ -17,6 +17,8 @@ type OpenDialog = 'stories' | 'end' | null;
 
 export interface HostControlsProps {
   presentation: PresentationView;
+  /** Offline, every control waits for the connection. */
+  online: boolean;
   onNavigate: (action: PresentationAction) => void;
   onEnd: () => void;
   /** A dialog is open: the page shortcuts must wait. */
@@ -25,6 +27,7 @@ export interface HostControlsProps {
 
 export function HostControls({
   presentation,
+  online,
   onNavigate,
   onEnd,
   onDialogChange,
@@ -35,6 +38,7 @@ export function HostControls({
   // D29: these would not move the cursor, so they are not offered.
   const atStart = !finished && storyIndex === 0 && step.kind === 'theme';
   const atFull = !finished && step.kind === 'full';
+  const offline = !online;
 
   function open(next: OpenDialog): void {
     setDialog(next);
@@ -59,7 +63,7 @@ export function HostControls({
       <Button
         variant="secondary"
         className={SMALL}
-        disabled={atStart}
+        disabled={offline || atStart}
         onClick={() => {
           onNavigate({ action: 'prev' });
         }}
@@ -68,7 +72,7 @@ export function HostControls({
       </Button>
       <Button
         className="min-h-10 px-4 py-1"
-        disabled={finished}
+        disabled={offline || finished}
         onClick={() => {
           onNavigate({ action: 'next' });
         }}
@@ -78,7 +82,7 @@ export function HostControls({
       <Button
         variant="secondary"
         className={SMALL}
-        disabled={finished || atFull}
+        disabled={offline || finished || atFull}
         onClick={() => {
           onNavigate({ action: 'showFull' });
         }}
@@ -88,7 +92,7 @@ export function HostControls({
       <Button
         variant="secondary"
         className={SMALL}
-        disabled={finished}
+        disabled={offline || finished}
         onClick={() => {
           onNavigate({ action: 'nextStory' });
         }}
@@ -99,6 +103,7 @@ export function HostControls({
         variant="secondary"
         className={SMALL}
         aria-haspopup="dialog"
+        disabled={offline}
         onClick={() => {
           open('stories');
         }}
@@ -108,6 +113,7 @@ export function HostControls({
       <Button
         variant="ghost"
         className={SMALL}
+        disabled={offline}
         onClick={() => {
           // At the end there is nothing left to miss; before it, the host confirms.
           if (finished) {
@@ -134,6 +140,7 @@ export function HostControls({
               <Button
                 variant="secondary"
                 className="w-full justify-start text-left"
+                disabled={offline}
                 aria-current={!finished && story.index === storyIndex ? 'true' : undefined}
                 onClick={() => {
                   goTo(story.index);
@@ -164,7 +171,7 @@ export function HostControls({
             >
               {cancel}
             </Button>
-            <Button variant="danger" onClick={end}>
+            <Button variant="danger" disabled={offline} onClick={end}>
               {texts.endConfirm}
             </Button>
           </>
