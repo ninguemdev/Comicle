@@ -31,6 +31,7 @@ type Room = {
   status: 'lobby' | 'in_match';
   settings: MatchSettings;
   match: Match | null;
+  lastMatchId: string | null;        // R25: partida cujo conteúdo ainda está guardado
   emptySince: number | null;         // para R16
   hostTransferPending: boolean;      // R14: ninguém conectado quando a função mudaria
   closed: boolean;                   // encerrando: não aceita mais nada
@@ -46,11 +47,12 @@ type Member = {
 
 type Match = {
   id: string;
-  seats: string[];                       // playerIds embaralhados (R23)
-  spectators: Set<string>;
+  settings: MatchSettings;               // cópia no início
+  startedAt: number;
+  seats: Seat[];                         // embaralhados (R23); quem não tem assento é espectador (R10, R24)
   totalRounds: number;
-  drawingSeconds: number;
   plan: DistributionPlan;                // R31–R33
+  fallbackThemes: string[];              // já embaralhados; usados em ordem (R30)
   phase: MatchPhase;
   phaseStartedAt: number;
   phaseDeadlineAt: number | null;
@@ -61,6 +63,15 @@ type Match = {
   presentation: PresentationCursor | null;
 };
 
+type Seat = {
+  playerId: string;
+  nickname: string;                      // cópia no início, gravada com o tema
+  themeId: string;
+  storyId: string;
+};
+
+type ThemeDraftState = { draft: string; final: string | null };   // R28
+
 type DistributionPlan = {
   // assignments[r][playerId] = índice da história na rodada r
   assignments: ReadonlyArray<Readonly<Record<string, number>>>;
@@ -70,7 +81,9 @@ type StoryState = {
   id: string;
   themeId: string;
   authorPlayerId: string;
+  authorNickname: string;
   themeText: string;
+  themeSource: 'player' | 'fallback';
   panels: PanelMeta[];                   // já persistidos, em ordem
 };
 
