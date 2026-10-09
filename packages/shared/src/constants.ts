@@ -15,6 +15,8 @@ export const THEME_MIN_LENGTH = 3;
 export const THEME_MAX_LENGTH = 140;
 
 export const NICKNAME_MAX_LENGTH = 20;
+/** Raw length (UTF-16 units) of any text field before normalization; anything longer is refused. */
+export const TEXT_INPUT_MAX_LENGTH = 1000;
 
 export const READING_BASE_SECONDS = 15;
 export const READING_PER_PANEL_SECONDS = 5;

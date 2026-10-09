@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../constants';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, TEXT_INPUT_MAX_LENGTH } from '../constants';
 
 const ROOM_CODE_PATTERN = new RegExp(`^[${ROOM_CODE_ALPHABET}]{${String(ROOM_CODE_LENGTH)}}$`);
 
@@ -12,5 +12,6 @@ export function normalizeRoomCode(input: string): string {
 /** R6. */
 export const roomCodeSchema = z
   .string()
+  .max(TEXT_INPUT_MAX_LENGTH)
   .transform(normalizeRoomCode)
   .refine((code) => ROOM_CODE_PATTERN.test(code), 'Código de sala inválido.');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { TEXT_INPUT_MAX_LENGTH } from '../constants';
 import { nicknameSchema, themeDraftSchema, themeSchema } from './text';
 
 describe('nicknameSchema', () => {
@@ -56,5 +57,16 @@ describe('themeDraftSchema', () => {
 
   it('R28: rascunho respeita o máximo do tema', () => {
     expect(themeDraftSchema.safeParse('a'.repeat(141)).success).toBe(false);
+  });
+});
+
+describe('limite bruto dos textos', () => {
+  it('R1, R27: entrada acima de TEXT_INPUT_MAX_LENGTH é recusada antes de normalizar', () => {
+    const spaces = ' '.repeat(TEXT_INPUT_MAX_LENGTH);
+    // Within the raw limit, whitespace collapses as R1 says.
+    expect(nicknameSchema.parse(`${spaces.slice(0, TEXT_INPUT_MAX_LENGTH - 3)}Ana`)).toBe('Ana');
+    expect(nicknameSchema.safeParse(`${spaces}Ana`).success).toBe(false);
+    expect(themeSchema.safeParse(`${spaces}Um gato`).success).toBe(false);
+    expect(themeDraftSchema.safeParse(spaces + ' ').success).toBe(false);
   });
 });
