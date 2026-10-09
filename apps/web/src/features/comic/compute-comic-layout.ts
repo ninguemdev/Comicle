@@ -27,6 +27,14 @@ export function computeComicLayout(panelCount: number, maxColumns: MaxColumns): 
   return Array.from({ length: rows }, (_, row) => (row < extra ? base + 1 : base));
 }
 
+/** `items` cut into rows of the given sizes, in reading order. */
+export function splitIntoRows<T>(items: readonly T[], rows: readonly number[]): T[][] {
+  return rows.map((count, index) => {
+    const start = rows.slice(0, index).reduce((sum, size) => sum + size, 0);
+    return items.slice(start, start + count);
+  });
+}
+
 /** How many columns a page this wide may use for `panelCount` panels. */
 export function columnsForWidth(width: number, panelCount: number): MaxColumns {
   if (width < ONE_COLUMN_BELOW) {

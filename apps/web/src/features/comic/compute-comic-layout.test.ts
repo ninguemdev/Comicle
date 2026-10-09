@@ -5,6 +5,7 @@ import {
   computeComicLayout,
   MIN_PANEL_WIDTH,
   panelWidthFor,
+  splitIntoRows,
   type MaxColumns,
 } from './compute-comic-layout';
 
@@ -50,6 +51,13 @@ describe('computeComicLayout', () => {
       }
     },
   );
+});
+
+describe('splitIntoRows', () => {
+  it('corta na ordem de leitura', () => {
+    expect(splitIntoRows([1, 2, 3, 4, 5], [2, 2, 1])).toEqual([[1, 2], [3, 4], [5]]);
+    expect(splitIntoRows([], [])).toEqual([]);
+  });
 });
 
 describe('columnsForWidth', () => {
