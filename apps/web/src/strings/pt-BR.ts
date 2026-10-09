@@ -166,6 +166,23 @@ export const strings = {
   navigation: {
     backHome: 'Voltar ao início',
   },
+  comic: {
+    page: 'Página de HQ',
+    panelAlt: (position: number, artist: string) => `Quadro ${String(position)} de ${artist}`,
+    /** R55. */
+    notDrawn: (artist: string) => `${artist} não desenhou a tempo`,
+    loading: 'Carregando quadro…',
+    loadFailed: 'Não deu para carregar este quadro.',
+  },
+  devComic: {
+    title: 'Páginas de HQ',
+    intro: 'Histórias de exemplo de 1 a 12 quadros, visíveis só em desenvolvimento.',
+    panelCount: 'Quadros',
+    credits: 'Mostrar créditos',
+    emptyPanels: 'Com quadros vazios',
+    sample: (position: number) => `Quadro ${String(position)}`,
+    artists: ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Fábio'],
+  },
   drawing: {
     canvas: 'Área de desenho',
     toolbar: 'Ferramentas de desenho',

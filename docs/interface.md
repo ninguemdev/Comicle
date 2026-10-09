@@ -79,10 +79,11 @@ Regras visuais de `ComicPage`:
 - Todos os quadros de uma página têm o **mesmo tamanho** e proporção 4:3 — nunca são esticados. Linhas com menos quadros ficam centralizadas. (O exemplo em ASCII da especificação, com o quadro 5 ocupando a linha toda, é atendido pela centralização; esticar o quadro distorceria o desenho.)
 - `maxColumns`: 1 abaixo de 480px de largura, 2 até 1024px, 3 acima — exceto `n = 4`, que usa 2 para formar uma grade 2×2.
 - Ordem de leitura: esquerda→direita, cima→baixo. Cada quadro tem um número discreto no canto.
-- O tamanho do quadro é o maior que faça a página caber na área visível; se ficar menor que 160px de largura, a página rola verticalmente.
+- O tamanho do quadro é o maior que faça a página caber na área visível (a área do componente pai); se ficar menor que 160px de largura, os quadros ficam com 160px (ou a largura da linha, se for menor) e a página rola verticalmente. As colunas são decididas pela largura da página, não da janela.
 - Página com moldura de papel, `--border-ink` em cada quadro e `--gutter-comic` entre eles.
 - Quadro `empty`: fundo de retícula com o texto do R55.
 - Créditos (apresentação, visão completa): nickname do artista sob cada quadro, em `--color-muted`.
+- Imagens: `usePanelImage(panelId)` espera o token da sessão, busca com `Authorization`, mostra retícula enquanto carrega ou se falhar e revoga a URL `blob:` ao desmontar. Em desenvolvimento, `/dev/comic` mostra histórias de exemplo de 1 a 12 quadros.
 
 ---
 
