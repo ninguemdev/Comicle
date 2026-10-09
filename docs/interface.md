@@ -93,7 +93,7 @@ Regras visuais de `ComicPage`:
 - Resolução lógica fixa `PANEL_WIDTH × PANEL_HEIGHT` (1024×768), fundo branco. O canvas é exibido escalado para caber na área, mantendo 4:3, e o buffer interno considera `devicePixelRatio`.
 - Coordenadas do ponteiro são convertidas para o espaço lógico — o desenho final independe do tamanho da tela.
 - `touch-action: none` no canvas; Pointer Events com `setPointerCapture` e `getCoalescedEvents()` quando disponível.
-- Um ponteiro por vez. Se um traço de caneta (`pointerType: 'pen'`) começou, toques são ignorados até ele terminar (rejeição de palma).
+- Um ponteiro por vez. Se um traço de caneta (`pointerType: 'pen'`) começou, toques são ignorados até ele terminar (rejeição de palma). Uma caneta que encosta durante um traço de toque descarta esse traço e começa o dela (a palma costuma encostar antes).
 - Suavização por curvas quadráticas entre pontos médios.
 
 ### Ferramentas
@@ -106,7 +106,7 @@ Regras visuais de `ComicPage`:
 | Espessura | 4 tamanhos: 3, 8, 16, 32 px lógicos | `[` e `]` |
 | Desfazer / Refazer | até 100 passos | `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` |
 | Limpar | entra no histórico (pode ser desfeito); pede confirmação | — |
-| Concluir | envia o quadro (R40); pede confirmação se faltar mais de metade do tempo | `Ctrl/⌘+Enter` |
+| Concluir | envia o quadro (R40); pede confirmação se faltar mais de metade do tempo. Fica na tela de desenho, não no editor | `Ctrl/⌘+Enter` |
 
 Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1 #1E88E5 #3949AB #8E24AA #EC407A #8D6E63 #F5CBA7 #5D4037`.
 
@@ -114,7 +114,8 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 
 - `DrawingDocument`: lista de operações (`stroke` com cor, tamanho, ferramenta e pontos; `clear`), `baseImage` opcional (rascunho restaurado, R48) e pilha de refazer.
 - Renderização incremental: o traço em andamento é desenhado direto; desfazer re-renderiza a partir de um snapshot em cache a cada 20 operações.
-- `exportPng(): Promise<Uint8Array | null>` — `null` se não há operações nem `baseImage` (R40).
+- `exportPng(): Promise<Uint8Array | null>` — `null` quando não há nada visível (R40): nenhum traço de pincel depois do último `clear` e nenhuma `baseImage` que um `clear` não tenha coberto. A borracha sozinha não conta como desenho.
+- API pública: `DrawingEditor { baseImageUrl?, disabled, onChange(revision), ref.exportPng() }`. Em desenvolvimento, `/dev/editor` mostra o editor isolado.
 - O documento é descartado ao concluir; não é guardado no navegador.
 
 ### Layout
