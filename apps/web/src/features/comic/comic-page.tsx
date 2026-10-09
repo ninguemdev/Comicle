@@ -67,6 +67,7 @@ export function ComicPage({ panels, showCredits = false, maxColumns }: ComicPage
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState<Measured>({ area: { width: 0, height: 0 }, gutter: 0 });
+  const [scrollable, setScrollable] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -77,10 +78,13 @@ export function ComicPage({ panels, showCredits = false, maxColumns }: ComicPage
     const update = () => {
       const next = measure(container, frame);
       setMeasured((current) => (sameMeasure(current, next) ? current : next));
+      setScrollable(container.scrollHeight > container.clientHeight);
     };
     update();
+    // The frame too: panels grow or shrink without the container changing size.
     const observer = new ResizeObserver(update);
     observer.observe(container);
+    observer.observe(frame);
     return () => {
       observer.disconnect();
     };
@@ -97,7 +101,14 @@ export function ComicPage({ panels, showCredits = false, maxColumns }: ComicPage
   const rowsOfPanels = splitIntoRows(ordered, rows);
 
   return (
-    <div ref={containerRef} className="size-full min-h-0 overflow-y-auto">
+    // A page that scrolls is reachable by keyboard, so it scrolls without a pointer too.
+    <div
+      ref={containerRef}
+      tabIndex={scrollable ? 0 : undefined}
+      role={scrollable ? 'region' : undefined}
+      aria-label={scrollable ? strings.comic.page : undefined}
+      className="size-full min-h-0 overflow-y-auto"
+    >
       <div
         ref={frameRef}
         aria-label={strings.comic.page}
