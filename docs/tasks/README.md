@@ -20,7 +20,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T12 | [Rodadas no servidor](./T12-rodadas-servidor.md) | T11 | ✅ |
 | T13 | [Editor de desenho](./T13-editor-desenho.md) | T06 | ✅ |
 | T14 | [Página de HQ](./T14-pagina-hq.md) | T06 | ✅ |
-| T15 | [Fluxo da partida no cliente](./T15-fluxo-partida-web.md) | T09, T12, T13, T14 | 🟨 |
+| T15 | [Fluxo da partida no cliente](./T15-fluxo-partida-web.md) | T09, T12, T13, T14 | ✅ |
 | T16 | [Apresentação no servidor](./T16-apresentacao-servidor.md) | T12 | ⬜ |
 | T17 | [Apresentação no cliente](./T17-apresentacao-web.md) | T15, T16 | ⬜ |
 | T18 | [Resiliência e reconexão](./T18-resiliencia-reconexao.md) | T17 | ⬜ |
