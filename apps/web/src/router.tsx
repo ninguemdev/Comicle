@@ -25,6 +25,13 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
           return { Component: DevEditorPage };
         },
       },
+      {
+        path: 'dev/comic',
+        lazy: async () => {
+          const { DevComicPage } = await import('./features/comic/dev-comic-page');
+          return { Component: DevComicPage };
+        },
+      },
     ]
   : [];
 
