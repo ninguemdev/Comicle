@@ -102,6 +102,7 @@ Validação de imagem no servidor (`apps/server/src/modules/drawing/panel-image.
 |---|---|---|
 | `room:view` | `PlayerView` | Após cada mudança de estado relevante para o jogador, ao entrar e ao reconectar |
 | `round:collect` | `{ roundIndex }` | Início de `round_closing` (R42) |
+| `match:aborted` | `{ reason: 'host' \| 'persistence_failed' }` | A partida voltou ao lobby antes do fim: o anfitrião abortou ou o servidor não conseguiu gravar os temas ou uma rodada depois de uma nova tentativa (R57). Vai a todos os membros conectados, logo antes da `room:view` do lobby |
 | `room:removed` | `{ reason: 'kicked' \| 'closed' }` | Expulsão (R12) ou encerramento (R16) |
 | `session:replaced` | `{}` | Outra conexão da mesma sessão assumiu (R5) |
 
