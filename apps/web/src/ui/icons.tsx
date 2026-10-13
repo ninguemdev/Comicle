@@ -60,6 +60,14 @@ export function EraserIcon({ className = 'size-6' }: IconProps) {
   );
 }
 
+export function DownloadIcon({ className = 'size-5' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>
+      <path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" />
+    </svg>
+  );
+}
+
 export function BucketIcon({ className = 'size-6' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>

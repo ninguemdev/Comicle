@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import { fetchPanelImage } from '../../lib/panel-images';
 import { useSessionStore } from '../../stores/session-store';
@@ -20,17 +20,31 @@ interface Loaded {
 const LOADING: PanelImageState = { status: 'loading' };
 
 /**
+ * How to load panel images right now: the custom loader, or the server with the session token;
+ * `null` while there is no token yet. Changes only when the token or the loader does.
+ */
+export function usePanelImageLoader(): PanelImageLoader | null {
+  const custom = useContext(PanelImageLoaderContext);
+  const token = useSessionStore((state) => state.token);
+  return useMemo(
+    () =>
+      custom ??
+      (token === null
+        ? null
+        : (panelId: string, signal: AbortSignal) => fetchPanelImage(panelId, token, signal)),
+    [custom, token],
+  );
+}
+
+/**
  * The image of a panel as a `blob:` URL (protocolo §1), revoked when the panel goes away or
  * changes. Waits for the session token before asking the server.
  */
 export function usePanelImage(panelId: string): PanelImageState {
-  const custom = useContext(PanelImageLoaderContext);
-  const token = useSessionStore((state) => state.token);
+  const load = usePanelImageLoader();
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
   useEffect(() => {
-    const load: PanelImageLoader | null =
-      custom ?? (token === null ? null : (id, signal) => fetchPanelImage(id, token, signal));
     if (load === null) {
       return;
     }
@@ -55,7 +69,7 @@ export function usePanelImage(panelId: string): PanelImageState {
         URL.revokeObjectURL(url);
       }
     };
-  }, [panelId, token, custom]);
+  }, [panelId, load]);
 
   // A result for another panel is stale: this one is still on its way.
   return loaded?.panelId === panelId ? loaded.state : LOADING;

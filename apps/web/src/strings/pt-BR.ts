@@ -256,6 +256,9 @@ export const strings = {
       themeBy: (nickname: string) => `Tema de ${nickname}`,
       revealed: 'Quadros já revelados',
       full: 'HQ completa',
+      download: 'Baixar HQ',
+      downloading: 'Preparando a HQ…',
+      downloadFailed: 'Não deu para baixar a HQ. Tente de novo.',
       finished: 'Fim das histórias!',
       finishedWaiting: 'O anfitrião vai levar todo mundo de volta ao lobby.',
       newMatch: 'Nova partida',
@@ -291,6 +294,8 @@ export const strings = {
     notDrawn: (artist: string) => `${artist} não desenhou a tempo`,
     loading: 'Carregando quadro…',
     loadFailed: 'Não deu para carregar este quadro.',
+    /** Bottom line of the downloaded page (Baixar HQ). */
+    exportFooter: 'Feito no Comicle',
   },
   devComic: {
     title: 'Páginas de HQ',
@@ -299,6 +304,7 @@ export const strings = {
     credits: 'Mostrar créditos',
     emptyPanels: 'Com quadros vazios',
     sample: (position: number) => `Quadro ${String(position)}`,
+    sampleTheme: 'O dia em que o gato virou prefeito da cidade e proibiu as segundas-feiras',
     artists: ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa', 'Fábio'],
   },
   drawing: {
