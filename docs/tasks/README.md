@@ -49,7 +49,7 @@ Sons e o modo Quadrinhos Individuais ([D47](../decisoes.md)). Os sons vêm prime
 | T34 | [Sons nos eventos do jogo](./T34-sons-na-partida.md) | T33 | ✅ |
 | T35 | [Modo individual: regras e contratos](./T35-individual-regras-e-contratos.md) | T12, T16 | ✅ |
 | T36 | [Modo individual: rodadas no servidor](./T36-individual-rodadas-no-servidor.md) | T35 | ✅ |
-| T37 | [Modo individual: editor de história completa](./T37-individual-editor-de-historia-completa.md) | T36 | 🟨 |
+| T37 | [Modo individual: editor de história completa](./T37-individual-editor-de-historia-completa.md) | T36 | ✅ |
 | T38 | [Modo individual: apresentação das versões](./T38-individual-apresentacao-das-versoes.md) | T37 | ⬜ |
 
 Podem andar em paralelo, se houver mais de uma pessoa ou sessão: T06/T07/T13/T14 (cliente) com T03–T05/T08/T10–T12 (servidor).
