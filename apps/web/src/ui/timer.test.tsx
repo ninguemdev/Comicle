@@ -1,7 +1,8 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Timer } from './timer';
+import { soundEngine } from '../features/sound/sound-engine';
+import { milestoneSound, Timer } from './timer';
 
 const LOCAL_START = 1_000_000;
 /** The server clock is 5 s ahead of the local one. */
@@ -76,5 +77,44 @@ describe('Timer', () => {
 
     expect(clock()).toBe('0:15');
     expect(announcement()).toBe('');
+  });
+});
+
+describe('Timer: sons de prazo (docs/sons.md §2)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ now: LOCAL_START });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('milestoneSound: 30 s e 10 s avisam, os últimos 5 s tiquetaqueiam, o fim soa uma vez', () => {
+    expect(milestoneSound(31, 30)).toBe('warning');
+    expect(milestoneSound(11, 10)).toBe('warning');
+    expect(milestoneSound(20, 19)).toBeNull();
+    expect(milestoneSound(6, 5)).toBe('tick');
+    expect(milestoneSound(2, 1)).toBe('tick');
+    expect(milestoneSound(1, 1)).toBeNull();
+    expect(milestoneSound(1, 0)).toBe('timeUp');
+    expect(milestoneSound(0, 0)).toBeNull();
+  });
+
+  it('cada som de prazo toca uma vez, e começar atrasado não repete o marco passado', () => {
+    const play = vi.spyOn(soundEngine, 'play').mockImplementation(() => undefined);
+    render(<Timer deadlineAt={LOCAL_START + OFFSET_MS + 12_000} offsetMs={OFFSET_MS} />);
+
+    advance(12_000);
+
+    expect(play.mock.calls.map(([id]) => id)).toEqual([
+      'warning',
+      'tick',
+      'tick',
+      'tick',
+      'tick',
+      'tick',
+      'timeUp',
+    ]);
   });
 });

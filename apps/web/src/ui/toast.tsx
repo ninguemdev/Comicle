@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { soundEngine } from '../features/sound/sound-engine';
 import { strings } from '../strings/pt-BR';
 import { CloseIcon } from './icons';
 
@@ -33,6 +34,13 @@ export function Toast({
       clearTimeout(timeout);
     };
   }, [onDismiss, durationMs, message]);
+
+  // docs/sons.md §2: a refused action is heard as well as seen.
+  useEffect(() => {
+    if (tone === 'error') {
+      soundEngine.play('error');
+    }
+  }, [tone, message]);
 
   return (
     <div className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center">

@@ -1,5 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 
+import { soundEngine } from '../features/sound/sound-engine';
+
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
 const BASE_CLASSES =
@@ -29,6 +31,23 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
 }
 
-export function Button({ variant = 'primary', type = 'button', className, ...props }: ButtonProps) {
-  return <button type={type} className={buttonClassName(variant, className)} {...props} />;
+export function Button({
+  variant = 'primary',
+  type = 'button',
+  className,
+  onClick,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      type={type}
+      className={buttonClassName(variant, className)}
+      onClick={(event) => {
+        // docs/sons.md §2: every press answers with a click.
+        soundEngine.play('click');
+        onClick?.(event);
+      }}
+      {...props}
+    />
+  );
 }
