@@ -11,16 +11,16 @@ Ligar o catálogo da T33 aos momentos do jogo de `docs/sons.md` §2 e §3: cliqu
 - `apps/web/src/features/room/room-announcer.tsx` (mesmo padrão de comparar views)
 
 ## Entregáveis
-- [ ] `useGameSounds`: compara a `PlayerView` anterior com a nova e pede os sons; nada na primeira view.
-- [ ] Avisos de prazo (30 s, 10 s, tique-taque nos últimos 5 s, fim) pelo relógio corrigido do `Timer`.
-- [ ] `click` no `Button`, `toggle` nas ferramentas e opções, `error` no `Toast` de erro.
-- [ ] `docs/sons.md` e `interface.md` §6 atualizados se algo mudar.
+- [x] `useGameSounds`: compara a `PlayerView` anterior com a nova e pede os sons; nada na primeira view.
+- [x] Avisos de prazo (30 s, 10 s, tique-taque nos últimos 5 s, fim) pelo relógio corrigido do `Timer`.
+- [x] `click` no `Button`, `toggle` nas ferramentas e opções, `error` no `Toast` de erro.
+- [x] `docs/sons.md` e `interface.md` §6 atualizados se algo mudar.
 
 ## Critérios de aceite
-- [ ] Numa partida real, cada momento do catálogo toca uma vez, sem som repetido ao reconectar.
-- [ ] Silenciado na tela inicial, a partida inteira fica em silêncio.
+- [x] Numa partida real, cada momento do catálogo toca uma vez, sem som repetido ao reconectar.
+- [x] Silenciado na tela inicial, a partida inteira fica em silêncio.
 
 ## Testes obrigatórios
-- [ ] `useGameSounds` com sequências de views (lobby → temas → desenho → leitura → apresentação, entrada e saída de membros, reconexão).
-- [ ] Prazos: 30 s, 10 s, 5…1 s e fim, uma vez cada.
-- [ ] Botão, ferramentas e toast de erro pedem o som certo.
+- [x] `useGameSounds` com sequências de views (lobby → temas → desenho → leitura → apresentação, entrada e saída de membros, reconexão).
+- [x] Prazos: 30 s, 10 s, 5…1 s e fim, uma vez cada.
+- [x] Botão, ferramentas e toast de erro pedem o som certo.
