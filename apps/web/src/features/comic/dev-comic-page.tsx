@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 
 import { strings } from '../../strings/pt-BR';
 import { DRAWING_COLORS } from '../drawing/engine/palette';
+import { DownloadComicButton } from '../presentation/download-comic-button';
 import { ComicPage } from './comic-page';
 import { PanelImageLoaderContext, type PanelImageLoader } from './use-panel-image';
 
@@ -34,6 +35,12 @@ const sampleLoader: PanelImageLoader = (panelId) => {
   return canvas.convertToBlob({ type: 'image/png' });
 };
 
+const sampleAuthor = {
+  playerId: 'autor',
+  nickname: texts.artists[0],
+  avatar: defaultAvatar(),
+};
+
 function samplePanels(count: number, withEmpty: boolean): PanelRef[] {
   return Array.from({ length: count }, (_, position) => {
     const nickname = texts.artists[position % texts.artists.length] ?? '';
@@ -52,6 +59,7 @@ export function DevComicPage() {
   const [count, setCount] = useState(5);
   const [credits, setCredits] = useState(false);
   const [withEmpty, setWithEmpty] = useState(false);
+  const panels = samplePanels(count, withEmpty);
 
   return (
     // Full viewport width, past the app column, to try the three-column layout.
@@ -96,11 +104,19 @@ export function DevComicPage() {
           {texts.emptyPanels}
         </label>
       </div>
-      <div className="h-[75dvh]">
-        <PanelImageLoaderContext value={sampleLoader}>
-          <ComicPage panels={samplePanels(count, withEmpty)} showCredits={credits} />
-        </PanelImageLoaderContext>
-      </div>
+      <PanelImageLoaderContext value={sampleLoader}>
+        <DownloadComicButton
+          story={{
+            theme: { text: texts.sampleTheme, author: sampleAuthor },
+            panelCount: count,
+            revealedPanels: panels,
+          }}
+          storyNumber={1}
+        />
+        <div className="h-[75dvh]">
+          <ComicPage panels={panels} showCredits={credits} />
+        </div>
+      </PanelImageLoaderContext>
     </div>
   );
 }

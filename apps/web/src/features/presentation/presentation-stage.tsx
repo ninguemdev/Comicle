@@ -6,6 +6,7 @@ import { SpeechBubble } from '../../ui/speech-bubble';
 import { AvatarRenderer } from '../avatar/avatar-renderer';
 import { ComicPage } from '../comic/comic-page';
 import { PanelFrame } from '../comic/panel-frame';
+import { DownloadComicButton } from './download-comic-button';
 
 // The main area of the presentation (interface.md §5): one view per step of the cursor.
 
@@ -69,7 +70,7 @@ function PanelView({ story, position }: { story: Story; position: number }) {
 }
 
 /** `full`: the whole story as a comic page with credits — the main view of the result. */
-function FullView({ story }: { story: Story }) {
+function FullView({ story, storyNumber }: { story: Story; storyNumber: number }) {
   return (
     <div className="flex size-full flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-x-3">
@@ -80,6 +81,9 @@ function FullView({ story }: { story: Story }) {
           {story.theme.text}
         </h2>
         <p className="text-muted">{texts.themeBy(story.theme.author.nickname)}</p>
+        <div className="ml-auto">
+          <DownloadComicButton story={story} storyNumber={storyNumber} />
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         <ComicPage panels={story.revealedPanels} showCredits />
@@ -136,7 +140,7 @@ export function PresentationStage({
     case 'panel':
       return <PanelView story={story} position={step.position} />;
     case 'full':
-      return <FullView story={story} />;
+      return <FullView story={story} storyNumber={presentation.storyIndex + 1} />;
     default:
       return step satisfies never;
   }

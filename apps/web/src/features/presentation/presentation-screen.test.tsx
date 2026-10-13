@@ -9,11 +9,21 @@ import {
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { saveFile } from '../../lib/save-file';
 import { useRoomStore } from '../../stores/room-store';
 import { matchView, setUpStores } from '../../test/room-fixtures';
+import { exportComicPng } from '../comic/comic-export';
 import { PanelImageLoaderContext, type PanelImageLoader } from '../comic/use-panel-image';
 import { MatchScreen } from '../match/match-screen';
 import { PresentationScreen } from './presentation-screen';
+
+// jsdom has no canvas: the page itself is drawn in the browser (comic-export.ts), here it is a
+// stand-in, and saving only records what would be downloaded.
+vi.mock('../comic/comic-export', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../comic/comic-export')>()),
+  exportComicPng: vi.fn(),
+}));
+vi.mock('../../lib/save-file', () => ({ saveFile: vi.fn() }));
 
 class NoopResizeObserver {
   observe(): void {
@@ -139,6 +149,45 @@ describe('PresentationScreen: vistas', () => {
         .map((figure) => figure.textContent),
     ).toEqual(['1Bia', 'Caio não desenhou a tempo2Caio', '3Ana']);
     expect(screen.queryByRole('list', { name: 'Quadros já revelados' })).toBeNull();
+  });
+
+  it.each([
+    ['o anfitrião', true],
+    ['os demais', false],
+  ])('Baixar HQ: %s baixam a história inteira como PNG', async (_who, isHost) => {
+    const png = new Blob(['png'], { type: 'image/png' });
+    vi.mocked(exportComicPng).mockResolvedValueOnce(png);
+    renderScreen(presentation({ kind: 'full' }, 3, { storyIndex: 1 }), isHost);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Baixar HQ' }));
+
+    await waitFor(() => {
+      expect(saveFile).toHaveBeenCalledWith(png, 'comicle-2-um-gato-prefeito.png');
+    });
+    expect(vi.mocked(exportComicPng).mock.lastCall?.[0]).toEqual({
+      theme: { text: 'Um gato prefeito', author: artist('Ana') },
+      panels: PANELS,
+    });
+    expect(screen.getByRole('button', { name: 'Baixar HQ' })).toHaveProperty('disabled', false);
+  });
+
+  it('Baixar HQ avisa quando não deu certo e deixa tentar de novo', async () => {
+    vi.mocked(exportComicPng).mockRejectedValueOnce(new Error('sem canvas'));
+    renderScreen(presentation({ kind: 'full' }, 3));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Baixar HQ' }));
+
+    expect(await screen.findByRole('alert')).toHaveProperty(
+      'textContent',
+      'Não deu para baixar a HQ. Tente de novo.',
+    );
+    expect(screen.getByRole('button', { name: 'Baixar HQ' })).toHaveProperty('disabled', false);
+  });
+
+  it('Baixar HQ só aparece na HQ completa', () => {
+    renderScreen(presentation({ kind: 'panel', position: 2 }, 3));
+
+    expect(screen.queryByRole('button', { name: 'Baixar HQ' })).toBeNull();
   });
 
   it('R56: finished leva o anfitrião ao lobby com Nova partida', () => {
