@@ -144,6 +144,37 @@ describe('DrawingEditor', () => {
     expect(pressed('Pincel (B)')).toBe(true);
   });
 
+  it('G escolhe o balde, que continua escolhido ao trocar de cor', () => {
+    setup();
+
+    key({ key: 'g' });
+    expect(pressed('Balde de tinta (G)')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Azul' }));
+    expect(pressed('Balde de tinta (G)')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Pincel (B)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Balde de tinta (G)' }));
+    expect(pressed('Balde de tinta (G)')).toBe(true);
+  });
+
+  it('um clique com o balde é um passo do desenho, que pode ser desfeito', () => {
+    const { onChange } = setup();
+    key({ key: 'g' });
+    fireEvent.click(screen.getByRole('button', { name: 'Vermelho' }));
+
+    const canvas = screen.getByRole('img', { name: 'Área de desenho' });
+    fireEvent.pointerDown(canvas, { pointerId: 1, pointerType: 'mouse', button: 0 });
+    expect(onChange).toHaveBeenLastCalledWith(1);
+    expect(enabled('Limpar')).toBe(true);
+
+    // The click is the whole action: moving and releasing add nothing.
+    fireEvent.pointerMove(canvas, { pointerId: 1, pointerType: 'mouse', clientX: 9, clientY: 9 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, pointerType: 'mouse' });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    key({ key: 'z', ctrlKey: true });
+    expect(enabled('Limpar')).toBe(false);
+  });
+
   it('R40: exportPng devolve null sem nada desenhado', async () => {
     const { ref } = setup();
 

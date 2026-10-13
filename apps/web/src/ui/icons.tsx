@@ -60,6 +60,16 @@ export function EraserIcon({ className = 'size-6' }: IconProps) {
   );
 }
 
+export function BucketIcon({ className = 'size-6' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>
+      <path d="M11 3L3.5 10.5a2 2 0 0 0 0 3l5 5a2 2 0 0 0 3 0L19 11z" />
+      <path d="M4 11h15" />
+      <path d="M21 15c0 1.5-1 3-2 3s-2-1.5-2-3 2-3.5 2-3.5 2 2 2 3.5z" />
+    </svg>
+  );
+}
+
 export function UndoIcon({ className = 'size-6' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>

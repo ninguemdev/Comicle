@@ -3,13 +3,19 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 
 import { strings } from '../../strings/pt-BR';
 import { bufferSize, fitPanel, toLogical, type Size } from './engine/coordinates';
-import type { DrawingDocument, NewStroke, Point } from './engine/drawing-document';
+import type {
+  DrawingDocument,
+  DrawingTool,
+  NewFill,
+  NewStroke,
+  Point,
+} from './engine/drawing-document';
 import { createPanelLayer, type Layer } from './engine/layers';
 import { PointerPolicy } from './engine/pointer-policy';
 import { drawStroke, renderDocument, SnapshotCache } from './engine/renderer';
 
 export interface BrushSettings {
-  tool: NewStroke['tool'];
+  tool: DrawingTool;
   color: string;
   size: number;
 }
@@ -22,6 +28,8 @@ export interface DrawingCanvasProps {
   disabled: boolean;
   /** A finished stroke, in logical coordinates. */
   onStroke: (stroke: NewStroke) => void;
+  /** A click with the bucket, in logical coordinates. */
+  onFill: (fill: NewFill) => void;
 }
 
 /** A canvas without 2D support (jsdom, very old browsers) leaves the editor inert, not broken. */
@@ -52,6 +60,7 @@ export function DrawingCanvas({
   brush,
   disabled,
   onStroke,
+  onFill,
 }: DrawingCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,9 +156,17 @@ export function DrawingCanvas({
       return;
     }
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     const rect = event.currentTarget.getBoundingClientRect();
-    live.current = { ...brush, points: [toLogical(event.clientX, event.clientY, rect)] };
+    const at = toLogical(event.clientX, event.clientY, rect);
+    const { tool, color, size } = brush;
+    if (tool === 'fill') {
+      // One click is the whole action: nothing follows the pointer.
+      policy.current.reset();
+      onFill({ color, at });
+      return;
+    }
+    event.currentTarget.setPointerCapture(event.pointerId);
+    live.current = { tool, color, size, points: [at] };
     schedulePaint();
   }
 

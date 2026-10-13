@@ -308,6 +308,7 @@ export const strings = {
     history: 'Histórico',
     brush: 'Pincel (B)',
     eraser: 'Borracha (E)',
+    fill: 'Balde de tinta (G)',
     colors: 'Cores',
     showColors: 'Escolher cor',
     customColor: 'Cor livre',

@@ -4,7 +4,12 @@ import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
 import { DrawingCanvas } from './drawing-canvas';
-import { DrawingDocument, type DrawingTool, type NewStroke } from './engine/drawing-document';
+import {
+  DrawingDocument,
+  type DrawingTool,
+  type NewFill,
+  type NewStroke,
+} from './engine/drawing-document';
 import { exportPng } from './engine/export';
 import { loadImage } from './load-image';
 import { BRUSH_SIZES, DEFAULT_BRUSH_SIZE, DEFAULT_COLOR, type BrushSize } from './engine/palette';
@@ -77,6 +82,11 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
     changed();
   }
 
+  function addFill(fill: NewFill): void {
+    doc.addFill(fill);
+    changed();
+  }
+
   function undo(): void {
     if (doc.undo()) {
       changed();
@@ -119,7 +129,8 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
         onTool={setTool}
         onColor={(next) => {
           setColor(next);
-          setTool('brush');
+          // A color is for painting: it leaves the eraser, but the bucket keeps it.
+          setTool((current) => (current === 'eraser' ? 'brush' : current));
         }}
         onSize={setSize}
         onUndo={undo}
@@ -134,6 +145,7 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
         brush={{ tool, color, size }}
         disabled={disabled}
         onStroke={addStroke}
+        onFill={addFill}
       />
       <Dialog
         open={confirmingClear}

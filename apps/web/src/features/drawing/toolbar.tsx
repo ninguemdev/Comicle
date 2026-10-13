@@ -1,7 +1,15 @@
 import { useState, type ReactNode } from 'react';
 
 import { strings } from '../../strings/pt-BR';
-import { BrushIcon, EraserIcon, PaletteIcon, RedoIcon, TrashIcon, UndoIcon } from '../../ui/icons';
+import {
+  BrushIcon,
+  BucketIcon,
+  EraserIcon,
+  PaletteIcon,
+  RedoIcon,
+  TrashIcon,
+  UndoIcon,
+} from '../../ui/icons';
 import type { DrawingTool } from './engine/drawing-document';
 import { BRUSH_SIZES, DRAWING_COLORS, type BrushSize, type DrawingColorId } from './engine/palette';
 
@@ -77,7 +85,7 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Brush, eraser, colors, sizes and history (interface.md §4). Desktop: a column left of the
+ * Brush, eraser, bucket, colors, sizes and history (interface.md §4). Desktop: a column left of the
  * canvas; phone in portrait: a row below it, colors in a popover; phone in landscape: a column.
  */
 export function Toolbar(props: ToolbarProps) {
@@ -115,6 +123,16 @@ export function Toolbar(props: ToolbarProps) {
           }}
         >
           <EraserIcon />
+        </ToolButton>
+        <ToolButton
+          label={texts.fill}
+          pressed={tool === 'fill'}
+          disabled={disabled}
+          onClick={() => {
+            props.onTool('fill');
+          }}
+        >
+          <BucketIcon />
         </ToolButton>
       </Group>
 
