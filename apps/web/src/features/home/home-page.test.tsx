@@ -1,10 +1,11 @@
 import { fail } from '@comicle/shared';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { routes } from '../../router';
 import { useProfileStore } from '../../stores/profile-store';
+import { useSoundStore } from '../../stores/sound-store';
 import { useThemeStore } from '../../stores/theme-store';
 import { mockRoomActions, ROOM_CODE, setUpStores } from '../../test/room-fixtures';
 
@@ -30,6 +31,25 @@ describe('tela inicial', () => {
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(screen.getByRole('radio', { name: 'Escuro' })).toHaveProperty('checked', true);
     expect(group).toBeInstanceOf(HTMLFieldSetElement);
+  });
+
+  it('Som: silenciar e volume valem para o site e ficam no navegador', () => {
+    setUpStores(null);
+    renderHome();
+    const group = screen.getByRole('group', { name: 'Som' });
+    const mute = within(group).getByRole('button', { name: 'Silenciar' });
+    const volume = within(group).getByRole<HTMLInputElement>('slider', { name: 'Volume' });
+
+    expect(mute.getAttribute('aria-pressed')).toBe('false');
+    expect(volume.value).toBe('60');
+    fireEvent.click(mute);
+    expect(mute.getAttribute('aria-pressed')).toBe('true');
+    expect(useSoundStore.getState().muted).toBe(true);
+
+    fireEvent.change(volume, { target: { value: '35' } });
+    expect(useSoundStore.getState()).toMatchObject({ volume: 0.35, muted: false });
+    expect(volume.getAttribute('aria-valuetext')).toBe('35%');
+    useSoundStore.getState().actions.setVolume(0.6);
   });
 
   it('mostra o perfil atual com atalho para editar', () => {

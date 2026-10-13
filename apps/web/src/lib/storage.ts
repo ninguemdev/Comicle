@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   session: 'comicle.session',
   profile: 'comicle.profile',
   theme: 'comicle.theme',
+  sound: 'comicle.sound',
 } as const;
 
 type Backend = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;

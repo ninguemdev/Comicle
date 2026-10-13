@@ -1,3 +1,4 @@
+import type { SoundId } from '../features/sound/sound-catalog';
 import {
   MAX_PLAYERS,
   MIN_PLAYERS,
@@ -79,6 +80,34 @@ export const strings = {
       ThemePreference,
       string
     >,
+  },
+  sound: {
+    label: 'Som',
+    volume: 'Volume',
+    volumeValue: (percent: number) => `${String(percent)}%`,
+    mute: 'Silenciar',
+    unmute: 'Ativar sons',
+    names: {
+      click: 'Clique',
+      toggle: 'Alternar',
+      join: 'Alguém entrou',
+      leave: 'Alguém saiu',
+      start: 'Partida começa',
+      turn: 'Sua vez',
+      tick: 'Tique do relógio',
+      warning: 'Aviso de tempo',
+      timeUp: 'Tempo esgotado',
+      submit: 'Recebido',
+      reveal: 'Revelação',
+      fanfare: 'HQ completa',
+      error: 'Erro',
+    } satisfies Record<SoundId, string>,
+  },
+  devSounds: {
+    title: 'Sons',
+    description:
+      'Cada som do catálogo (docs/sons.md), no volume escolhido. Visível só em desenvolvimento.',
+    sounds: 'Catálogo',
   },
   home: {
     editProfile: 'Editar perfil',
