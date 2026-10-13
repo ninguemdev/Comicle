@@ -151,13 +151,13 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R35 — Leitura.** A partir da rodada 1, cada rodada começa em `round_reading`, com prazo `min(READING_BASE_SECONDS + READING_PER_PANEL_SECONDS × r, READING_MAX_SECONDS)` segundos, sendo `r` o índice da rodada (= quadros já existentes).
 
-**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready`. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história. A confirmação vale para a rodada: se a mesma história voltar a ele numa rodada posterior (quantidade fixa maior que o número de participantes), ele a lê de novo. A interface mostra "Prepare-se…" com o progresso dos demais, sem os quadros.
+**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready` e leva o jogador direto ao desenho (R38), mesmo com os demais ainda lendo. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história. A confirmação vale para a rodada: se a mesma história voltar a ele numa rodada posterior (quantidade fixa maior que o número de participantes), ele a lê de novo.
 
 **R37 — Fim da leitura.** A leitura termina quando todos os participantes **conectados** confirmaram ou quando o prazo acaba; quem não confirmou é marcado como pronto automaticamente. Participantes desconectados contam como prontos.
 
-**R38 — Desenho.** Começa no mesmo instante para todos, com prazo `drawingSeconds`. O tema fica visível como referência textual; os quadros anteriores, não.
+**R38 — Desenho.** Cada jogador começa a desenhar ao confirmar a leitura (ou quando ela termina); na rodada 0, todos começam juntos. O prazo do desenho é **comum**: fim da leitura + `drawingSeconds`, e a fase `round_drawing` vai do fim da leitura até ele. Enquanto a leitura não termina, a tarefa de quem já desenha traz o prazo mais tarde possível (prazo da leitura + `drawingSeconds`), que fica mais cedo se a leitura terminar antes. O tema fica visível como referência textual; os quadros anteriores, não.
 
-**R39 — Autosave.** Enquanto desenha, o cliente envia `panel:autosave` com o PNG atual no máximo a cada `AUTOSAVE_INTERVAL_MS`, e só se houve mudança. O servidor guarda, em memória, o último por (rodada, jogador).
+**R39 — Autosave.** Enquanto desenha (inclusive durante a leitura dos demais, R38), o cliente envia `panel:autosave` com o PNG atual no máximo a cada `AUTOSAVE_INTERVAL_MS`, e só se houve mudança. O servidor guarda, em memória, o último por (rodada, jogador).
 
 **R40 — Concluir.** `panel:submit { reason: 'done' }` envia o PNG final. O jogador vai para a espera e não pode reabrir o quadro. Tela sem nenhum traço é enviada sem imagem. Qualquer envio final (`done` ou `timeout`) encerra a participação do jogador na rodada.
 
@@ -167,7 +167,7 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R43 — Status do quadro.** `complete` (o jogador concluiu), `partial` (imagem vinda de `timeout` ou autosave) ou `empty` (nenhuma imagem). Quadros `partial` são exibidos normalmente, sem marcação.
 
-**R44 — Envios inválidos.** Envio para outra rodada, fora da fase ou depois da janela de fechamento: `INVALID_STATE` ou `DEADLINE_PASSED`. Envio repetido depois de `done`: `INVALID_STATE`.
+**R44 — Envios inválidos.** Envio na leitura antes de confirmá-la, para outra rodada, fora da fase ou depois da janela de fechamento: `INVALID_STATE` ou `DEADLINE_PASSED`. Envio repetido depois de `done`: `INVALID_STATE`.
 
 **R45 — Transição.** Depois do fechamento: se há próxima rodada, ela começa (leitura); senão, a partida vai para `presentation`.
 
@@ -177,7 +177,7 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R46 — Vaga preservada.** O participante desconectado mantém a vaga; nenhuma fase espera por ele além do prazo.
 
-**R47 — Volta na leitura.** Se ainda não confirmou, volta a ver os quadros da rodada atual. Se já confirmou, continua sem vê-los.
+**R47 — Volta na leitura.** Se ainda não confirmou, volta a ver os quadros da rodada atual. Se já confirmou, volta ao desenho (R48), sem vê-los.
 
 **R48 — Volta no desenho.** O cliente baixa o próprio rascunho (`GET /api/rooms/:code/my-draft`) e o usa como camada base do canvas; o histórico de desfazer recomeça vazio.
 

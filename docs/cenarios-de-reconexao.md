@@ -20,7 +20,7 @@ O que acontece quando a conexão de alguém cai e volta, em cada fase. Complemen
 | Temas | Participante cai e volta (ou recarrega) | O rascunho volta no campo pela `PlayerView` (R49); o tema enviado continua enviado | `reconnection.test.ts` |
 | Temas | Participante fica fora até o prazo | A etapa espera o prazo (R29); vale o último rascunho válido ou um tema reserva (R30) | `reconnection.test.ts` (R46) |
 | Leitura | Cai antes de confirmar | Volta vendo os quadros da história (R47) | `reconnection.test.ts` |
-| Leitura | Cai depois de confirmar | Volta em "Prepare-se…", sem os quadros; a imagem responde 403 (R36, R47) | `reconnection.test.ts` |
+| Leitura | Cai depois de confirmar | Volta ao desenho com o rascunho, mesmo com os demais ainda lendo; sem os quadros, e a imagem responde 403 (R36, R47, R48) | `reconnection.test.ts` |
 | Leitura | Fica fora | Não segura a fase: conta como pronto (R37) | `rounds.test.ts` |
 | Desenho | Cai depois de um autosave e volta | `hasDraft: true`; o cliente baixa `my-draft` e usa como camada base, com o desfazer vazio (R48) | `reconnection.test.ts` |
 | Desenho | O prazo local zera sem conexão | O envio por tempo é refeito ao voltar à sala, se o fechamento ainda aceitar; senão vale o último autosave (R42) | `drawing-screen.test.tsx` |

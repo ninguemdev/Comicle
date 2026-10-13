@@ -70,8 +70,8 @@ type Ack<T> =
 | `theme:draft` | `{ text }` | `{}` | participante, `theme_writing` | R28 |
 | `theme:submit` | `{ text }` | `{}` | participante, `theme_writing` | R27–R29 |
 | `round:ready` | `{ roundIndex }` | `{}` | participante, `round_reading` | R36, R37 |
-| `panel:autosave` | `{ roundIndex, png: Uint8Array }` | `{}` | participante, `round_drawing` | R39 |
-| `panel:submit` | `{ roundIndex, reason: 'done' \| 'timeout', png: Uint8Array \| null }` | `{}` | participante, `round_drawing` ou `round_closing` | R40–R44 |
+| `panel:autosave` | `{ roundIndex, png: Uint8Array }` | `{}` | participante, `round_drawing` (ou `round_reading` depois do próprio `round:ready`) | R38, R39 |
+| `panel:submit` | `{ roundIndex, reason: 'done' \| 'timeout', png: Uint8Array \| null }` | `{}` | participante, `round_drawing` ou `round_closing` (ou `round_reading` depois do próprio `round:ready`) | R38, R40–R44 |
 | `presentation:navigate` | `{ action: 'next' \| 'prev' \| 'showFull' \| 'nextStory' } \| { action: 'goToStory', storyIndex }` | `{}` | anfitrião, `presentation` | R52, R53 |
 | `presentation:end` | `{}` | `{}` | anfitrião, `presentation` | R56 |
 
@@ -94,7 +94,7 @@ Erros da partida e da etapa de temas:
 Erros das rodadas:
 
 - `round:ready`: fora de `round_reading`, com outro `roundIndex` ou de espectador → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED`. Confirmar de novo é idempotente.
-- `panel:autosave` e `panel:submit` (R44): de espectador, com `roundIndex` de uma rodada futura, na leitura da rodada ou depois do próprio envio final → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo do desenho; a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
+- `panel:autosave` e `panel:submit` (R44): de espectador, com `roundIndex` de uma rodada futura, na leitura antes do próprio `round:ready` ou depois do próprio envio final → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo comum do desenho (R38); a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
 - O `panel:autosave` não gera `room:view`: só mudaria o `hasDraft` do próprio jogador, que importa ao (re)conectar e chega com essa view.
 
 Erros da apresentação:
@@ -179,9 +179,9 @@ type PanelRef = {
 type PlayerTask =
   | { kind: 'write_theme'; status: 'writing' | 'submitted'; draft: string }
   | { kind: 'read_story'; status: 'reading'; theme: string; previousPanels: PanelRef[] }
-  | { kind: 'read_story'; status: 'ready'; theme: string }
   | { kind: 'draw_panel'; status: 'drawing' | 'submitted'; theme: string;
-      panelPosition: number; hasDraft: boolean }
+      panelPosition: number; hasDraft: boolean;
+      deadlineAt: number }  // prazo comum do desenho (R38); na leitura, o mais tarde possível
   | { kind: 'wait' }        // round_closing, ou nada a fazer
   | { kind: 'spectate' }    // espectadores durante a criação
   | { kind: 'watch' };      // todos durante a apresentação
@@ -208,7 +208,7 @@ type PresentationView = {
 
 Regras de projeção (R58), testadas em `build-player-view.test.ts`:
 
-- `read_story.previousPanels` só existe com `status: 'reading'`.
+- `read_story` só existe até o `round:ready`; depois dele, a tarefa é `draw_panel`, mesmo na `round_reading` (R36, R38).
 - `draw_panel` nunca inclui quadros.
 - Temas de outros participantes nunca aparecem fora da apresentação.
 - `presentation.story.revealedPanels` contém exatamente os quadros com posição `< revealedCount`.
@@ -221,7 +221,7 @@ Regras de projeção (R58), testadas em `build-player-view.test.ts`:
 1. Ao conectar e a cada 60 s, o cliente envia `time:sync { clientSentAt }` três vezes.
 2. Para cada resposta: `rtt = agora − clientSentAt`; `offset = serverNow + rtt/2 − agora`.
 3. Usa o `offset` da amostra de menor `rtt`.
-4. Tempo restante exibido: `phaseDeadlineAt − (Date.now() + offset)`, com piso 0.
+4. Tempo restante exibido: `phaseDeadlineAt − (Date.now() + offset)`, com piso 0; no desenho, o `deadlineAt` da tarefa.
 5. Quando o timer local chega a 0 durante o desenho, o cliente já envia `panel:submit { reason: 'timeout' }` sem esperar o `round:collect`.
 
 ---
