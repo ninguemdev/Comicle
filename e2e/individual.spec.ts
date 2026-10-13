@@ -5,6 +5,7 @@ import {
   createRoom,
   drawingCanvas,
   drawSomething,
+  finishedHeading,
   inviteLinkOf,
   joinRoom,
   presentationHeading,
@@ -17,6 +18,7 @@ import { createPlayer } from './support/player';
 
 const settings = strings.room.settings;
 const story = strings.match.drawing.story;
+const presentation = strings.match.presentation;
 const PANELS = 2;
 
 /** R65, R66: draws on every panel of the story, moving with the strip, then hands it in. */
@@ -34,7 +36,7 @@ async function drawWholeStory(page: Page): Promise<void> {
   }
 }
 
-test('R62–R66: partida individual de 2 jogadores, cada um desenha a história inteira do outro', async ({
+test('R62–R68: partida individual de 2 jogadores, da escolha do modo ao fim da apresentação por tema', async ({
   browser,
 }) => {
   const host = await createPlayer(browser, 'Ana');
@@ -69,11 +71,17 @@ test('R62–R66: partida individual de 2 jogadores, cada um desenha a história 
   }
   await Promise.all([drawWholeStory(host.page), drawWholeStory(guest.page)]);
 
-  // Two versions, one per theme, each with two panels by the same artist.
-  await expect(presentationHeading(host.page)).toHaveText(/^História 1 de 2$/);
+  // R68: by theme; with 2 players each theme has one version, by the other player.
+  await expect(presentationHeading(host.page)).toHaveText('Tema 1 de 2 · versão 1 de 1');
+  await expect(guest.page.getByText(/^Versão 1 de 1 · desenhada por (Ana|Bruno)$/)).toBeVisible();
   for (let step = 0; step <= PANELS; step++) {
     await presentationNext(host);
   }
   await expect(host.page.locator('figure img')).toHaveCount(PANELS);
   await expect(guest.page.locator('figure img')).toHaveCount(PANELS);
+
+  await host.page.getByRole('button', { name: presentation.nextTheme }).click();
+  await expect(presentationHeading(guest.page)).toHaveText('Tema 2 de 2 · versão 1 de 1');
+  await host.page.getByRole('button', { name: presentation.nextTheme }).click();
+  await expect(finishedHeading(guest.page)).toBeVisible();
 });
