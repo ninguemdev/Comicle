@@ -12,7 +12,14 @@ import {
 } from '@comicle/shared';
 
 import { presentedPanels, readablePanels } from '../drawing/panel-access-policy';
-import { assignedStory, isParticipant, seatOf, type Match, type PanelMeta } from '../matches/match';
+import {
+  assignedStory,
+  isParticipant,
+  seatOf,
+  type Match,
+  type PanelMeta,
+  type RoundState,
+} from '../matches/match';
 import { isConnected, type Member, type Room } from '../rooms/room';
 
 // The only place that decides what a player sees (R58, arquitetura §4 Projeção).
@@ -106,6 +113,19 @@ function presentationView(room: Room, match: Match): PresentationView | null {
   };
 }
 
+/** R38: only the theme of the story being drawn; never its panels. */
+function drawTask(match: Match, round: RoundState, playerId: string, theme: string): PlayerTask {
+  return {
+    kind: 'draw_panel',
+    status: round.finals.has(playerId) ? 'submitted' : 'drawing',
+    theme,
+    panelPosition: match.roundIndex,
+    // R48: whether `GET /api/rooms/:code/my-draft` has something to restore.
+    hasDraft: round.drafts.has(playerId),
+    deadlineAt: round.drawingDeadlineAt,
+  };
+}
+
 function participantTask(room: Room, match: Match, playerId: string): PlayerTask {
   switch (match.phase) {
     case 'theme_writing': {
@@ -120,12 +140,12 @@ function participantTask(room: Room, match: Match, playerId: string): PlayerTask
     }
     case 'round_reading': {
       const story = assignedStory(match, playerId);
-      if (!story) {
+      if (!story || match.round === null) {
         return { kind: 'wait' };
       }
-      // R36: the panels only until the player confirms; afterwards just the theme.
-      return match.round?.ready.has(playerId)
-        ? { kind: 'read_story', status: 'ready', theme: story.themeText }
+      // R36: the panels only until the player confirms; then straight to drawing.
+      return match.round.ready.has(playerId)
+        ? drawTask(match, match.round, playerId, story.themeText)
         : {
             kind: 'read_story',
             status: 'reading',
@@ -137,16 +157,8 @@ function participantTask(room: Room, match: Match, playerId: string): PlayerTask
     }
     case 'round_drawing': {
       const story = assignedStory(match, playerId);
-      // R38: only the theme of the story being drawn; never its panels.
-      return story
-        ? {
-            kind: 'draw_panel',
-            status: match.round?.finals.has(playerId) ? 'submitted' : 'drawing',
-            theme: story.themeText,
-            panelPosition: match.roundIndex,
-            // R48: whether `GET /api/rooms/:code/my-draft` has something to restore.
-            hasDraft: match.round?.drafts.has(playerId) ?? false,
-          }
+      return story && match.round !== null
+        ? drawTask(match, match.round, playerId, story.themeText)
         : { kind: 'wait' };
     }
     case 'round_closing':

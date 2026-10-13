@@ -197,15 +197,29 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
 
   /** R34, R35: a round starts at reading, or straight at drawing when the mode has none. */
   function startRound(match: Match, roundIndex: number, now: number): MatchTransition {
-    const next: Match = { ...match, roundIndex, round: emptyRound() };
-    return getGameMode(match.settings.mode).hasReadingPhase(roundIndex)
-      ? enterPhase(next, 'round_reading', now, timing.readingMs(roundIndex))
-      : enterPhase(next, 'round_drawing', now, timing.drawingMs(match.settings));
+    const drawingMs = timing.drawingMs(match.settings);
+    if (!getGameMode(match.settings.mode).hasReadingPhase(roundIndex)) {
+      const next: Match = { ...match, roundIndex, round: emptyRound(now + drawingMs) };
+      return enterPhase(next, 'round_drawing', now, drawingMs);
+    }
+    const readingMs = timing.readingMs(roundIndex);
+    const next: Match = { ...match, roundIndex, round: emptyRound(now + readingMs + drawingMs) };
+    return enterPhase(next, 'round_reading', now, readingMs);
   }
 
-  /** R37, R38: drawing starts at the same instant for everyone. */
+  /**
+   * R37, R38: the reading is over for everyone; the drawing deadline, common to all, is now
+   * final. Whoever confirmed earlier has been drawing since then (R36).
+   */
   function startDrawing(match: RoundMatch, now: number): MatchTransition {
-    return enterPhase(allReady(match), 'round_drawing', now, timing.drawingMs(match.settings));
+    const drawingMs = timing.drawingMs(match.settings);
+    const ready = allReady(match);
+    return enterPhase(
+      { ...ready, round: { ...ready.round, drawingDeadlineAt: now + drawingMs } },
+      'round_drawing',
+      now,
+      drawingMs,
+    );
   }
 
   /** R29, R30, R34: the themes are final; the rounds begin. */

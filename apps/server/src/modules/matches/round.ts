@@ -38,8 +38,9 @@ export function assertCanConfirmReading(
 export type PanelAction = 'autosave' | 'submit';
 
 /**
- * R39, R44, R61: autosaves are accepted while drawing; submissions also until the end of the
- * closing window (R42). An earlier round or a closed window answers DEADLINE_PASSED.
+ * R36, R39, R44, R61: autosaves are accepted while drawing, which starts for each player as soon
+ * as they confirm the reading; submissions also until the end of the closing window (R42). An
+ * earlier round or a closed window answers DEADLINE_PASSED.
  */
 export function assertCanSendPanel(
   match: Match | null,
@@ -58,8 +59,8 @@ export function assertCanSendPanel(
   if (roundIndex < match.roundIndex || !inRound(match)) {
     throw deadlinePassed();
   }
-  if (match.phase === 'round_reading') {
-    throw invalidState('O desenho desta rodada ainda não começou.');
+  if (match.phase === 'round_reading' && !match.round.ready.has(playerId)) {
+    throw invalidState('Confirme a leitura antes de desenhar.');
   }
   if (match.round.finals.has(playerId)) {
     throw invalidState('Você já entregou este quadro.');
@@ -70,10 +71,11 @@ export function assertCanSendPanel(
 }
 
 function sendLimit(match: RoundMatch, action: PanelAction, closingMs: number): number {
-  const deadline = match.phaseDeadlineAt ?? Number.POSITIVE_INFINITY;
   if (match.phase === 'round_closing') {
-    return action === 'submit' ? deadline : Number.NEGATIVE_INFINITY;
+    const closingEnd = match.phaseDeadlineAt ?? Number.POSITIVE_INFINITY;
+    return action === 'submit' ? closingEnd : Number.NEGATIVE_INFINITY;
   }
+  const deadline = match.round.drawingDeadlineAt;
   return action === 'submit' ? deadline + closingMs : deadline;
 }
 

@@ -35,7 +35,7 @@ describe('roomAnnouncement', () => {
     const view = matchView({
       phase: 'round_reading',
       roundIndex: 1,
-      task: { kind: 'read_story', status: 'ready', theme: 'Tema' },
+      task: { kind: 'read_story', status: 'reading', theme: 'Tema', previousPanels: [] },
     });
     expect(roomAnnouncement(view)).toBe('Leitura: rodada 2 de 3');
   });

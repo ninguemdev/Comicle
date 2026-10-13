@@ -158,7 +158,7 @@ describe('reconexão (integração)', () => {
     });
   });
 
-  it('R47: quem cai antes de confirmar a leitura volta vendo os quadros; depois, volta sem eles', async () => {
+  it('R47, R48: quem cai antes de confirmar a leitura volta vendo os quadros; depois, volta desenhando, sem eles', async () => {
     const players = await room();
     const [ana, bia] = players;
     await startMatch(players);
@@ -169,7 +169,7 @@ describe('reconexão (integração)', () => {
     await drop(bia, ana);
     let back = await reopen(bia);
     const reading = taskOf(back);
-    if (reading?.kind !== 'read_story' || reading.status !== 'reading') {
+    if (reading?.kind !== 'read_story') {
       throw new Error(`esperava a leitura, veio ${JSON.stringify(reading)}`);
     }
     expect(reading.previousPanels).toHaveLength(1);
@@ -177,10 +177,18 @@ describe('reconexão (integração)', () => {
     expect((await get(`/api/panels/${panelId}`, bia.token)).status).toBe(200);
 
     expect((await back.client.emitWithAck('round:ready', { roundIndex: 1 })).ok).toBe(true);
+    // R36: drawing already, while ana is still reading.
+    const draft = panelPng(3);
+    expect(
+      (await back.client.emitWithAck('panel:autosave', { roundIndex: 1, png: draft })).ok,
+    ).toBe(true);
     await drop(back, ana);
     back = await reopen(back);
 
-    expect(taskOf(back)).toMatchObject({ kind: 'read_story', status: 'ready' });
+    expect(back.views.latest?.match?.phase).toBe('round_reading');
+    expect(taskOf(back)).toMatchObject({ kind: 'draw_panel', status: 'drawing', hasDraft: true });
+    const response = await get(`/api/rooms/${code}/my-draft`, bia.token);
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(draft);
     expect(JSON.stringify(back.views.latest)).not.toContain(panelId);
     expect((await get(`/api/panels/${panelId}`, bia.token)).status).toBe(403);
   });

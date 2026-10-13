@@ -135,9 +135,7 @@ describe('rodadas (integração)', () => {
 
   function previousPanelIds(player: Player): string[] {
     const task = taskOf(player.views.latest);
-    return task?.kind === 'read_story' && task.status === 'reading'
-      ? task.previousPanels.map((panel) => panel.panelId)
-      : [];
+    return task?.kind === 'read_story' ? task.previousPanels.map((panel) => panel.panelId) : [];
   }
 
   function nextAborted(client: TestClient): Promise<{ reason: MatchAbortReason }> {
@@ -240,6 +238,42 @@ describe('rodadas (integração)', () => {
     await server.scheduler.advanceBy(timing.readingMs(2));
     const drawing = await bia.views.waitFor(inPhase('round_drawing', 2));
     expect(drawing.match?.progress).toEqual({ done: 0, total: 3 });
+  });
+
+  it('R36, R38: quem confirma desenha e entrega enquanto os outros leem; o prazo é comum', async () => {
+    await start();
+    const { players } = await drawingRound0();
+    const [ana, bia, caio] = players;
+    for (const player of players) {
+      await done(player, 0);
+    }
+    const reading = await ana.views.waitFor(inPhase('round_reading', 1));
+    const latestDeadline = (reading.match?.phaseDeadlineAt ?? 0) + DRAWING_MS;
+
+    expect(await ready(ana, 1)).toEqual({ ok: true, data: {} });
+    const drawing = await ana.views.waitFor((v) => taskState(v) === 'draw_panel:drawing');
+    expect(drawing.match?.phase).toBe('round_reading');
+    expect(drawing.match?.task).toMatchObject({ panelPosition: 1, deadlineAt: latestDeadline });
+    expect(taskState(bia.views.latest)).toBe('read_story:reading');
+
+    expect(await done(ana, 1, 5)).toEqual({ ok: true, data: {} });
+    await ana.views.waitFor((v) => taskState(v) === 'draw_panel:submitted');
+    expect(ana.views.latest?.match?.phase).toBe('round_reading');
+
+    // The last confirmation ends the reading: the common deadline is fixed from now on.
+    await server.scheduler.advanceBy(1000);
+    await ready(bia, 1);
+    await ready(caio, 1);
+    const started = await bia.views.waitFor(inPhase('round_drawing', 1));
+    const deadline = server.clock.now() + DRAWING_MS;
+    expect(started.match).toMatchObject({
+      phaseDeadlineAt: deadline,
+      task: { deadlineAt: deadline },
+    });
+    expect((await ana.views.waitFor(inPhase('round_drawing', 1))).match?.task).toMatchObject({
+      status: 'submitted',
+      deadlineAt: deadline,
+    });
   });
 
   it('R41, R42: um desconectado sem concluir faz o desenho esperar o prazo; o fechamento recolhe o resto', async () => {

@@ -11,6 +11,9 @@ import { Room, type Member } from '../../src/modules/rooms/room';
 
 // Builders for unit tests of the rooms and matches modules.
 
+/** Drawing deadline of the rounds built here (R38). */
+export const TEST_DRAWING_DEADLINE_AT = 200_000;
+
 export function testMember(
   playerId: string,
   { joinedAt = 0, connected = true }: { joinedAt?: number; connected?: boolean } = {},
@@ -108,6 +111,6 @@ export function testRoundMatch(
     roundIndex,
     themes: new Map(),
     stories: testStories(playerIds, roundIndex),
-    round: { ...emptyRound(), ...round },
+    round: { ...emptyRound(TEST_DRAWING_DEADLINE_AT), ...round },
   });
 }

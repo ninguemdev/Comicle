@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 
 import {
   inMatch,
+  TEST_DRAWING_DEADLINE_AT,
   testMatch,
   testMember,
   testRoom,
   testRoundMatch,
   testStories,
 } from '../../../test/support/room-builders';
-import type { Match } from '../matches/match';
+import { emptyRound, type Match } from '../matches/match';
 import {
   initialPresentationCursor,
   isPanelRevealed,
@@ -178,6 +179,7 @@ describe('buildPlayerView na rodada 0', () => {
       phase: 'round_drawing',
       roundIndex: 0,
       themes: new Map(),
+      round: emptyRound(TEST_DRAWING_DEADLINE_AT),
       stories: ['ana', 'bia'].map((playerId) => ({
         id: `story-${playerId}`,
         themeId: `theme-${playerId}`,
@@ -198,6 +200,7 @@ describe('buildPlayerView na rodada 0', () => {
       theme: 'Tema de bia',
       panelPosition: 0,
       hasDraft: false,
+      deadlineAt: TEST_DRAWING_DEADLINE_AT,
     });
     expect(buildPlayerView(drawingRoom(), 'bia', 0).match?.task).toMatchObject({
       theme: 'Tema de ana',
@@ -245,14 +248,18 @@ describe('buildPlayerView nas rodadas', () => {
     });
   });
 
-  it('R36: depois de round:ready, a leitura só traz o tema', () => {
+  it('R36, R38: depois de round:ready, o jogador já desenha, com o prazo comum e sem os quadros', () => {
     const reading = testRoundMatch(players, 'round_reading', 1, { ready: new Set(['ana']) });
 
     expect(taskOf(reading, 'ana')).toEqual({
-      kind: 'read_story',
-      status: 'ready',
+      kind: 'draw_panel',
+      status: 'drawing',
       theme: 'Tema de bia',
+      panelPosition: 1,
+      hasDraft: false,
+      deadlineAt: TEST_DRAWING_DEADLINE_AT,
     });
+    expect(taskOf(reading, 'bia')).toMatchObject({ kind: 'read_story', status: 'reading' });
     expect(JSON.stringify(viewOf(reading, 'ana'))).not.toContain('panel-');
   });
 
@@ -280,6 +287,7 @@ describe('buildPlayerView nas rodadas', () => {
       theme: 'Tema de ana',
       panelPosition: 2,
       hasDraft: true,
+      deadlineAt: TEST_DRAWING_DEADLINE_AT,
     });
     expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', hasDraft: false });
     for (const playerId of [...players, 'davi']) {

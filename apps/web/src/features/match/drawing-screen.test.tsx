@@ -8,6 +8,7 @@ import { useSessionStore } from '../../stores/session-store';
 import { matchView, setUpStores } from '../../test/room-fixtures';
 import type { DrawingEditorProps } from '../drawing/drawing-editor';
 import { DrawingScreen } from './drawing-screen';
+import { MatchScreen } from './match-screen';
 
 // The real editor needs a 2D canvas; this one records its props and hands back a fixed PNG.
 const editor = vi.hoisted(() => ({
@@ -30,7 +31,14 @@ function drawingView({ hasDraft = false, deadlineIn = DRAWING_MS } = {}): Player
     phase: 'round_drawing',
     roundIndex: 1,
     phaseDeadlineAt: NOW + deadlineIn,
-    task: { kind: 'draw_panel', status: 'drawing', theme: 'Um gato', panelPosition: 1, hasDraft },
+    task: {
+      kind: 'draw_panel',
+      status: 'drawing',
+      theme: 'Um gato',
+      panelPosition: 1,
+      hasDraft,
+      deadlineAt: NOW + deadlineIn,
+    },
   });
 }
 
@@ -47,6 +55,7 @@ function renderDrawing(view: PlayerView) {
       view={view}
       match={match}
       theme="Um gato"
+      deadlineAt={match.task.kind === 'draw_panel' ? match.task.deadlineAt : null}
       hasDraft={match.task.kind === 'draw_panel' && match.task.hasDraft}
       closing={false}
       onSent={onSent}
@@ -115,6 +124,32 @@ describe('tela de desenho', () => {
     });
     await advance(1000);
     expect(actions.submitPanel).toHaveBeenCalledTimes(1);
+  });
+
+  it('R36, R38: quem confirmou a leitura desenha com o prazo do desenho, não o da leitura', async () => {
+    const view = matchView({
+      phase: 'round_reading',
+      roundIndex: 1,
+      phaseDeadlineAt: NOW + 5000,
+      task: {
+        kind: 'draw_panel',
+        status: 'drawing',
+        theme: 'Um gato',
+        panelPosition: 1,
+        hasDraft: false,
+        deadlineAt: NOW + 5000 + DRAWING_MS,
+      },
+    });
+    const actions = setUpStores(view);
+    useRoomStore.setState({ clockOffsetMs: 0 });
+    render(<MatchScreen view={view} match={view.match ?? never()} />);
+
+    expect(screen.getByRole('button', { name: 'Concluir' })).toBeTruthy();
+    expect(editor.props?.disabled).toBe(false);
+    await advance(5000 + DRAWING_MS - 1);
+    expect(actions.submitPanel).not.toHaveBeenCalled();
+    await advance(1);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'timeout', editor.png);
   });
 
   it('R42: round:collect da rodada envia timeout na hora; de outra rodada, não', async () => {
@@ -260,3 +295,7 @@ describe('tela de desenho', () => {
     expect(editor.props?.baseImageUrl).toBeUndefined();
   });
 });
+
+function never(): never {
+  throw new Error('view sem partida');
+}
