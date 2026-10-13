@@ -50,7 +50,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 
 | Tela | Rota / condição | Conteúdo essencial |
 |---|---|---|
-| Início | `/` | Logo, avatar + nickname atuais (botão editar), **Criar sala** (sem perfil salvo, leva antes à personalização), **Entrar em sala** (campo de código normalizado ao digitar: maiúsculas e só caracteres do alfabeto, R6) |
+| Início | `/` | Logo, avatar + nickname atuais (botão editar), **Criar sala** (sem perfil salvo, leva antes à personalização), **Entrar em sala** (campo de código normalizado ao digitar: maiúsculas e só caracteres do alfabeto, R6), **Aparência** e **Som** (botão **Silenciar** e barra **Volume** de 0 a 100 %, com prévia; [sons](./sons.md#4-volume)) |
 | Personalização | `/perfil` (ou modal ao entrar pelo convite sem perfil) | Prévia grande do avatar, abas por categoria com miniaturas, campo de nickname, botão aleatório, salvar |
 | Lobby | `/sala/:code`, `room.status = 'lobby'` | Código, link do convite visível e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais; inclui as caixas **O autor desenha o último quadro**, ligada por padrão, e **Mostrar quadros anteriores ao desenhar**, desligada por padrão; a dica de "Baseada nos jogadores" vira "um quadro por jogador, menos o autor" com a primeira desligada); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
 | Temas | `task.kind = 'write_theme'` | Campo grande, contador de caracteres, exemplos rotativos de inspiração, timer, **Pronto** |

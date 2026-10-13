@@ -26,6 +26,13 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
         },
       },
       {
+        path: 'dev/sons',
+        lazy: async () => {
+          const { DevSoundPage } = await import('./features/sound/dev-sound-page');
+          return { Component: DevSoundPage };
+        },
+      },
+      {
         path: 'dev/comic',
         lazy: async () => {
           const { DevComicPage } = await import('./features/comic/dev-comic-page');

@@ -10,6 +10,7 @@ import { Card } from '../../ui/card';
 import { Logo } from '../../ui/logo';
 import { Toast } from '../../ui/toast';
 import { AvatarRenderer } from '../avatar/avatar-renderer';
+import { VolumeControl } from '../sound/volume-control';
 import { ThemeSwitch } from '../theme/theme-switch';
 import { isCompleteRoomCode, sanitizeRoomCodeInput } from './room-code-input';
 
@@ -118,6 +119,7 @@ export function HomePage() {
         </Button>
         <JoinForm />
         <ThemeSwitch />
+        <VolumeControl />
       </div>
       {error !== null && <Toast message={error} tone="error" onDismiss={dismissError} />}
     </div>
