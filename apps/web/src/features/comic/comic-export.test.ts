@@ -54,7 +54,8 @@ describe('planComicExport', () => {
     const { panelWidth, panelHeight, margin } = COMIC_EXPORT;
     const plan = planComicExport(6, 1, 1);
 
-    expect(plan.width).toBe(3 * panelWidth + 2 * margin);
+    expect(plan.width).toBe(exportContentWidth(6) + 2 * margin);
+    expect(exportContentWidth(6)).toBe(3 * panelWidth);
     const xs = plan.panels.map((panel) => panel.x);
     const ys = plan.panels.map((panel) => panel.y);
     expect(xs).toEqual([0, 1, 2, 0, 1, 2].map((column) => margin + column * panelWidth));
