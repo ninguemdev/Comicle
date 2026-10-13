@@ -1,8 +1,13 @@
-import { DRAWING_SECONDS_DEFAULT, type Rng } from '@comicle/shared';
+import {
+  DRAWING_SECONDS_DEFAULT,
+  type GameModeId,
+  type MatchSettings,
+  type Rng,
+} from '@comicle/shared';
 
-import { buildCollaborativePlan } from '../../src/modules/game-modes/collaborative/distribution';
-import { storyForPlayer } from '../../src/modules/game-modes/game-mode';
-import type { Match } from '../../src/modules/matches/match';
+import { playerForStory, storyForPlayer } from '../../src/modules/game-modes/game-mode';
+import { getGameMode } from '../../src/modules/game-modes/registry';
+import { hasHandedIn, type Match } from '../../src/modules/matches/match';
 import {
   createMatchMachine,
   type MatchEvent,
@@ -25,6 +30,8 @@ export interface GeneratedMatch {
   players: string[];
   /** Watches from outside `seats` (R10). */
   spectator: string;
+  /** Every panel ID of the match, drawn or not yet. */
+  panelIds: string[];
   snapshots: MatchSnapshot[];
 }
 
@@ -35,8 +42,9 @@ const NAVIGATION = ['next', 'prev', 'showFull', 'nextStory'] as const;
 /** Distinct, searchable texts: a leak shows up as a substring of the view. */
 export const draftOf = (playerId: string) => `RASCUNHO-${playerId}`;
 export const themeOf = (playerId: string) => `TEMA-${playerId}`;
-export const panelIdOf = (round: number, story: number) =>
-  `PAINEL-${String(round)}-${String(story)}`;
+/** Fixed width, so no ID is a substring of another. */
+export const panelIdOf = (round: number, story: number, panel = 0) =>
+  `PAINEL-${String(round).padStart(2, '0')}-${String(story).padStart(2, '0')}-${String(panel)}`;
 export const FALLBACK_THEMES = Array.from({ length: 8 }, (_, i) => `RESERVA-${String(i)}`);
 
 function subset(rng: Rng, items: string[], max = items.length): Set<string> {
@@ -62,10 +70,18 @@ function stepLabel(match: Match): string {
   return `presentation ${String(cursor.storyIndex)}:${kind}`;
 }
 
-/** R38: the artist still drawing sees the story's earlier panels when the option is on. */
+/**
+ * R38: the artist still drawing sees the story's earlier panels when the option is on; the
+ * individual mode ignores it (R62, R67).
+ */
 export function seesReference(match: Match, viewer: string): boolean {
-  const { round } = match;
-  if (!match.settings.showPreviousPanels || round === null || round.finals.has(viewer)) {
+  const { round, settings } = match;
+  if (
+    settings.mode !== 'collaborative' ||
+    !settings.showPreviousPanels ||
+    round === null ||
+    hasHandedIn(match, round, viewer)
+  ) {
     return false;
   }
   return match.phase !== 'round_reading' || round.ready.has(viewer);
@@ -78,7 +94,21 @@ export function generateMatch(rng: Rng): GeneratedMatch {
   const showPreviousPanels = rng.nextInt(2) === 1;
   // R20, R31: half of them skip the author, with one round less.
   const authorDrawsLast = rng.nextInt(2) === 1;
-  const totalRounds = authorDrawsLast ? players.length : players.length - 1;
+  // R62–R67: a third of them are individual, with 2 or 3 panels per story.
+  const modeId: GameModeId = rng.nextInt(3) === 0 ? 'individual' : 'collaborative';
+  const settings: MatchSettings = {
+    mode: modeId,
+    panelCount: { kind: 'per_player' },
+    drawingSeconds: DRAWING_SECONDS_DEFAULT,
+    showPreviousPanels,
+    authorDrawsLast,
+    individual: { panelsPerStory: 2 + rng.nextInt(2), storySeconds: 300 },
+  };
+  const mode = getGameMode(modeId);
+  const totalRounds = mode.totalRounds(settings, players.length);
+  const plan = mode.buildPlan(players, totalRounds, settings);
+  const storyCount = mode.storyCount(players.length);
+  const panelsPerRound = mode.panelsPerRound(settings);
   const snapshots: MatchSnapshot[] = [];
   let match: Match | null = null;
 
@@ -104,25 +134,22 @@ export function generateMatch(rng: Rng): GeneratedMatch {
     {
       type: 'start',
       id: 'match-gerada',
-      settings: {
-        mode: 'collaborative',
-        panelCount: { kind: 'per_player' },
-        drawingSeconds: DRAWING_SECONDS_DEFAULT,
-        showPreviousPanels,
-        authorDrawsLast,
-        individual: { panelsPerStory: 4, storySeconds: 300 },
-      },
+      settings,
       seats: players.map((playerId) => ({
         playerId,
         nickname: playerId,
         themeId: `theme-${playerId}`,
       })),
       totalRounds,
-      plan: buildCollaborativePlan(players, totalRounds, { authorDraws: authorDrawsLast }),
+      plan,
       fallbackThemes: FALLBACK_THEMES,
-      storyIds: players.map((playerId) => `story-${playerId}`),
+      storyIds: Array.from({ length: storyCount }, (_, s) => `story-${String(s)}`),
       panelIds: Array.from({ length: totalRounds }, (_, r) =>
-        players.map((_p, s) => [panelIdOf(r, s)]),
+        Array.from({ length: storyCount }, (_unused, s) =>
+          playerForStory(plan, r, s) === undefined
+            ? []
+            : Array.from({ length: panelsPerRound }, (_x, k) => panelIdOf(r, s, k)),
+        ),
       ),
       previousMatchId: null,
     },
@@ -148,18 +175,23 @@ export function generateMatch(rng: Rng): GeneratedMatch {
       snap(` r${String(round)}`);
       apply({ type: 'phase_deadline' }, atDeadline());
     }
-    for (const playerId of subset(rng, players, players.length - 1)) {
-      apply(
-        {
-          type: 'panel_submit',
-          playerId,
-          roundIndex: round,
-          panelIndex: 0,
-          reason: 'done',
-          png: PNG,
-        },
-        soon(),
-      );
+    // Some players hand everything in, never all of them; R66: someone may hand in only part.
+    const handing = subset(rng, players, players.length - 1);
+    for (const playerId of players) {
+      const count = handing.has(playerId) ? panelsPerRound : rng.nextInt(panelsPerRound);
+      for (let panelIndex = 0; panelIndex < count; panelIndex++) {
+        apply(
+          {
+            type: 'panel_submit',
+            playerId,
+            roundIndex: round,
+            panelIndex,
+            reason: 'done',
+            png: PNG,
+          },
+          soon(),
+        );
+      }
     }
     snap(` r${String(round)}`);
     apply({ type: 'phase_deadline' }, atDeadline());
@@ -174,7 +206,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
     const kind = rng.nextInt(NAVIGATION.length + 1);
     const action: PresentationAction =
       kind === NAVIGATION.length
-        ? { action: 'goToStory', storyIndex: rng.nextInt(players.length) }
+        ? { action: 'goToStory', storyIndex: rng.nextInt(storyCount) }
         : { action: NAVIGATION[kind] ?? 'next' };
     try {
       apply({ type: 'presentation_navigate', action }, T0);
@@ -186,7 +218,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
     snap();
   }
 
-  return { players, spectator: 'espectador', snapshots };
+  return { players, spectator: 'espectador', panelIds: current().panelIds.flat(2), snapshots };
 }
 
 /** R31: the story `playerId` works on in the snapshot's round, if any. */

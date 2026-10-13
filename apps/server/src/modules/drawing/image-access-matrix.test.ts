@@ -10,7 +10,7 @@ import { SeededRng } from '../../platform/random';
 import type { Match } from '../matches/match';
 import { canAccessPanel } from './panel-access-policy';
 
-// R59 as a matrix (T19): every panel ID of generated matches (drawn or not yet), for every
+// R59 and R67 as a matrix (T19, T36): every panel ID of generated matches (drawn or not yet), for every
 // player and spectator, at every moment. Membership itself is checked by DrawingService.
 
 const MATCHES = 30;
@@ -55,12 +55,11 @@ function mayAccess(match: Match, viewer: string, panelId: string): boolean {
 }
 
 describe('matriz de acesso às imagens (R59)', () => {
-  it(`R36, R38, R54, R59: em ${String(MATCHES)} partidas geradas, todo quadro × todo jogador × todo momento`, () => {
+  it(`R36, R38, R54, R59, R67: em ${String(MATCHES)} partidas geradas, todo quadro × todo jogador × todo momento`, () => {
     let checked = 0;
     let granted = 0;
     for (let seed = 1; seed <= MATCHES; seed++) {
-      const { players, spectator, snapshots } = generateMatch(new SeededRng(seed));
-      const panelIds = players.flatMap((_p, s) => players.map((_q, r) => panelIdOf(r, s)));
+      const { players, spectator, panelIds, snapshots } = generateMatch(new SeededRng(seed));
       for (const { label, match } of snapshots) {
         for (const viewer of [...players, spectator]) {
           for (const panelId of [...panelIds, 'PAINEL-inventado']) {
