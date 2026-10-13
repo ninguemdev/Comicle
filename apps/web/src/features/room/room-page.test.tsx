@@ -88,13 +88,39 @@ describe('sala no cliente', () => {
       panelCount: { kind: 'per_player' },
       drawingSeconds: 60,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     });
     expect(actions.updateSettings).toHaveBeenNthCalledWith(2, {
       mode: 'collaborative',
       panelCount: { kind: 'fixed', value: 4 },
       drawingSeconds: 90,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     });
+  });
+
+  it('R11, R20: o anfitrião desliga O autor desenha o último quadro, e a dica do por jogador muda', () => {
+    const actions = setUpStores(lobbyView());
+    renderAt();
+
+    expect(screen.getByText('(um quadro por jogador)')).toBeInstanceOf(HTMLElement);
+    fireEvent.click(screen.getByRole('checkbox', { name: /O autor desenha o último quadro/ }));
+    expect(actions.updateSettings).toHaveBeenCalledWith({
+      mode: 'collaborative',
+      panelCount: { kind: 'per_player' },
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+      authorDrawsLast: false,
+    });
+    cleanup();
+
+    const off = lobbyView();
+    setUpStores({
+      ...off,
+      room: { ...off.room, settings: { ...off.room.settings, authorDrawsLast: false } },
+    });
+    renderAt();
+    expect(screen.getByText('(um quadro por jogador, menos o autor)')).toBeInstanceOf(HTMLElement);
   });
 
   it('R11, R18: o anfitrião liga Mostrar quadros anteriores; os demais veem o valor', () => {
@@ -107,6 +133,7 @@ describe('sala no cliente', () => {
       panelCount: { kind: 'per_player' },
       drawingSeconds: 90,
       showPreviousPanels: true,
+      authorDrawsLast: true,
     });
     cleanup();
 

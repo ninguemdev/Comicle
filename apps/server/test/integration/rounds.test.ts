@@ -36,6 +36,7 @@ const SETTINGS = {
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
+  authorDrawsLast: true,
 } as const;
 
 const inPhase = (phase: string, roundIndex?: number) => (view: PlayerView) =>
@@ -108,12 +109,12 @@ describe('rodadas (integração)', () => {
 
   /** Room of Ana, Bia and Caio already drawing round 0. */
   async function drawingRound0(
-    showPreviousPanels = false,
+    overrides: { showPreviousPanels?: boolean; authorDrawsLast?: boolean } = {},
   ): Promise<{ code: string; players: [Player, Player, Player] }> {
     const { code, players } = await room('Bia', 'Caio');
     const [ana, bia, caio] = players;
     if (!ana || !bia || !caio) throw new Error('jogadores');
-    const settings = { ...SETTINGS, showPreviousPanels };
+    const settings = { ...SETTINGS, ...overrides };
     expect((await ana.client.emitWithAck('room:updateSettings', { settings })).ok).toBe(true);
     expect((await ana.client.emitWithAck('match:start', {})).ok).toBe(true);
     for (const player of players) {
@@ -221,6 +222,42 @@ describe('rodadas (integração)', () => {
     expect(server.scheduler.pendingKeys().some((key) => key.endsWith(':phase'))).toBe(false);
   });
 
+  it('R20, R31: sem o autor desenhando, 3 jogadores fazem 2 quadros por história, nenhum do autor', async () => {
+    await start();
+    const createMatch = vi.spyOn(repository, 'createMatch');
+    const saveRoundPanels = vi.spyOn(repository, 'saveRoundPanels');
+    const { players } = await drawingRound0({ authorDrawsLast: false });
+    expect(players[0].views.latest?.match?.totalRounds).toBe(2);
+
+    for (const roundIndex of [0, 1]) {
+      if (roundIndex > 0) {
+        for (const player of players) {
+          await player.views.waitFor(inPhase('round_reading', roundIndex));
+          await ready(player, roundIndex);
+        }
+      }
+      for (const player of players) {
+        await player.views.waitFor((v) => taskState(v) === 'draw_panel:drawing');
+        expect(await done(player, roundIndex)).toEqual({ ok: true, data: {} });
+      }
+    }
+
+    await players[0].views.waitFor(inPhase('presentation'));
+    const panels = saveRoundPanels.mock.calls.flatMap((call) => call[1]);
+    expect(panels).toHaveLength(6);
+    const record = createMatch.mock.calls[0]?.[0];
+    const authors = new Map(
+      record?.stories.map((story) => [
+        story.id,
+        record.themes.find((theme) => theme.id === story.themeId)?.authorPlayerId,
+      ]),
+    );
+    expect(authors.size).toBe(3);
+    for (const panel of panels) {
+      expect(panel.artistPlayerId).not.toBe(authors.get(panel.storyId));
+    }
+  });
+
   it('R37: o prazo da leitura confirma quem faltou; desconectado não segura a fase', async () => {
     await start();
     const { players } = await drawingRound0();
@@ -290,7 +327,7 @@ describe('rodadas (integração)', () => {
 
   it('R38, R59: com showPreviousPanels, quem desenha vê os quadros anteriores até entregar', async () => {
     await start();
-    const { players } = await drawingRound0(true);
+    const { players } = await drawingRound0({ showPreviousPanels: true });
     const [ana, bia] = players;
     for (const player of players) {
       await done(player, 0);

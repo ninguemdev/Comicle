@@ -49,6 +49,7 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
       panelCount: { kind: 'per_player' },
       drawingSeconds: DRAWING_SECONDS_DEFAULT,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     },
     startedAt: 0,
     seats: playerIds.map((playerId) => ({
@@ -58,7 +59,7 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
       storyId: `story-${playerId}`,
     })),
     totalRounds: playerIds.length,
-    plan: buildCollaborativePlan(playerIds, playerIds.length),
+    plan: buildCollaborativePlan(playerIds, playerIds.length, { authorDraws: true }),
     fallbackThemes: [],
     panelIds: playerIds.map((_, round) =>
       playerIds.map((author) => `panel-${String(round)}-${author}`),

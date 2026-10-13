@@ -15,6 +15,7 @@ const VIEW: PlayerView = {
       panelCount: { kind: 'per_player' },
       drawingSeconds: 90,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     },
     members: [],
   },

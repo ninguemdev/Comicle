@@ -22,6 +22,7 @@ const settings: MatchSettings = {
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
+  authorDrawsLast: true,
 };
 const players = ['ana', 'bia', 'caio'];
 const everyone: ReadonlySet<string> = new Set(players);
@@ -43,7 +44,7 @@ function startEvent(previousMatchId: string | null = null, totalRounds = seats.l
     settings,
     seats,
     totalRounds,
-    plan: buildCollaborativePlan(players, totalRounds),
+    plan: buildCollaborativePlan(players, totalRounds, { authorDraws: true }),
     fallbackThemes,
     panelIds: Array.from({ length: totalRounds }, (_, round) =>
       players.map((author) => `panel-${String(round)}-${author}`),

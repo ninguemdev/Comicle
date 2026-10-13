@@ -88,6 +88,7 @@ export class MatchService {
         plan: mode.buildPlan(
           participants.map((member) => member.playerId),
           totalRounds,
+          settings,
         ),
         fallbackThemes: shuffled(FALLBACK_THEMES, rng),
         panelIds: Array.from({ length: totalRounds }, () => participants.map(() => newId())),

@@ -21,4 +21,5 @@ export const matchSettingsSchema = z.object({
   panelCount: panelCountSchema,
   drawingSeconds: z.literal(DRAWING_SECONDS_OPTIONS),
   showPreviousPanels: z.boolean(),
+  authorDrawsLast: z.boolean(),
 }) satisfies z.ZodType<MatchSettings>;

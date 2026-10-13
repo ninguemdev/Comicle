@@ -52,6 +52,7 @@ describe('Room', () => {
       panelCount: { kind: 'per_player' },
       drawingSeconds: 90,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     });
     expect(defaultMatchSettings()).toEqual(room.settings);
   });

@@ -35,11 +35,14 @@ function validateSettings(settings: MatchSettings): Result<void> {
   return { ok: true, value: undefined };
 }
 
-/** R20: one round per participant, or the fixed amount chosen by the host. */
+/**
+ * R20: one round per participant (one less when the author does not draw their own story), or
+ * the fixed amount chosen by the host.
+ */
 function totalRounds(settings: MatchSettings, participantCount: number): number {
   switch (settings.panelCount.kind) {
     case 'per_player':
-      return participantCount;
+      return settings.authorDrawsLast ? participantCount : Math.max(1, participantCount - 1);
     case 'fixed':
       return settings.panelCount.value;
     default:
@@ -56,6 +59,7 @@ export const collaborativeMode: GameMode = {
   id: 'collaborative',
   validateSettings,
   totalRounds,
-  buildPlan: buildCollaborativePlan,
+  buildPlan: (seats, rounds, settings) =>
+    buildCollaborativePlan(seats, rounds, { authorDraws: settings.authorDrawsLast }),
   hasReadingPhase,
 };

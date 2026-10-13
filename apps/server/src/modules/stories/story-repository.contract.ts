@@ -31,6 +31,7 @@ function newMatch(roomId: string, storyCount = 2): NewMatch {
       panelCount: { kind: 'per_player' },
       drawingSeconds: 90,
       showPreviousPanels: false,
+      authorDrawsLast: true,
     },
     totalRounds: storyCount,
     startedAt: Date.UTC(2026, 0, 1),
