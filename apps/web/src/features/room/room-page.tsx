@@ -15,6 +15,7 @@ import { Button, buttonClassName } from '../../ui/button';
 import { SpeechBubble } from '../../ui/speech-bubble';
 import { Toast } from '../../ui/toast';
 import { MatchScreen } from '../match/match-screen';
+import { useGameSounds } from '../sound/game-sounds';
 import { Lobby } from './lobby';
 import { RoomAnnouncer } from './room-announcement';
 
@@ -111,6 +112,8 @@ function RoomSession({ code }: { code: string }) {
   const profile = useProfileStore((state) => state.profile);
   const [joinError, setJoinError] = useState<ErrorCode | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // docs/sons.md §3: only views of this room count; leaving it starts over.
+  useGameSounds(exit === null && view?.room.code === code ? view : null);
 
   useEffect(() => {
     if (connection !== 'connected') {

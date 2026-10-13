@@ -31,9 +31,11 @@ As receitas vivem em `apps/web/src/features/sound/sound-catalog.ts` como dados p
 
 ## 3. Quando toca (T34)
 
-- A partida decide os sons pela **mudança da `PlayerView`**, como já faz o `RoomAnnouncer`: fase ou tarefa nova, prazo cruzando 30 s / 10 s / 5 s, quadro recebido, passo novo da apresentação, membro entrando ou saindo. Um hook único (`useGameSounds`) compara a view anterior com a nova; componentes não chamam o motor de som diretamente, exceto o `Button` (clique) e o `Toast` de erro.
+- A partida decide os sons pela **mudança da `PlayerView`**, como já faz o `RoomAnnouncer`: partida começando, tarefa nova, tema ou quadro recebido, passo novo da apresentação, membro entrando ou saindo do lobby. A função pura `soundsForChange` (`features/sound/game-sounds.ts`) compara a view anterior com a nova, e o hook `useGameSounds`, montado na sala, toca o que ela devolve.
+- Fora disso, só tocam direto: o `Button` (`click`), as ferramentas do editor (`toggle`; desfazer, refazer e limpar dão `click`), as caixas das configurações (`toggle`), o `Toast` de erro (`error`) e o `Timer` (prazos, abaixo).
+- Confirmar a própria leitura (R36) não toca `turn`: o clique já soou. Se a leitura acaba pelo prazo, a fase muda e o `turn` toca.
 - Nada toca ao carregar ou reconectar: a primeira view só registra o estado, sem som.
-- O tique-taque dos últimos segundos e os avisos de prazo usam o mesmo relógio corrigido do `Timer` (R61).
+- Os avisos de prazo (30 s e 10 s), o tique-taque dos últimos 5 s e o fim saem do `Timer`, pelos mesmos marcos que ele anuncia ao leitor de tela e com o mesmo relógio corrigido (R61). Começar atrasado, como ao reconectar, não repete um marco já passado. Atalhos de teclado do editor não fazem som.
 - Sons do próprio desenho (cada traço) ficam de fora: seriam constantes e cansativos.
 
 ## 4. Volume

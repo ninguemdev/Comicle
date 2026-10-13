@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 
+import type { SoundId } from '../features/sound/sound-catalog';
+import { soundEngine } from '../features/sound/sound-engine';
 import { serverNow } from '../lib/time-sync';
 import { strings } from '../strings/pt-BR';
 
 /** Seconds announced to screen readers besides the end (interface.md §6). */
 const ANNOUNCED_SECONDS = [30, 10] as const;
+/** Each of the last seconds ticks (docs/sons.md §2). */
+const TICKING_SECONDS = 5;
 /** At or below this, the timer turns red. */
 const URGENT_SECONDS = 10;
 const TICK_MS = 250;
@@ -32,6 +36,17 @@ function milestoneAnnouncement(previous: number, current: number): string | null
   return crossed === undefined ? null : strings.ui.timer.secondsLeft(crossed);
 }
 
+/** Sound for going from `previous` to `current` seconds: the same milestones, plus the ticking. */
+export function milestoneSound(previous: number, current: number): SoundId | null {
+  if (current === 0) {
+    return previous > 0 ? 'timeUp' : null;
+  }
+  if (ANNOUNCED_SECONDS.some((mark) => previous > mark && current <= mark)) {
+    return 'warning';
+  }
+  return current <= TICKING_SECONDS && current < previous ? 'tick' : null;
+}
+
 export interface TimerProps {
   /** Server epoch ms (`phaseDeadlineAt`). */
   deadlineAt: number;
@@ -39,7 +54,10 @@ export interface TimerProps {
   offsetMs: number;
 }
 
-/** Countdown to a server deadline: the visible clock is silent; milestones go to `aria-live`. */
+/**
+ * Countdown to a server deadline: milestones go to `aria-live` and to the speakers (docs/sons.md
+ * §3); starting late, as after a reconnection, never replays a milestone already past.
+ */
 export function Timer({ deadlineAt, offsetMs }: TimerProps) {
   const [now, setNow] = useState(() => Date.now());
   // Tied to its deadline, so a new phase never shows the previous phase's announcement.
@@ -55,6 +73,10 @@ export function Timer({ deadlineAt, offsetMs }: TimerProps) {
       const text = milestoneAnnouncement(previous, current);
       if (text !== null) {
         setAnnouncement({ deadlineAt, text });
+      }
+      const sound = milestoneSound(previous, current);
+      if (sound !== null) {
+        soundEngine.play(sound);
       }
       previous = current;
       setNow(tick);

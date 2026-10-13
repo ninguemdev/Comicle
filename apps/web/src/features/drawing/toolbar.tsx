@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 
 import { strings } from '../../strings/pt-BR';
+import { soundEngine } from '../sound/sound-engine';
 import {
   BrushIcon,
   BucketIcon,
@@ -81,7 +82,11 @@ function ToolButton({
       title={label}
       aria-pressed={pressed}
       disabled={disabled}
-      onClick={onClick}
+      onClick={() => {
+        // A tool is a choice (toggle); undo, redo and clear are actions (click).
+        soundEngine.play(pressed === undefined ? 'click' : 'toggle');
+        onClick();
+      }}
       className={`flex size-11 shrink-0 items-center justify-center rounded-lg border-comic transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
         pressed === true ? 'bg-pop-yellow' : 'bg-paper hover:bg-pop-yellow/40'
       }`}

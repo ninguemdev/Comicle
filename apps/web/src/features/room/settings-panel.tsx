@@ -12,6 +12,7 @@ import { useId } from 'react';
 import type { SettingsInput } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
 import { Card } from '../../ui/card';
+import { soundEngine } from '../sound/sound-engine';
 
 const texts = strings.room.settings;
 
@@ -141,6 +142,7 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
           type="checkbox"
           checked={settings.authorDrawsLast}
           onChange={(event) => {
+            soundEngine.play('toggle');
             change({ authorDrawsLast: event.target.checked });
           }}
           className="mt-0.5 size-5 shrink-0 accent-ink"
@@ -156,6 +158,7 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
           type="checkbox"
           checked={settings.showPreviousPanels}
           onChange={(event) => {
+            soundEngine.play('toggle');
             change({ showPreviousPanels: event.target.checked });
           }}
           className="mt-0.5 size-5 shrink-0 accent-ink"
