@@ -37,6 +37,11 @@ describe('matchSettingsSchema', () => {
     expect(matchSettingsSchema.safeParse({ ...valid, drawingSeconds: 100 }).success).toBe(false);
   });
 
+  it('R18: o tempo por quadrinho vai até 10 minutos, nunca além', () => {
+    expect(matchSettingsSchema.safeParse({ ...valid, drawingSeconds: 600 }).success).toBe(true);
+    expect(matchSettingsSchema.safeParse({ ...valid, drawingSeconds: 660 }).success).toBe(false);
+  });
+
   it('R18: showPreviousPanels é obrigatório e booleano', () => {
     expect(matchSettingsSchema.safeParse({ ...valid, showPreviousPanels: true }).success).toBe(
       true,

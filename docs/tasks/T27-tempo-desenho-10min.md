@@ -10,15 +10,15 @@ Pedido do criador do projeto: o tempo por quadrinho, hoje limitado a 5 minutos, 
 - `docs/protocolo-realtime.md` (configurações da sala)
 
 ## Entregáveis
-- [ ] `DRAWING_SECONDS_OPTIONS` ganha 360, 420, 480, 540 e 600.
-- [ ] Seletor de tempo do lobby mostra as novas opções em minutos.
-- [ ] Conferir se banco, validação de payload e testes de propriedade aceitam os novos valores.
-- [ ] `regras-do-jogo.md` §1, protocolo se citar a lista.
+- [x] `DRAWING_SECONDS_OPTIONS` ganha 360, 420, 480, 540 e 600.
+- [x] Seletor de tempo do lobby mostra as novas opções em minutos.
+- [x] Conferir se banco, validação de payload e testes de propriedade aceitam os novos valores.
+- [x] `regras-do-jogo.md` §1, protocolo se citar a lista.
 
 ## Critérios de aceite
-- [ ] O anfitrião escolhe 10 minutos no lobby e a rodada de desenho dura 10 minutos.
-- [ ] Valores fora da lista continuam rejeitados (`INVALID_PAYLOAD`).
+- [x] O anfitrião escolhe 10 minutos no lobby e a rodada de desenho dura 10 minutos.
+- [x] Valores fora da lista continuam rejeitados (`INVALID_PAYLOAD`).
 
 ## Testes obrigatórios
-- [ ] R18: schema aceita 600 e rejeita valores fora da lista.
-- [ ] Lobby: opção de 10 minutos visível para o anfitrião.
+- [x] R18: schema aceita 600 e rejeita valores fora da lista.
+- [x] Lobby: opção de 10 minutos visível para o anfitrião.

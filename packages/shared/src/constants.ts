@@ -7,7 +7,9 @@ export const FIXED_PANEL_COUNT_MIN = 2;
 export const FIXED_PANEL_COUNT_MAX = 12;
 export const FIXED_PANEL_COUNT_DEFAULT = 4;
 
-export const DRAWING_SECONDS_OPTIONS = [30, 45, 60, 90, 120, 180, 240, 300] as const;
+export const DRAWING_SECONDS_OPTIONS = [
+  30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600,
+] as const;
 export const DRAWING_SECONDS_DEFAULT = 90;
 
 export const THEME_WRITING_SECONDS = 90;
