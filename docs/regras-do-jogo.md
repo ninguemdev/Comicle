@@ -84,9 +84,9 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 ## 4. Configurações da partida
 
-**R18 — Formato.** `MatchSettings = { mode: 'collaborative', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX` e `drawingSeconds` em `DRAWING_SECONDS_OPTIONS`.
+**R18 — Formato.** `MatchSettings = { mode: 'collaborative', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds, showPreviousPanels }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX`, `drawingSeconds` em `DRAWING_SECONDS_OPTIONS` e `showPreviousPanels` booleano (R38).
 
-**R19 — Padrões.** `per_player` e `DRAWING_SECONDS_DEFAULT`.
+**R19 — Padrões.** `per_player`, `DRAWING_SECONDS_DEFAULT` e `showPreviousPanels: false`.
 
 **R20 — Quantidade baseada nos jogadores.** `totalRounds` = número de participantes no início da partida.
 
@@ -151,11 +151,11 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
 **R35 — Leitura.** A partir da rodada 1, cada rodada começa em `round_reading`, com prazo `min(READING_BASE_SECONDS + READING_PER_PANEL_SECONDS × r, READING_MAX_SECONDS)` segundos, sendo `r` o índice da rodada (= quadros já existentes).
 
-**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready` e leva o jogador direto ao desenho (R38), mesmo com os demais ainda lendo. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história. A confirmação vale para a rodada: se a mesma história voltar a ele numa rodada posterior (quantidade fixa maior que o número de participantes), ele a lê de novo.
+**R36 — Conteúdo da leitura.** O jogador vê o tema e todos os quadros anteriores da história recebida, na composição de HQ. O botão **Começar a desenhar** envia `round:ready` e leva o jogador direto ao desenho (R38), mesmo com os demais ainda lendo. A partir daí, até a apresentação, o servidor nunca mais envia nem autoriza a esse jogador os quadros daquela história, exceto como referência do desenho quando `showPreviousPanels` está ligada (R38). A confirmação vale para a rodada: se a mesma história voltar a ele numa rodada posterior (quantidade fixa maior que o número de participantes), ele a lê de novo.
 
 **R37 — Fim da leitura.** A leitura termina quando todos os participantes **conectados** confirmaram ou quando o prazo acaba; quem não confirmou é marcado como pronto automaticamente. Participantes desconectados contam como prontos.
 
-**R38 — Desenho.** Cada jogador começa a desenhar ao confirmar a leitura (ou quando ela termina); na rodada 0, todos começam juntos. O prazo do desenho é **comum**: fim da leitura + `drawingSeconds`, e a fase `round_drawing` vai do fim da leitura até ele. Enquanto a leitura não termina, a tarefa de quem já desenha traz o prazo mais tarde possível (prazo da leitura + `drawingSeconds`), que fica mais cedo se a leitura terminar antes. O tema fica visível como referência textual; os quadros anteriores, não.
+**R38 — Desenho.** Cada jogador começa a desenhar ao confirmar a leitura (ou quando ela termina); na rodada 0, todos começam juntos. O prazo do desenho é **comum**: fim da leitura + `drawingSeconds`, e a fase `round_drawing` vai do fim da leitura até ele. Enquanto a leitura não termina, a tarefa de quem já desenha traz o prazo mais tarde possível (prazo da leitura + `drawingSeconds`), que fica mais cedo se a leitura terminar antes. O tema fica visível como referência textual; os quadros anteriores, não — salvo com `showPreviousPanels` ligada: aí a tarefa de desenho traz os quadros anteriores da história, que o jogador vê em miniatura, sem ampliar, da confirmação da leitura até entregar o quadro (envio final, R40); depois disso, mais nada.
 
 **R39 — Autosave.** Enquanto desenha (inclusive durante a leitura dos demais, R38), o cliente envia `panel:autosave` com o PNG atual no máximo a cada `AUTOSAVE_INTERVAL_MS`, e só se houve mudança. O servidor guarda, em memória, o último por (rodada, jogador).
 
@@ -219,7 +219,7 @@ Ações sem efeito definido na tabela — `prev` no `theme` da primeira históri
 
 **R58 — Projeção mínima.** A `PlayerView` de um jogador nunca contém temas, quadros ou IDs de quadros que ele não pode ver naquele momento. Há testes de projeção para cada fase.
 
-**R59 — Imagens autorizadas.** Imagens de quadros só saem pelo endpoint autorizado, que consulta a `PanelAccessPolicy` (função pura) e responde com `Cache-Control: private, no-store`. Fora da leitura própria (R36) e da apresentação (R54), nenhum quadro é acessível.
+**R59 — Imagens autorizadas.** Imagens de quadros só saem pelo endpoint autorizado, que consulta a `PanelAccessPolicy` (função pura) e responde com `Cache-Control: private, no-store`. Fora da leitura própria (R36), do próprio desenho com `showPreviousPanels` (R38) e da apresentação (R54), nenhum quadro é acessível.
 
 **R60 — Servidor autoritativo.** Fases, prazos, distribuição, revelação e função de anfitrião são decididos só pelo servidor. O cliente apenas exibe a `PlayerView` e envia intenções.
 

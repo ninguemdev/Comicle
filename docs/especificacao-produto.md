@@ -216,6 +216,7 @@ O anfitrião possui controle sobre as seguintes opções:
 | Quantidade fixa | O anfitrião escolhe um número específico de quadros |
 | Quantidade baseada nos jogadores | Cada história possui tantos quadros quanto jogadores participando da partida |
 | Tempo por quadrinho | Determina a duração disponível para desenhar cada contribuição |
+| Mostrar quadros anteriores ao desenhar | Desligada por padrão. Ligada, quem desenha vê os quadros anteriores da história em miniatura, ao lado do desenho, só para conferir |
 
 As duas opções de quantidade de quadrinhos são alternativas.
 
@@ -306,6 +307,8 @@ O participante precisa observar, interpretar e memorizar o que aconteceu na hist
 O objetivo é permitir que pequenas alterações de memória, interpretações individuais e improvisações influenciem naturalmente o desenvolvimento da narrativa.
 
 O desenho não acontece com os quadros anteriores permanentemente visíveis.
+
+A exceção é uma configuração opcional da partida, **Mostrar quadros anteriores ao desenhar**: ligada pelo anfitrião, quem desenha vê os quadros anteriores da história em miniatura, ao lado do desenho, até entregar o quadro. As miniaturas são pequenas, sem ampliação: servem para conferir o desenho anterior, não para copiá-lo. Desligada (o padrão), vale o jogo de memória descrito acima.
 
 ### Tempo e preparação
 
