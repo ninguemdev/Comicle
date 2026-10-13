@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 import { expect, test } from '@playwright/test';
 
 import { strings } from '../apps/web/src/strings/pt-BR';
@@ -24,6 +26,7 @@ import { createPlayer, fillProfile, type Player } from './support/player';
 
 const texts = strings.match;
 const PLAYER_COUNT = 3;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const THEMES = [
   'Um dragão que tem medo de fogo',
   'A primeira pizzaria da Lua',
@@ -117,6 +120,16 @@ test('uma partida completa com 3 jogadores e 3 quadros', async ({ browser }) => 
         );
         await expect(page.getByText(texts.presentation.full, { exact: true })).toBeVisible();
         await expect(page.locator('figure img')).toHaveCount(PLAYER_COUNT);
+      }
+      if (story === 1) {
+        // Anyone, not only the host, can keep the page: a PNG of the whole story.
+        const [download] = await Promise.all([
+          bruno.page.waitForEvent('download'),
+          bruno.page.getByRole('button', { name: texts.presentation.download }).click(),
+        ]);
+        expect(download.suggestedFilename()).toMatch(/^comicle-1-[a-z0-9-]+\.png$/);
+        const png = await readFile(await download.path());
+        expect(png.subarray(0, PNG_SIGNATURE.length)).toEqual(PNG_SIGNATURE);
       }
       await presentationNext(ana);
     }
