@@ -24,6 +24,13 @@ test('R38: com a opção ligada, o desenho mostra os quadros anteriores, inclusi
   // A real image, not the placeholder of a panel still loading.
   await expect(reference.locator('figure img')).toHaveCount(1);
 
+  // A click opens it large; Esc goes back to drawing.
+  await reference.getByRole('button').first().click();
+  const enlarged = host.page.getByRole('dialog');
+  await expect(enlarged.locator('figure img')).toHaveCount(1);
+  await host.page.keyboard.press('Escape');
+  await expect(enlarged).toHaveCount(0);
+
   await host.page.reload();
 
   await expect(drawingCanvas(host.page)).toBeVisible();

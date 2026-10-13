@@ -241,6 +241,8 @@ export const strings = {
       submit: 'Concluir',
       submitting: 'Enviando…',
       previousPanels: 'Quadros anteriores',
+      enlargePanel: (number: number, artist: string) =>
+        `Ampliar o quadro ${String(number)} de ${artist}`,
       confirmTitle: 'Concluir agora?',
       confirmBody:
         'Ainda falta mais da metade do tempo. Depois de concluir, não dá para voltar ao quadro.',

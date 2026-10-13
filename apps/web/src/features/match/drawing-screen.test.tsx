@@ -314,6 +314,36 @@ describe('tela de desenho', () => {
     ).toEqual(['Quadro 1 de Bia', 'Quadro 2 de Caio']);
   });
 
+  it('R38: clicar numa miniatura abre o quadro grande; Esc fecha e volta ao editor', () => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        observe(): void {
+          // jsdom has no layout to observe
+        }
+        disconnect(): void {
+          // nothing to stop
+        }
+      },
+    );
+    const panel: PanelRef = {
+      panelId: 'panel-0',
+      position: 0,
+      artist: { playerId: 'bia', nickname: 'Bia', avatar: defaultAvatar() },
+      status: 'empty',
+    };
+    renderDrawing(drawingView({ previousPanels: [panel] }));
+
+    const thumbnail = screen.getByRole('button', { name: 'Ampliar o quadro 1 de Bia' });
+    fireEvent.click(thumbnail);
+    const dialog = screen.getByRole('dialog', { name: 'Quadro 1 de Bia' });
+    expect(within(dialog).getByRole('img', { name: 'Quadro 1 de Bia' })).toBeTruthy();
+
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(editor.props?.disabled).toBe(false);
+  });
+
   it('R36: sem quadros anteriores (opção desligada), nenhuma miniatura', () => {
     renderDrawing(drawingView());
 
