@@ -170,14 +170,14 @@ interface GameMode {
   id: 'collaborative' | 'individual';
   validateSettings(settings: MatchSettings): Result<void>;
   totalRounds(settings: MatchSettings, participantCount: number): number;
-  buildPlan(seats: readonly string[], totalRounds: number): DistributionPlan;
+  buildPlan(seats: readonly string[], totalRounds: number, settings: MatchSettings): DistributionPlan;
   hasReadingPhase(roundIndex: number): boolean;
 }
 ```
 
 `Result<T>` é `{ ok: true; value: T } | { ok: false; error: DomainError }`. O formato de `DistributionPlan` está no [modelo de dados](./modelo-de-dados.md); consulte-o só por `storyForPlayer(plan, r, playerId)` e `playerForStory(plan, r, storyIndex)` (`modules/game-modes/game-mode.ts`). O modo é obtido por `getGameMode(id)` (`modules/game-modes/registry.ts`).
 
-A v1 registra só `collaborative`. O modo individual (v2) entra como nova implementação, sem alterar salas, apresentação ou desenho. Não implemente a v2 antes de a task existir.
+Os modos ficam em `modules/game-modes/<modo>/`. O `individual` (`individual/individual-mode.ts`, R62–R65) reaproveita a rotação do colaborativo sem o autor, e no plano o índice é o **tema** que o jogador desenha na rodada, não uma história compartilhada. Ele já existe desde a T35, mas só entra no registro na T36, junto com as rodadas de vários quadros por jogador; até lá, `getGameMode('individual')` recusa com `INVALID_PAYLOAD` e uma partida individual não começa (R21).
 
 ### Projeção
 

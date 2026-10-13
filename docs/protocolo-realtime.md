@@ -87,7 +87,7 @@ Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate l
 
 Erros da partida e da etapa de temas:
 
-- `match:start`: de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`; menos de `MIN_PLAYERS` membros conectados → `NOT_ENOUGH_PLAYERS` (R22).
+- `match:start`: de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`; menos de `MIN_PLAYERS` membros conectados → `NOT_ENOUGH_PLAYERS` (R22). Até a T36, com `mode: 'individual'` → `INVALID_PAYLOAD` (R21); o `room:updateSettings` já aceita o modo e os campos de `individual` (R18).
 - `match:abort`: de outro membro → `NOT_HOST`; sem partida em andamento → `INVALID_STATE` (R57).
 - `theme:draft` e `theme:submit`: fora de `theme_writing`, de espectador ou depois do envio final → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED` (R61). O texto é normalizado (R1); no `theme:submit`, tamanho fora de `THEME_MIN_LENGTH`–`THEME_MAX_LENGTH` → `INVALID_PAYLOAD` (R27).
 

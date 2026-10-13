@@ -143,7 +143,7 @@ rooms ─┬─< matches ─┬─< themes ──< stories ──< panels
 |---|---|---|
 | `id` | `uuid` PK | |
 | `room_id` | `uuid` FK → `rooms.id` `ON DELETE CASCADE` | índice |
-| `mode` | `text` | `'collaborative'` |
+| `mode` | `text` | `'collaborative' \| 'individual'` |
 | `settings` | `jsonb` | `MatchSettings` |
 | `total_rounds` | `integer` | |
 | `status` | `text` | `'in_progress' \| 'presenting' \| 'finished' \| 'aborted'` |
@@ -168,7 +168,7 @@ rooms ─┬─< matches ─┬─< themes ──< stories ──< panels
 |---|---|---|
 | `id` | `uuid` PK | |
 | `match_id` | `uuid` FK → `matches.id` `ON DELETE CASCADE` | |
-| `theme_id` | `uuid` FK → `themes.id` `ON DELETE CASCADE` | No modo 2, um tema terá várias histórias |
+| `theme_id` | `uuid` FK → `themes.id` `ON DELETE CASCADE` | No modo individual, cada tema tem uma história por versão (R64) |
 | `position` | `integer` | ordem de apresentação |
 
 ### `panels`
