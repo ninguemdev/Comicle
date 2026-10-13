@@ -1,6 +1,8 @@
 import {
   DRAWING_SECONDS_DEFAULT,
+  INDIVIDUAL_PANEL_COUNT_DEFAULT,
   MAX_PLAYERS,
+  STORY_SECONDS_DEFAULT,
   type MatchSettings,
   type PlayerProfile,
   type RoomStatus,
@@ -38,6 +40,10 @@ export function defaultMatchSettings(): MatchSettings {
     drawingSeconds: DRAWING_SECONDS_DEFAULT,
     showPreviousPanels: false,
     authorDrawsLast: true,
+    individual: {
+      panelsPerStory: INDIVIDUAL_PANEL_COUNT_DEFAULT,
+      storySeconds: STORY_SECONDS_DEFAULT,
+    },
   };
 }
 

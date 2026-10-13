@@ -18,6 +18,10 @@ Este documento transforma a [especificação de produto](./especificacao-produto
 | `FIXED_PANEL_COUNT_DEFAULT` | 4 | Valor inicial quando o anfitrião escolhe "fixa" |
 | `DRAWING_SECONDS_OPTIONS` | 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600 | Tempo por quadrinho (até 10 min) |
 | `DRAWING_SECONDS_DEFAULT` | 90 | |
+| `INDIVIDUAL_PANEL_COUNT_MIN` / `_MAX` | 2 / 6 | Faixa de quadros por história no modo individual (R62) |
+| `INDIVIDUAL_PANEL_COUNT_DEFAULT` | 4 | |
+| `STORY_SECONDS_OPTIONS` | 120, 180, 240, 300, 360, 480, 600 | Tempo para desenhar a história inteira no modo individual (R65) |
+| `STORY_SECONDS_DEFAULT` | 300 | |
 | `THEME_WRITING_SECONDS` | 90 | Duração da etapa de temas |
 | `THEME_MIN_LENGTH` / `THEME_MAX_LENGTH` | 3 / 140 | Caracteres do tema (após normalização) |
 | `NICKNAME_MAX_LENGTH` | 20 | |
@@ -84,13 +88,13 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 ## 4. Configurações da partida
 
-**R18 — Formato.** `MatchSettings = { mode: 'collaborative', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds, showPreviousPanels, authorDrawsLast }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX`, `drawingSeconds` em `DRAWING_SECONDS_OPTIONS` e `showPreviousPanels` (R38) e `authorDrawsLast` (R31) booleanos.
+**R18 — Formato.** `MatchSettings = { mode: 'collaborative' | 'individual', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds, showPreviousPanels, authorDrawsLast, individual: { panelsPerStory, storySeconds } }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX`, `drawingSeconds` em `DRAWING_SECONDS_OPTIONS`, `showPreviousPanels` (R38) e `authorDrawsLast` (R31) booleanos, `panelsPerStory` inteiro entre `INDIVIDUAL_PANEL_COUNT_MIN` e `_MAX` e `storySeconds` em `STORY_SECONDS_OPTIONS`. Todos os campos são obrigatórios nos dois modos; cada modo lê só os seus (`panelCount`, `drawingSeconds`, `showPreviousPanels` e `authorDrawsLast` no colaborativo; `individual` no individual), e os demais ficam guardados para o anfitrião não perdê-los ao trocar de modo.
 
-**R19 — Padrões.** `per_player`, `DRAWING_SECONDS_DEFAULT`, `showPreviousPanels: false` e `authorDrawsLast: true`.
+**R19 — Padrões.** `collaborative`, `per_player`, `DRAWING_SECONDS_DEFAULT`, `showPreviousPanels: false`, `authorDrawsLast: true` e `individual: { panelsPerStory: INDIVIDUAL_PANEL_COUNT_DEFAULT, storySeconds: STORY_SECONDS_DEFAULT }`.
 
 **R20 — Quantidade baseada nos jogadores.** `totalRounds` = número de participantes no início da partida; com `authorDrawsLast: false`, um a menos (no mínimo 1: com 2 jogadores, cada história tem um quadro).
 
-**R21 — Modo individual.** O tipo `mode` já prevê `'individual'`, mas a v1 o rejeita (`INVALID_PAYLOAD`). A interface mostra o modo como "Em breve", desabilitado.
+**R21 — Modo individual.** `mode: 'individual'` é aceito nas configurações; suas regras estão na [seção 12](#12-modo-individual). Com ele escolhido, o lobby mostra só a quantidade de quadros por história e o tempo da história, e esconde as opções do colaborativo. *Até a T36*, iniciar uma partida individual responde `INVALID_PAYLOAD` e a interface mostra o modo como "Em breve", desabilitado.
 
 ---
 
@@ -228,3 +232,23 @@ Ações sem efeito definido na tabela — `prev` no `theme` da primeira históri
 **R60 — Servidor autoritativo.** Fases, prazos, distribuição, revelação e função de anfitrião são decididos só pelo servidor. O cliente apenas exibe a `PlayerView` e envia intenções.
 
 **R61 — Tempo.** Prazos são enviados como instantes absolutos do servidor (`phaseDeadlineAt`, em ms). O cliente corrige pelo deslocamento medido em `time:sync`. O servidor rejeita ações após o prazo, exceto os envios aceitos durante `round_closing` (R42).
+
+---
+
+## 12. Modo individual
+
+Modo Quadrinhos Individuais ([especificação §9](./especificacao-produto.md), [D48](./decisoes.md)): cada jogador desenha sozinho uma história inteira de cada tema que não é o seu. Salas, início, temas (R22–R30), desconexões (R46) e privacidade (R58–R61) seguem as seções anteriores; esta seção diz o que muda. O protocolo dos envios é fechado na T36 e o da apresentação, na T38.
+
+**R62 — Rodadas.** `totalRounds = N − 1` (no mínimo 1), sendo `N` o número de participantes: o autor **nunca** desenha o próprio tema. Cada história tem `individual.panelsPerStory` quadros. As configurações do colaborativo (quantidade de quadros, tempo por quadrinho, R31 `authorDrawsLast`, R38 `showPreviousPanels`) são ignoradas.
+
+**R63 — Distribuição.** A fórmula do R31 com `C = N − 1`, trocando "história" por "tema": na rodada `r`, o tema do assento `p_i` vai para `p_{(i + 1 + r) mod N}`. Propriedades garantidas (testadas para todo `N` de 2 a 12): em cada rodada, cada jogador recebe exatamente um tema e cada tema, exatamente um jogador; o autor nunca recebe o próprio tema; ao fim, cada jogador desenhou exatamente uma versão de cada tema dos outros. Com 2 jogadores há uma rodada só, e cada um desenha o tema do outro.
+
+**R64 — Versões.** Cada par (tema, artista) é uma **versão**: uma história própria, com todos os quadros do mesmo artista, independente das demais (§9.3). São `N × (N − 1)` versões por partida, gravadas como linhas de `stories` que compartilham o `theme_id` ([modelo de dados](./modelo-de-dados.md#stories)). A ordem (`position`) é por assento do autor do tema e, dentro do tema, pela rodada em que a versão foi desenhada.
+
+**R65 — Rodada.** Nenhuma rodada tem leitura: cada uma começa direto em `round_drawing`, com prazo comum de início + `individual.storySeconds`, que vale para a história inteira, não para cada quadro (§9.4). O jogador vê o tema e o editor com todos os quadros da sua versão: navega entre eles numa faixa de miniaturas numeradas ou com anterior/próximo e pode voltar a qualquer quadro até entregar. Ele nunca vê quadros de outros jogadores.
+
+**R66 — Entrega e fechamento.** O autosave (R39) guarda cada quadro da versão em andamento. Entregar (`done`) envia a história inteira de uma vez e encerra a participação do jogador na rodada; não há como reabrir. A rodada termina antes do prazo quando todos os participantes (inclusive desconectados) entregaram (como no R41) e, senão, fecha como no R42: cada quadro é resolvido em envio final → último autosave → vazio, com os status do R43. Os quadros de todas as versões da rodada são persistidos numa única transação. Na volta durante o desenho (R48), o jogador recupera o rascunho de todos os quadros da sua versão.
+
+**R67 — Privacidade.** Até a apresentação, um jogador só tem acesso aos quadros da versão que desenha na rodada atual, e só enquanto não a entregou. Depois da entrega, nem a própria versão volta a ser vista antes da apresentação.
+
+**R68 — Apresentação por tema.** Os temas são apresentados na ordem dos assentos dos autores e, para cada tema, todas as suas versões em seguida, na ordem do R64. O tema mostra o autor; cada versão mostra o artista, revela os quadros um a um e depois a página completa (como R51–R53); a última versão de um tema leva ao tema seguinte. Créditos e quadros vazios seguem o R55; baixar a HQ (D40), também, por versão.

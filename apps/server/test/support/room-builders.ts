@@ -50,6 +50,7 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
       drawingSeconds: DRAWING_SECONDS_DEFAULT,
       showPreviousPanels: false,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     },
     startedAt: 0,
     seats: playerIds.map((playerId) => ({

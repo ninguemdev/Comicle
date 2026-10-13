@@ -1,9 +1,19 @@
-/** `individual` is planned for v2; v1 rejects it (R21). */
 export type GameModeId = 'collaborative' | 'individual';
 
 export type PanelCountSetting = { kind: 'per_player' } | { kind: 'fixed'; value: number };
 
-/** R18. */
+/** R18: settings that only the individual mode reads (R62, R65). */
+export interface IndividualSettings {
+  /** Panels of every story, drawn by a single player. */
+  panelsPerStory: number;
+  /** Time to draw the whole story, not each panel. */
+  storySeconds: number;
+}
+
+/**
+ * R18. Each mode reads only its own fields; the others are kept so the host does not lose them
+ * when switching modes in the lobby.
+ */
 export interface MatchSettings {
   mode: GameModeId;
   panelCount: PanelCountSetting;
@@ -15,4 +25,5 @@ export interface MatchSettings {
    * off, the rotation skips the author and "per player" gives one panel less.
    */
   authorDrawsLast: boolean;
+  individual: IndividualSettings;
 }

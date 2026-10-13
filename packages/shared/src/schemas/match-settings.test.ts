@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DRAWING_SECONDS_OPTIONS } from '../constants';
+import { DRAWING_SECONDS_OPTIONS, STORY_SECONDS_OPTIONS } from '../constants';
 import { matchSettingsSchema } from './match-settings';
 
 const valid = {
@@ -9,6 +9,7 @@ const valid = {
   drawingSeconds: 90,
   showPreviousPanels: false,
   authorDrawsLast: true,
+  individual: { panelsPerStory: 4, storySeconds: 300 },
 } as const;
 
 function withFixed(value: number) {
@@ -66,7 +67,45 @@ describe('matchSettingsSchema', () => {
     expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
   });
 
-  it("R21: mode 'individual' é rejeitado", () => {
-    expect(matchSettingsSchema.safeParse({ ...valid, mode: 'individual' }).success).toBe(false);
+  it("R21: aceita mode 'individual' e recusa outro modo", () => {
+    expect(matchSettingsSchema.safeParse({ ...valid, mode: 'individual' }).success).toBe(true);
+    expect(matchSettingsSchema.safeParse({ ...valid, mode: 'solo' }).success).toBe(false);
+  });
+
+  it('R18: individual.panelsPerStory aceita 2 a 6, inteiro', () => {
+    const withPanels = (panelsPerStory: number) => ({
+      ...valid,
+      individual: { ...valid.individual, panelsPerStory },
+    });
+    for (const value of [2, 6]) {
+      expect(matchSettingsSchema.safeParse(withPanels(value)).success, String(value)).toBe(true);
+    }
+    for (const value of [1, 7, 3.5]) {
+      expect(matchSettingsSchema.safeParse(withPanels(value)).success, String(value)).toBe(false);
+    }
+  });
+
+  it('R18: individual.storySeconds aceita só as opções', () => {
+    const withSeconds = (storySeconds: number) => ({
+      ...valid,
+      individual: { ...valid.individual, storySeconds },
+    });
+    for (const storySeconds of STORY_SECONDS_OPTIONS) {
+      expect(matchSettingsSchema.safeParse(withSeconds(storySeconds)).success).toBe(true);
+    }
+    for (const storySeconds of [90, 420, 660]) {
+      expect(matchSettingsSchema.safeParse(withSeconds(storySeconds)).success).toBe(false);
+    }
+  });
+
+  it('R18: individual é obrigatório, mesmo no modo colaborativo', () => {
+    const withoutIt = {
+      mode: valid.mode,
+      panelCount: valid.panelCount,
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+      authorDrawsLast: true,
+    };
+    expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
   });
 });

@@ -12,6 +12,13 @@ export const DRAWING_SECONDS_OPTIONS = [
 ] as const;
 export const DRAWING_SECONDS_DEFAULT = 90;
 
+export const INDIVIDUAL_PANEL_COUNT_MIN = 2;
+export const INDIVIDUAL_PANEL_COUNT_MAX = 6;
+export const INDIVIDUAL_PANEL_COUNT_DEFAULT = 4;
+
+export const STORY_SECONDS_OPTIONS = [120, 180, 240, 300, 360, 480, 600] as const;
+export const STORY_SECONDS_DEFAULT = 300;
+
 export const THEME_WRITING_SECONDS = 90;
 export const THEME_MIN_LENGTH = 3;
 export const THEME_MAX_LENGTH = 140;
