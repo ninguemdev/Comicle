@@ -94,7 +94,7 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 **R20 — Quantidade baseada nos jogadores.** `totalRounds` = número de participantes no início da partida; com `authorDrawsLast: false`, um a menos (no mínimo 1: com 2 jogadores, cada história tem um quadro).
 
-**R21 — Modo individual.** `mode: 'individual'` é aceito nas configurações; suas regras estão na [seção 12](#12-modo-individual). Com ele escolhido, o lobby mostra só a quantidade de quadros por história e o tempo da história, e esconde as opções do colaborativo. O servidor já inicia partidas individuais; *até a T37*, a interface mostra o modo como "Em breve", desabilitado.
+**R21 — Modo individual.** `mode: 'individual'` é aceito nas configurações; suas regras estão na [seção 12](#12-modo-individual). Com ele escolhido, o lobby mostra só a quantidade de quadros por história e o tempo da história, e esconde as opções do colaborativo. O modo aparece no lobby ao lado do colaborativo, cada um com uma linha explicando o que é.
 
 ---
 

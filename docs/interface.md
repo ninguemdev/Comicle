@@ -52,7 +52,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 |---|---|---|
 | Início | `/` | Logo, avatar + nickname atuais (botão editar), **Criar sala** (sem perfil salvo, leva antes à personalização), **Entrar em sala** (campo de código normalizado ao digitar: maiúsculas e só caracteres do alfabeto, R6), **Aparência** e **Som** (botão **Silenciar** e barra **Volume** de 0 a 100 %, com prévia; [sons](./sons.md#4-volume)) |
 | Personalização | `/perfil` (ou modal ao entrar pelo convite sem perfil) | Prévia grande do avatar, abas por categoria com miniaturas, campo de nickname, botão aleatório, salvar |
-| Lobby | `/sala/:code`, `room.status = 'lobby'` | Código, link do convite visível e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais; inclui as caixas **O autor desenha o último quadro**, ligada por padrão, e **Mostrar quadros anteriores ao desenhar**, desligada por padrão; a dica de "Baseada nos jogadores" vira "um quadro por jogador, menos o autor" com a primeira desligada); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
+| Lobby | `/sala/:code`, `room.status = 'lobby'` | Código, link do convite visível e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais; começa pelo **Modo**, Colaborativo ou Individual, cada um com uma linha explicando; no Individual aparecem só **Quadros por história** (2–6) e **Tempo da história** (2–10 min), R21; no Colaborativo, a quantidade, o tempo por quadrinho e as caixas **O autor desenha o último quadro**, ligada por padrão, e **Mostrar quadros anteriores ao desenhar**, desligada por padrão; a dica de "Baseada nos jogadores" vira "um quadro por jogador, menos o autor" com a primeira desligada); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
 | Temas | `task.kind = 'write_theme'` | Campo grande, contador de caracteres, exemplos rotativos de inspiração, timer, **Pronto** |
 | Leitura | `task.kind = 'read_story'`, `status = 'reading'` | Tema no topo, `ComicPage` com os quadros anteriores, aviso "Depois de começar, você não verá estes quadros de novo", botão **Começar a desenhar**, timer de leitura |
 | Desenho | `task.kind = 'draw_panel'`, `status = 'drawing'` (também na `round_reading`, para quem já confirmou, R38) | Canvas ocupando o máximo de espaço, barra de ferramentas compacta, timer do `deadlineAt` da tarefa, "Quadro 3 de 5", tema em uma linha recolhível. Com `previousPanels` (opção **Mostrar quadros anteriores ao desenhar**), miniaturas numeradas de 96 px; um clique abre o quadro grande num diálogo largo (`Esc` fecha e volta ao editor): coluna à direita do editor no desktop e no celular deitado, faixa acima do canvas no celular em pé |
@@ -61,7 +61,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 | Espectador | `task.kind = 'spectate'` | "Partida em andamento — você entra na próxima", lista de jogadores |
 | Apresentação | `phase = 'presentation'` | Ver §5 |
 
-Durante a partida, um cabeçalho mostra a fase, "Quadro X de Y", o progresso, o timer e, para o anfitrião, **Encerrar partida** (discreto, com confirmação, R57). Quando a partida é encerrada, todos voltam ao lobby com um aviso do motivo (`match:aborted`). O desenho ocupa a tela inteira, com o tema numa linha recolhível.
+Durante a partida, um cabeçalho mostra a fase, "Quadro X de Y" (no modo individual, "História X de Y"), o progresso, o timer e, para o anfitrião, **Encerrar partida** (discreto, com confirmação, R57). Quando a partida é encerrada, todos voltam ao lobby com um aviso do motivo (`match:aborted`). O desenho ocupa a tela inteira, com o tema numa linha recolhível.
 
 Erros de conexão aparecem como faixa no topo ("Reconectando…"), sem trocar de tela; as telas cheias (desenho e apresentação) começam abaixo dela, e os botões que mandam ações ficam desabilitados até a conexão voltar (o editor continua desenhando). Já os motivos para não estar na sala trocam a tela por uma mensagem com volta ao início: sala inexistente ou código mal formado, sala cheia, expulsão, sala encerrada e sessão aberta em outra aba (R5, R9, R12, R16).
 
@@ -124,7 +124,8 @@ Regras visuais de `ComicPage`:
 | Cursor | sobre o canvas, com mouse ou caneta, uma bolinha do diâmetro do traço na escala da tela (no mínimo 4 px), com anel preto e branco; o balde mantém a mira, e o toque não mostra cursor | — |
 | Desfazer / Refazer | até 100 passos | `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` |
 | Limpar | entra no histórico (pode ser desfeito); pede confirmação | — |
-| Concluir | envia o quadro (R40); pede confirmação se faltar mais de metade do tempo. Fica na tela de desenho, não no editor | `Ctrl/⌘+Enter` |
+| Concluir | envia o quadro (R40); pede confirmação se faltar mais de metade do tempo. No modo individual, **Enviar história** envia todos os quadros (R66), com a mesma regra sobre o tempo da história. Fica na tela de desenho, não no editor | `Ctrl/⌘+Enter` |
+| Quadro anterior / próximo | só no modo individual: troca o quadro no editor (R65) | `Alt+←`, `Alt+→` |
 
 Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1 #1E88E5 #3949AB #8E24AA #EC407A #8D6E63 #F5CBA7 #5D4037`.
 
@@ -133,7 +134,7 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 - `DrawingDocument`: lista de operações (`stroke` com cor, tamanho, opacidade, ferramenta e pontos; `fill` com cor e ponto; `clear`), `baseImage` opcional (rascunho restaurado, R48) e pilha de refazer.
 - Renderização incremental: o traço em andamento é desenhado direto; desfazer re-renderiza a partir de um snapshot em cache a cada 20 operações.
 - `exportPng(): Promise<Uint8Array | null>` — `null` quando não há nada visível (R40): nenhum traço de pincel ou balde (fora o balde branco) depois do último `clear` e nenhuma `baseImage` que um `clear` não tenha coberto. A borracha sozinha não conta como desenho.
-- API pública: `DrawingEditor { baseImageUrl?, disabled, onChange(revision), ref.exportPng() }`. Em desenvolvimento, `/dev/editor` mostra o editor isolado.
+- API pública: `DrawingEditor { document?, baseImageUrl?, disabled, onChange(revision), ref.exportPng() }`. Com `document`, o editor edita o documento recebido em vez do próprio: a tela de desenho guarda um por quadro da história (R65), cada um com o seu histórico, e ferramenta, cor e espessura continuam as mesmas ao trocar de quadro. O canvas guarda um cache de snapshots por documento. Em desenvolvimento, `/dev/editor` mostra o editor isolado.
 - O documento é descartado ao concluir; não é guardado no navegador.
 
 ### Layout
@@ -141,6 +142,13 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 - Desktop: barra vertical à esquerda do canvas.
 - Mobile retrato: barra horizontal abaixo do canvas, botões de pelo menos 44×44px; seletor de cores em popover.
 - Mobile paisagem: barra lateral compacta.
+
+### História completa (modo individual)
+
+- Abaixo do editor, uma faixa centralizada com ◀, as miniaturas numeradas de todos os quadros e ▶ (R65). A miniatura do quadro aberto fica com moldura amarela (`aria-current="step"`); cada uma é um botão "Quadro k de N". Se não couberem, a faixa rola na horizontal.
+- A miniatura é pintada a 1:1 e reduzida por CSS (56 px no celular, 96 px a partir de `sm`, 48 px em telas com até 30rem de altura). Ela se atualiza quando o jogador sai do quadro, não a cada traço.
+- O cabeçalho mostra "História r de N − 1" e o botão **Enviar história**; ao fim do tempo, a faixa "Enviando a sua história…".
+- Rascunhos (R48) voltam por quadro, cada um como camada base do seu documento. O autosave reveza os quadros alterados, um a cada `AUTOSAVE_INTERVAL_MS`, e o envio manda um `panel:submit` por quadro, refazendo só os que não chegaram (D49).
 
 ---
 
