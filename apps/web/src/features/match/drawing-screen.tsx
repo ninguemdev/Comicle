@@ -6,6 +6,7 @@ import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
 import { secondsLeft, Timer } from '../../ui/timer';
+import { ComicPage } from '../comic/comic-page';
 import { PanelFrame } from '../comic/panel-frame';
 import { DrawingEditor, type DrawingEditorHandle } from '../drawing/drawing-editor';
 import { AbortMatchButton } from './abort-match-button';
@@ -22,10 +23,16 @@ const HALF = 2;
 const REFERENCE_WIDTH = 96;
 
 /**
- * R38 with `showPreviousPanels`: the story's earlier panels, small, just to check them. A column
- * right of the editor; a strip above it on a phone held upright.
+ * R38 with `showPreviousPanels`: the story's earlier panels, small, to check them; a click opens
+ * one large. A column right of the editor; a strip above it on a phone held upright.
  */
-function ReferencePanels({ panels }: { panels: readonly PanelRef[] }) {
+function ReferencePanels({
+  panels,
+  onOpen,
+}: {
+  panels: readonly PanelRef[];
+  onOpen: (panel: PanelRef) => void;
+}) {
   return (
     <ul
       aria-label={texts.previousPanels}
@@ -33,7 +40,16 @@ function ReferencePanels({ panels }: { panels: readonly PanelRef[] }) {
     >
       {panels.map((panel) => (
         <li key={panel.panelId}>
-          <PanelFrame panel={panel} width={REFERENCE_WIDTH} compact />
+          <button
+            type="button"
+            aria-label={texts.enlargePanel(panel.position + 1, panel.artist.nickname)}
+            onClick={() => {
+              onOpen(panel);
+            }}
+            className="block cursor-zoom-in rounded transition-transform hover:scale-105"
+          >
+            <PanelFrame panel={panel} width={REFERENCE_WIDTH} compact />
+          </button>
         </li>
       ))}
     </ul>
@@ -79,6 +95,8 @@ export function DrawingScreen({
   const [revision, setRevision] = useState(0);
   const [themeOpen, setThemeOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  /** The reference panel shown large, if any. */
+  const [enlarged, setEnlarged] = useState<PanelRef | null>(null);
   const baseImageUrl = useMyDraft(view.room.code, hasDraft);
   const { report, toast } = useActionError();
   const { roundIndex } = match;
@@ -117,7 +135,7 @@ export function DrawingScreen({
 
   // Ctrl/⌘+Enter concludes (interface.md §4; the editor itself never hands anything in, D25).
   const onShortcut = useEffectEvent((event: KeyboardEvent) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !confirming) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !confirming && !enlarged) {
       event.preventDefault();
       requestDone();
     }
@@ -169,10 +187,24 @@ export function DrawingScreen({
         </div>
         {previousPanels.length > 0 && (
           <div className="order-first landscape:order-last md:order-last">
-            <ReferencePanels panels={previousPanels} />
+            <ReferencePanels panels={previousPanels} onOpen={setEnlarged} />
           </div>
         )}
       </div>
+      <Dialog
+        open={enlarged !== null}
+        wide
+        title={
+          enlarged ? strings.comic.panelAlt(enlarged.position + 1, enlarged.artist.nickname) : ''
+        }
+        onClose={() => {
+          setEnlarged(null);
+        }}
+      >
+        <div className="aspect-[4/3] max-h-[70vh] w-full">
+          {enlarged && <ComicPage key={enlarged.panelId} panels={[enlarged]} maxColumns={1} />}
+        </div>
+      </Dialog>
       <Dialog
         open={confirming}
         title={texts.confirmTitle}

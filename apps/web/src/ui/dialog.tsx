@@ -43,10 +43,12 @@ export interface DialogProps {
   children: ReactNode;
   /** Buttons at the bottom, such as cancel and confirm. */
   actions?: ReactNode;
+  /** For a picture instead of a question: as wide as the screen allows. */
+  wide?: boolean;
 }
 
 /** Modal with focus trapped inside, `Esc` to close and focus returned to the trigger. */
-export function Dialog({ open, title, onClose, children, actions }: DialogProps) {
+export function Dialog({ open, title, onClose, children, actions, wide = false }: DialogProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -93,7 +95,7 @@ export function Dialog({ open, title, onClose, children, actions }: DialogProps)
         aria-labelledby={titleId}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="flex max-h-full w-full max-w-md animate-pop flex-col gap-4 overflow-y-auto rounded-xl border-comic bg-paper p-5 shadow-pop"
+        className={`flex max-h-full w-full ${wide ? 'max-w-5xl' : 'max-w-md'} animate-pop flex-col gap-4 overflow-y-auto rounded-xl border-comic bg-paper p-5 shadow-pop`}
       >
         <div className="flex items-start justify-between gap-3">
           <h2 id={titleId} className="font-display text-3xl tracking-wide">
