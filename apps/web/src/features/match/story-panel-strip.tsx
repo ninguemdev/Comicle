@@ -36,7 +36,7 @@ function PanelThumbnail({
       width={PANEL_WIDTH}
       height={PANEL_HEIGHT}
       aria-hidden
-      className="block aspect-[4/3] w-20 bg-white sm:w-24"
+      className="block aspect-[4/3] w-14 bg-white sm:w-24 [@media(max-height:30rem)]:w-12"
     />
   );
 }
@@ -61,7 +61,7 @@ export function StoryPanelStrip({ documents, current, onSelect }: StoryPanelStri
   };
 
   return (
-    <nav aria-label={texts.panels} className="flex shrink-0 items-center gap-2">
+    <nav aria-label={texts.panels} className="flex shrink-0 items-center justify-center gap-2">
       <button
         type="button"
         aria-label={texts.previous}
@@ -73,7 +73,7 @@ export function StoryPanelStrip({ documents, current, onSelect }: StoryPanelStri
       >
         {texts.previousArrow}
       </button>
-      <ol className="flex min-w-0 flex-1 gap-2 overflow-x-auto p-1">
+      <ol className="flex min-w-0 gap-2 overflow-x-auto p-1">
         {documents.map((document, index) => (
           <li key={index} className="shrink-0">
             <button

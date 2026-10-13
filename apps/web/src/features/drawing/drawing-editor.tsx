@@ -55,7 +55,9 @@ export function DrawingEditor({
 }: DrawingEditorProps) {
   const [own] = useState(() => new DrawingDocument());
   const doc = document ?? own;
-  const [revision, setRevision] = useState(doc.revision);
+  // Re-renders on every change; the canvas reads the revision from the document itself, which
+  // the caller may also change (a draft restored into it, R48).
+  const [, setRevision] = useState(doc.revision);
   const [tool, setTool] = useState<DrawingTool>('brush');
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [size, setSize] = useState(DEFAULT_BRUSH_SIZE);
@@ -156,7 +158,7 @@ export function DrawingEditor({
       />
       <DrawingCanvas
         document={doc}
-        revision={revision}
+        revision={doc.revision}
         brush={{ tool, color, size, opacity }}
         disabled={disabled}
         onStroke={addStroke}
