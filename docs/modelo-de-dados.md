@@ -53,12 +53,15 @@ type Match = {
   totalRounds: number;
   plan: DistributionPlan;                // R31–R33
   fallbackThemes: string[];              // já embaralhados; usados em ordem (R30)
-  panelIds: string[][];                  // [rodada][história]: ids dos quadros, sorteados no início
+  storyIds: string[];                    // um por história (GameMode.storyCount), sorteados no início
+  panelIds: string[][][];                // [rodada][história][k]: ids dos quadros, sorteados no início;
+                                         // vazio quando a história não é desenhada na rodada (R64)
   phase: MatchPhase;
   phaseStartedAt: number;
   phaseDeadlineAt: number | null;
   roundIndex: number;                    // -1 na fase de temas; a última rodada na apresentação
-  stories: StoryState[];                 // índice = assento do autor
+  stories: StoryState[];                 // ordem de apresentação: uma por tema (assento do autor),
+                                         // ou uma por versão no modo individual (R64)
   themes: Map<string, ThemeDraftState>;  // por playerId, só na fase de temas
   round: RoundState | null;
   presentation: PresentationCursor | null;
@@ -68,13 +71,12 @@ type Seat = {
   playerId: string;
   nickname: string;                      // cópia no início, gravada com o tema
   themeId: string;
-  storyId: string;
 };
 
 type ThemeDraftState = { draft: string; final: string | null };   // R28
 
 type DistributionPlan = {
-  // assignments[r][playerId] = índice da história na rodada r
+  // assignments[r][playerId] = índice da história (no individual, da versão) na rodada r
   assignments: ReadonlyArray<Readonly<Record<string, number>>>;
 };
 
@@ -97,8 +99,9 @@ type PanelMeta = {
 
 type RoundState = {
   ready: Set<string>;                    // confirmaram leitura (R36, R37)
-  drafts: Map<string, Uint8Array>;       // último autosave (R39)
-  finals: Map<string, { png: Uint8Array | null; reason: 'done' | 'timeout' }>;
+  // por playerId e, dentro dele, pelo panelIndex (sempre 0 no colaborativo, R66)
+  drafts: Map<string, Map<number, Uint8Array>>;   // último autosave de cada quadro (R39)
+  finals: Map<string, Map<number, { png: Uint8Array | null; reason: 'done' | 'timeout' }>>;
 };
 
 type PresentationCursor = {
@@ -113,8 +116,8 @@ type PresentationCursor = {
 Invariantes verificadas em testes:
 
 - `room.hostPlayerId` sempre aponta para um membro existente.
-- Durante a partida, `match.seats` é imutável e `stories.length === seats.length`.
-- `story.panels[k].position === k` e `panels.length === roundIndex` no início de cada rodada.
+- Durante a partida, `match.seats` é imutável e `stories.length === GameMode.storyCount(seats.length)` (`N` no colaborativo, `N × (N − 1)` no individual).
+- `story.panels[k].position === k`; no colaborativo, `panels.length === roundIndex` no início de cada rodada.
 - `revealedCount[i]` e `maxStoryReached` nunca diminuem.
 
 ---

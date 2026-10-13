@@ -172,12 +172,15 @@ interface GameMode {
   totalRounds(settings: MatchSettings, participantCount: number): number;
   buildPlan(seats: readonly string[], totalRounds: number, settings: MatchSettings): DistributionPlan;
   hasReadingPhase(roundIndex: number): boolean;
+  storyCount(participantCount: number): number; // N, ou N × (N − 1) no individual
+  panelsPerRound(settings: MatchSettings): number; // 1, ou panelsPerStory no individual
+  themeOfStory(storyIndex: number, participantCount: number): number; // assento do autor do tema
 }
 ```
 
 `Result<T>` é `{ ok: true; value: T } | { ok: false; error: DomainError }`. O formato de `DistributionPlan` está no [modelo de dados](./modelo-de-dados.md); consulte-o só por `storyForPlayer(plan, r, playerId)` e `playerForStory(plan, r, storyIndex)` (`modules/game-modes/game-mode.ts`). O modo é obtido por `getGameMode(id)` (`modules/game-modes/registry.ts`).
 
-Os modos ficam em `modules/game-modes/<modo>/`. O `individual` (`individual/individual-mode.ts`, R62–R65) reaproveita a rotação do colaborativo sem o autor, e no plano o índice é o **tema** que o jogador desenha na rodada, não uma história compartilhada. Ele já existe desde a T35, mas só entra no registro na T36, junto com as rodadas de vários quadros por jogador; até lá, `getGameMode('individual')` recusa com `INVALID_PAYLOAD` e uma partida individual não começa (R21).
+Os modos ficam em `modules/game-modes/<modo>/`. Salas, máquina de fases, projeção e apresentação não perguntam o modo: leem as histórias (`storyCount`), quem desenha cada uma (`buildPlan`) e quantos quadros cada jogador desenha por rodada (`panelsPerRound`). O `individual` (`individual/individual-mode.ts`, R62–R66) reaproveita a rotação do colaborativo sem o autor e devolve no plano a **versão** que o jogador desenha: a do tema `t` na rodada `r` é a história `t × (N − 1) + r`, então as histórias já saem na ordem da apresentação por tema (R68). A rodada guarda rascunhos e envios por jogador e por `panelIndex`, e a posição de cada quadro é a quantidade que a história já tem mais `k`.
 
 ### Projeção
 
