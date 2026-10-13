@@ -12,7 +12,12 @@ import {
 } from './engine/drawing-document';
 import { exportPng } from './engine/export';
 import { loadImage } from './load-image';
-import { BRUSH_SIZES, DEFAULT_BRUSH_SIZE, DEFAULT_COLOR, type BrushSize } from './engine/palette';
+import {
+  DEFAULT_BRUSH_OPACITY,
+  DEFAULT_BRUSH_SIZE,
+  DEFAULT_COLOR,
+  stepBrushSize,
+} from './engine/palette';
 import { Toolbar } from './toolbar';
 import { useDrawingShortcuts } from './use-drawing-shortcuts';
 
@@ -32,11 +37,6 @@ export interface DrawingEditorProps {
   ref?: Ref<DrawingEditorHandle>;
 }
 
-function steppedSize(size: BrushSize, direction: -1 | 1): BrushSize {
-  const index = BRUSH_SIZES.indexOf(size) + direction;
-  return BRUSH_SIZES[Math.min(Math.max(index, 0), BRUSH_SIZES.length - 1)] ?? size;
-}
-
 /**
  * The drawing editor (interface.md §4), isolated from the match: it takes props and hands back
  * a PNG through `ref.exportPng()`. Autosave, submission and the timer belong to the caller.
@@ -46,7 +46,8 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
   const [revision, setRevision] = useState(doc.revision);
   const [tool, setTool] = useState<DrawingTool>('brush');
   const [color, setColor] = useState(DEFAULT_COLOR);
-  const [size, setSize] = useState<BrushSize>(DEFAULT_BRUSH_SIZE);
+  const [size, setSize] = useState(DEFAULT_BRUSH_SIZE);
+  const [opacity, setOpacity] = useState(DEFAULT_BRUSH_OPACITY);
   const [confirmingClear, setConfirmingClear] = useState(false);
 
   useImperativeHandle(ref, () => ({ exportPng: () => exportPng(doc) }), [doc]);
@@ -109,7 +110,7 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
   useDrawingShortcuts(!disabled && !confirmingClear, {
     selectTool: setTool,
     stepSize: (direction) => {
-      setSize((current) => steppedSize(current, direction));
+      setSize((current) => stepBrushSize(current, direction));
     },
     undo,
     redo,
@@ -122,6 +123,7 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
         tool={tool}
         color={color}
         size={size}
+        opacity={opacity}
         canUndo={doc.canUndo}
         canRedo={doc.canRedo}
         canClear={!doc.isEmpty}
@@ -133,6 +135,7 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
           setTool((current) => (current === 'eraser' ? 'brush' : current));
         }}
         onSize={setSize}
+        onOpacity={setOpacity}
         onUndo={undo}
         onRedo={redo}
         onClear={() => {
@@ -142,7 +145,7 @@ export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: Drawing
       <DrawingCanvas
         document={doc}
         revision={revision}
-        brush={{ tool, color, size }}
+        brush={{ tool, color, size, opacity }}
         disabled={disabled}
         onStroke={addStroke}
         onFill={addFill}

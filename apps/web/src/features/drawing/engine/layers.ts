@@ -11,6 +11,8 @@ export interface PaintContext {
   lineWidth: number;
   lineCap: CanvasLineCap;
   lineJoin: CanvasLineJoin;
+  /** Brush opacity (interface.md §4). */
+  globalAlpha: number;
   beginPath(): void;
   moveTo(x: number, y: number): void;
   lineTo(x: number, y: number): void;
