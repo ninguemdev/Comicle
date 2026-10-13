@@ -112,6 +112,7 @@ describe('apresentação (integração)', () => {
         );
         const ack = await player.client.emitWithAck('panel:submit', {
           roundIndex,
+          panelIndex: 0,
           reason: 'done',
           png: panelPng(roundIndex + 1),
         });

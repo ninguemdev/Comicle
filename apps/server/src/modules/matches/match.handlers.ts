@@ -11,8 +11,8 @@ export function matchHandlers(service: MatchService): SocketHandler[] {
     defineHandler('round:ready', ({ roundIndex }, { socket }) =>
       service.confirmReading(socket.id, roundIndex),
     ),
-    defineHandler('panel:autosave', ({ roundIndex, png }, { socket }) =>
-      service.autosavePanel(socket.id, roundIndex, png),
+    defineHandler('panel:autosave', (autosave, { socket }) =>
+      service.autosavePanel(socket.id, autosave),
     ),
     defineHandler('panel:submit', (submission, { socket }) =>
       service.submitPanel(socket.id, submission),

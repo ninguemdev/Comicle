@@ -1,4 +1,4 @@
-import { roomCodeSchema } from '@comicle/shared';
+import { myDraftQuerySchema, roomCodeSchema } from '@comicle/shared';
 import type { FastifyInstance, FastifyReply, preHandlerAsyncHookHandler } from 'fastify';
 
 import { DomainError } from '../../platform/errors';
@@ -35,7 +35,11 @@ export function registerDrawingRoutes(
       if (!parsed.success) {
         throw new DomainError('ROOM_NOT_FOUND', 'Sala não encontrada.');
       }
-      const draft = service.myDraft(request.guestId, parsed.data);
+      const query = myDraftQuerySchema.safeParse(request.query);
+      if (!query.success) {
+        throw new DomainError('INVALID_PAYLOAD', 'Quadro inexistente.');
+      }
+      const draft = service.myDraft(request.guestId, parsed.data, query.data.panelIndex);
       if (draft === null) {
         return reply.header('Cache-Control', 'private, no-store').status(HTTP_NO_CONTENT).send();
       }

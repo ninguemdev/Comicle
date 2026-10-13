@@ -32,6 +32,7 @@ const PAYLOAD_KEYS = [
   'storySeconds',
   'text',
   'roundIndex',
+  'panelIndex',
   'png',
   'reason',
   'action',

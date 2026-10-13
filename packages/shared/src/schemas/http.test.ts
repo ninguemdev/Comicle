@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { errorResponseSchema, guestSessionCreatedSchema, roomLookupSchema } from './http';
+import {
+  errorResponseSchema,
+  guestSessionCreatedSchema,
+  myDraftQuerySchema,
+  roomLookupSchema,
+} from './http';
 
 describe('schemas HTTP', () => {
   it('aceita a resposta de criação de sessão', () => {
@@ -26,5 +31,13 @@ describe('schemas HTTP', () => {
     const body = { error: { code: 'TEAPOT', message: 'x' } };
 
     expect(errorResponseSchema.safeParse(body).success).toBe(false);
+  });
+
+  it('R48, R66: my-draft lê o quadro da query, 0 se ausente', () => {
+    expect(myDraftQuerySchema.parse({})).toEqual({ panelIndex: 0 });
+    expect(myDraftQuerySchema.parse({ panelIndex: '3' })).toEqual({ panelIndex: 3 });
+    for (const panelIndex of ['-1', '6', '1.5', 'abc']) {
+      expect(myDraftQuerySchema.safeParse({ panelIndex }).success, panelIndex).toBe(false);
+    }
   });
 });

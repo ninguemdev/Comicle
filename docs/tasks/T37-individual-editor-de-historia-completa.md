@@ -37,4 +37,4 @@ No cliente, o lobby com o modo individual e o ambiente de criação com todos os
 - [ ] E2E de uma partida individual com 2 jogadores.
 
 ## Notas
-Task grande: usar o modo de planejamento e apresentar o plano antes de editar.
+Task grande: usar o modo de planejamento e apresentar o plano antes de editar. A T36 deixou o contrato pronto (D49): `panel:autosave` e `panel:submit` com `panelIndex` (a `room-store` hoje manda sempre 0), a tarefa `draw_panel` com `panelCount` e `draftPanels`, e `my-draft?panelIndex=k`. O servidor aceita um autosave a cada 2 s por conexão, então o cliente reveza os quadros que mudaram.

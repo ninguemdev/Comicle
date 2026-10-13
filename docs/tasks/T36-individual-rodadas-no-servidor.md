@@ -16,27 +16,27 @@ Uma rodada por tema dos outros (R62, R63): cada jogador desenha sozinho todos os
 - Apresentação por tema (T38); opções do colaborativo ignoradas.
 
 ## Entregáveis
-- [ ] Registrar `individualMode` no `registry` (remove a recusa provisória do R21) e ajustar a `MatchService`/máquina de fases para rodadas sem leitura com prazo `storySeconds`.
-- [ ] Versões: uma `StoryState` por (tema, rodada), `N × (N − 1)` no total, com ids sorteados no início e `position` na ordem do R64; `newMatchRecord` grava todas.
-- [ ] Rodada com `panelsPerStory` quadros por jogador: autosave e envio final por quadro (`panelIndex` nos eventos `panel:*`, validado contra `panelsPerStory`) e entrega da história inteira; fechamento e resolução por quadro (R66, R42, R43).
-- [ ] `PlayerView`: tarefa de desenho com o tema, a quantidade de quadros e quais têm rascunho; espera depois da entrega.
-- [ ] `GET /api/rooms/:code/my-draft` por quadro (R48) e `PanelAccessPolicy`/`buildPlayerView` respeitando o R67.
-- [ ] Atualizar `protocolo-realtime.md`, `modelo-de-dados.md` e `cenarios-de-reconexao.md`.
+- [x] Registrar `individualMode` no `registry` (remove a recusa provisória do R21) e ajustar a `MatchService`/máquina de fases para rodadas sem leitura com prazo `storySeconds`.
+- [x] Versões: uma `StoryState` por (tema, rodada), `N × (N − 1)` no total, com ids sorteados no início e `position` na ordem do R64; `newMatchRecord` grava todas.
+- [x] Rodada com `panelsPerStory` quadros por jogador: autosave e envio final por quadro (`panelIndex` nos eventos `panel:*`, validado contra `panelsPerStory`) e entrega da história inteira; fechamento e resolução por quadro (R66, R42, R43).
+- [x] `PlayerView`: tarefa de desenho com o tema, a quantidade de quadros e quais têm rascunho; espera depois da entrega.
+- [x] `GET /api/rooms/:code/my-draft` por quadro (R48) e `PanelAccessPolicy`/`buildPlayerView` respeitando o R67.
+- [x] Atualizar `protocolo-realtime.md`, `modelo-de-dados.md`, `arquitetura.md`, `cenarios-de-reconexao.md` e D49.
 
 ## Fora do escopo
 - Interface do editor (T37) e apresentação (T38).
 
 ## Critérios de aceite
-- [ ] Uma partida individual de 3 jogadores passa por 2 rodadas sem leitura e chega à apresentação com 6 versões persistidas.
-- [ ] Cada jogador desenha uma versão de cada tema dos outros e nunca o próprio.
-- [ ] Quem cai no meio da rodada recupera os rascunhos de todos os quadros da sua versão.
+- [x] Uma partida individual de 3 jogadores passa por 2 rodadas sem leitura e chega à apresentação com 6 versões persistidas.
+- [x] Cada jogador desenha uma versão de cada tema dos outros e nunca o próprio.
+- [x] Quem cai no meio da rodada recupera os rascunhos de todos os quadros da sua versão.
 
 ## Testes obrigatórios
-- [ ] R62/R65: rodadas, prazo da história inteira e ausência de leitura (máquina de fases).
-- [ ] R64: quantidade, ordem e tema das versões gravadas.
-- [ ] R66: entrega antecipada, fechamento por quadro (envio final → autosave → vazio) e envios inválidos.
-- [ ] R67: matriz de privacidade e de acesso às imagens com partidas individuais.
-- [ ] Integração de uma partida individual completa.
+- [x] R62/R65: rodadas, prazo da história inteira e ausência de leitura (máquina de fases).
+- [x] R64: quantidade, ordem e tema das versões gravadas.
+- [x] R66: entrega antecipada, fechamento por quadro (envio final → autosave → vazio) e envios inválidos.
+- [x] R67: matriz de privacidade e de acesso às imagens com partidas individuais.
+- [x] Integração de uma partida individual completa.
 
 ## Notas
 Task grande: usar o modo de planejamento e apresentar o plano antes de editar. O `DistributionPlan` do modo individual indexa **temas** (arquitetura §4): a versão é o par (tema, rodada).

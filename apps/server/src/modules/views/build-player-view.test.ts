@@ -2,6 +2,8 @@ import { defaultAvatar } from '@comicle/shared';
 import { describe, expect, it } from 'vitest';
 
 import {
+  draftPanel,
+  finalPanel,
   inMatch,
   TEST_DRAWING_DEADLINE_AT,
   testMatch,
@@ -206,7 +208,8 @@ describe('buildPlayerView na rodada 0', () => {
       status: 'drawing',
       theme: 'Tema de bia',
       panelPosition: 0,
-      hasDraft: false,
+      panelCount: 1,
+      draftPanels: [],
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
       previousPanels: [],
     });
@@ -264,7 +267,8 @@ describe('buildPlayerView nas rodadas', () => {
       status: 'drawing',
       theme: 'Tema de bia',
       panelPosition: 1,
-      hasDraft: false,
+      panelCount: 1,
+      draftPanels: [],
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
       previousPanels: [],
     });
@@ -284,10 +288,10 @@ describe('buildPlayerView nas rodadas', () => {
     expect(taskOf(reading, 'davi')).toEqual({ kind: 'spectate' });
   });
 
-  it('R38/R58: a view de desenho nunca contém quadros; hasDraft e status acompanham o jogador', () => {
+  it('R38/R58: a view de desenho nunca contém quadros; draftPanels e status acompanham o jogador', () => {
     const drawing = testRoundMatch(players, 'round_drawing', 2, {
-      drafts: new Map([['ana', new Uint8Array([1])]]),
-      finals: new Map([['bia', { png: null, reason: 'done' }]]),
+      drafts: new Map([['ana', draftPanel(new Uint8Array([1]))]]),
+      finals: new Map([['bia', finalPanel('done')]]),
     });
 
     expect(taskOf(drawing, 'ana')).toEqual({
@@ -295,11 +299,12 @@ describe('buildPlayerView nas rodadas', () => {
       status: 'drawing',
       theme: 'Tema de ana',
       panelPosition: 2,
-      hasDraft: true,
+      panelCount: 1,
+      draftPanels: [0],
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
       previousPanels: [],
     });
-    expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', hasDraft: false });
+    expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', draftPanels: [] });
     for (const playerId of [...players, 'davi']) {
       expect(JSON.stringify(viewOf(drawing, playerId))).not.toContain('panel-');
     }
@@ -307,7 +312,7 @@ describe('buildPlayerView nas rodadas', () => {
 
   it('R38/R58: com showPreviousPanels, a tarefa de desenho traz os quadros da própria história', () => {
     const base = testRoundMatch(players, 'round_drawing', 1, {
-      finals: new Map([['bia', { png: null, reason: 'done' }]]),
+      finals: new Map([['bia', finalPanel('done')]]),
     });
     const drawing = { ...base, settings: { ...base.settings, showPreviousPanels: true } };
 
@@ -348,8 +353,8 @@ describe('buildPlayerView nas rodadas', () => {
 
     const closing = testRoundMatch(players, 'round_closing', 1, {
       finals: new Map([
-        ['ana', { png: null, reason: 'done' }],
-        ['caio', { png: null, reason: 'timeout' }],
+        ['ana', finalPanel('done')],
+        ['caio', finalPanel('timeout')],
       ]),
     });
     expect(viewOf(closing, 'davi').match?.progress).toEqual({ done: 2, total: 3 });

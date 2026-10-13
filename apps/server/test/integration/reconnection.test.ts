@@ -112,6 +112,7 @@ describe('reconexão (integração)', () => {
       await player.views.waitFor(inPhase('round_drawing', roundIndex));
       const ack = await player.client.emitWithAck('panel:submit', {
         roundIndex,
+        panelIndex: 0,
         reason: 'done',
         png: panelPng(roundIndex + 1),
       });
@@ -180,34 +181,41 @@ describe('reconexão (integração)', () => {
     // R36: drawing already, while ana is still reading.
     const draft = panelPng(3);
     expect(
-      (await back.client.emitWithAck('panel:autosave', { roundIndex: 1, png: draft })).ok,
+      (
+        await back.client.emitWithAck('panel:autosave', {
+          roundIndex: 1,
+          panelIndex: 0,
+          png: draft,
+        })
+      ).ok,
     ).toBe(true);
     await drop(back, ana);
     back = await reopen(back);
 
     expect(back.views.latest?.match?.phase).toBe('round_reading');
-    expect(taskOf(back)).toMatchObject({ kind: 'draw_panel', status: 'drawing', hasDraft: true });
+    expect(taskOf(back)).toMatchObject({ kind: 'draw_panel', status: 'drawing', draftPanels: [0] });
     const response = await get(`/api/rooms/${code}/my-draft`, bia.token);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(draft);
     expect(JSON.stringify(back.views.latest)).not.toContain(panelId);
     expect((await get(`/api/panels/${panelId}`, bia.token)).status).toBe(403);
   });
 
-  it('R48: quem cai no desenho depois de um autosave volta com hasDraft e baixa o rascunho', async () => {
+  it('R48: quem cai no desenho depois de um autosave volta com draftPanels e baixa o rascunho', async () => {
     const players = await room();
     const [ana, bia] = players;
     await startMatch(players);
     await submitThemes(players);
     await bia.views.waitFor(inPhase('round_drawing', 0));
     const draft = panelPng(7);
-    expect((await bia.client.emitWithAck('panel:autosave', { roundIndex: 0, png: draft })).ok).toBe(
-      true,
-    );
+    expect(
+      (await bia.client.emitWithAck('panel:autosave', { roundIndex: 0, panelIndex: 0, png: draft }))
+        .ok,
+    ).toBe(true);
 
     await drop(bia, ana);
     const back = await reopen(bia);
 
-    expect(taskOf(back)).toMatchObject({ kind: 'draw_panel', status: 'drawing', hasDraft: true });
+    expect(taskOf(back)).toMatchObject({ kind: 'draw_panel', status: 'drawing', draftPanels: [0] });
     const response = await get(`/api/rooms/${code}/my-draft`, bia.token);
     expect(response.status).toBe(200);
     expect(new Uint8Array(await response.arrayBuffer())).toEqual(draft);
@@ -285,13 +293,19 @@ describe('reconexão (integração)', () => {
     expect(second.views.latest?.me).toMatchObject({ playerId, role: 'participant' });
     expect(taskOf(second)).toMatchObject({ kind: 'draw_panel', status: 'drawing' });
     // The old connection dropping must not leave Bia away.
-    await ana.client.emitWithAck('panel:submit', { roundIndex: 0, reason: 'done', png: null });
+    await ana.client.emitWithAck('panel:submit', {
+      roundIndex: 0,
+      panelIndex: 0,
+      reason: 'done',
+      png: null,
+    });
     const view = await ana.views.waitFor((current) => current.match?.progress.done === 1);
     expect(view.room.members.find((m) => m.nickname === 'Bia')?.connected).toBe(true);
     expect(
       (
         await second.client.emitWithAck('panel:submit', {
           roundIndex: 0,
+          panelIndex: 0,
           reason: 'done',
           png: panelPng(2),
         })

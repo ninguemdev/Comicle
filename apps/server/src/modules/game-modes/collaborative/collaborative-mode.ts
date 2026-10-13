@@ -62,4 +62,7 @@ export const collaborativeMode: GameMode = {
   buildPlan: (seats, rounds, settings) =>
     buildCollaborativePlan(seats, rounds, { authorDraws: settings.authorDrawsLast }),
   hasReadingPhase,
+  storyCount: (participantCount) => participantCount,
+  panelsPerRound: () => 1,
+  themeOfStory: (storyIndex) => storyIndex,
 };

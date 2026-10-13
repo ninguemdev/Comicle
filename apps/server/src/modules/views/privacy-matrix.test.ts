@@ -5,7 +5,6 @@ import {
   draftOf,
   FALLBACK_THEMES,
   generateMatch,
-  panelIdOf,
   seesReference,
   themeOf,
 } from '../../../test/support/generated-matches';
@@ -14,7 +13,7 @@ import { SeededRng } from '../../platform/random';
 import type { Match } from '../matches/match';
 import { buildPlayerView } from './build-player-view';
 
-// R58 as a matrix (T19): in generated matches, at every moment and for every player and
+// R58 and R67 as a matrix (T19, T36): in generated matches, at every moment and for every player and
 // spectator, the PlayerView carries no theme and no panel beyond what the rules allow.
 
 const MATCHES = 30;
@@ -26,7 +25,7 @@ function universe(match: Match, players: string[]) {
     ...FALLBACK_THEMES,
     ...match.stories.map((story) => story.themeText),
   ]);
-  const panels = match.panelIds.flatMap((round, r) => round.map((_id, s) => panelIdOf(r, s)));
+  const panels = match.panelIds.flat(2);
   return { themes, panels };
 }
 
@@ -91,7 +90,7 @@ function allowed(match: Match, viewer: string, seated: boolean) {
 }
 
 describe('matriz de privacidade (R58)', () => {
-  it(`R58: em ${String(MATCHES)} partidas geradas, nenhuma view mostra tema ou quadro além do permitido`, () => {
+  it(`R58, R67: em ${String(MATCHES)} partidas geradas, nenhuma view mostra tema ou quadro além do permitido`, () => {
     let checked = 0;
     for (let seed = 1; seed <= MATCHES; seed++) {
       const { players, spectator, snapshots } = generateMatch(new SeededRng(seed));
@@ -119,6 +118,15 @@ describe('matriz de privacidade (R58)', () => {
     }
     // Enough moments to mean something: every phase of 30 matches, for each viewer.
     expect(checked).toBeGreaterThan(1000);
+  });
+
+  it('R67: as partidas geradas incluem os dois modos', () => {
+    const modes = new Set<string>();
+    for (let seed = 1; seed <= MATCHES; seed++) {
+      const [first] = generateMatch(new SeededRng(seed)).snapshots;
+      if (first) modes.add(first.match.settings.mode);
+    }
+    expect([...modes].sort()).toEqual(['collaborative', 'individual']);
   });
 
   it('as partidas geradas passam por todas as fases', () => {

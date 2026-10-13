@@ -5,6 +5,7 @@ import { z } from 'zod';
 import type { ErrorBody } from '../domain/ack';
 import type { RoomStatus } from '../domain/player-view';
 import { ErrorCode } from '../errors';
+import { panelIndexSchema } from './events';
 
 /** `POST /api/guest-sessions` → 201. `expiresAt` is ms since epoch on the server clock (R3). */
 export const guestSessionCreatedSchema = z.object({
@@ -33,3 +34,8 @@ export type RoomLookup = z.infer<typeof roomLookupSchema>;
 export const errorResponseSchema = z.object({
   error: z.object({ code: z.enum(ErrorCode), message: z.string() }),
 }) satisfies z.ZodType<{ error: ErrorBody }>;
+
+/** `GET /api/rooms/:code/my-draft?panelIndex=k` (R48, R66); without it, the first panel. */
+export const myDraftQuerySchema = z.object({
+  panelIndex: z.coerce.number<string>().pipe(panelIndexSchema).default(0),
+});

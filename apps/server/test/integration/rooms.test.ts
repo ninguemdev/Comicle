@@ -214,7 +214,7 @@ describe('salas (integração)', () => {
     }
   });
 
-  it('R21: o modo individual é aceito nas configurações, mas ainda não inicia (T36)', async () => {
+  it('R21: o modo individual é aceito nas configurações e inicia a partida', async () => {
     await start();
     const { host, code } = await createRoom();
     await joinNew(code, 'Bia');
@@ -232,11 +232,8 @@ describe('salas (integração)', () => {
     await host.views.waitFor((view) => view.room.settings.mode === 'individual');
     expect(host.views.latest?.room.settings).toEqual(settings);
 
-    expect(await host.client.emitWithAck('match:start', {})).toMatchObject({
-      ok: false,
-      error: { code: 'INVALID_PAYLOAD' },
-    });
-    expect(host.views.latest?.room.status).toBe('lobby');
+    expect(await host.client.emitWithAck('match:start', {})).toEqual({ ok: true, data: {} });
+    await host.views.waitFor((view) => view.room.status === 'in_match');
   });
 
   it('R14, R15: anfitrião sai → função vai para o membro conectado mais antigo', async () => {

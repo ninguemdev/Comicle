@@ -24,6 +24,12 @@ export interface GameMode {
     settings: MatchSettings,
   ): DistributionPlan;
   hasReadingPhase(roundIndex: number): boolean;
+  /** Stories of the match: one per theme, or one per version in the individual mode (R64). */
+  storyCount(participantCount: number): number;
+  /** Panels each participant draws in a round, all of the same story. */
+  panelsPerRound(settings: MatchSettings): number;
+  /** Seat of the author whose theme story `storyIndex` tells. */
+  themeOfStory(storyIndex: number, participantCount: number): number;
 }
 
 /** Index of the story `playerId` draws in round `roundIndex`, or `undefined` for non-participants. */

@@ -2,6 +2,7 @@ import { DRAWING_SECONDS_DEFAULT, type MatchSettings } from '@comicle/shared';
 import { describe, expect, it } from 'vitest';
 
 import { getGameMode } from '../registry';
+import { individualMode } from '../individual/individual-mode';
 import { collaborativeMode } from './collaborative-mode';
 
 const perPlayer: MatchSettings = {
@@ -59,6 +60,12 @@ describe('collaborativeMode', () => {
     expect(errorCodeOf({ ...perPlayer, mode: 'individual' })).toBe('INVALID_PAYLOAD');
   });
 
+  it('R31: uma história por tema e um quadro por jogador em cada rodada', () => {
+    expect(collaborativeMode.storyCount(5)).toBe(5);
+    expect(collaborativeMode.themeOfStory(3, 5)).toBe(3);
+    expect(collaborativeMode.panelsPerRound(perPlayer)).toBe(1);
+  });
+
   it('R31: buildPlan usa a distribuição colaborativa', () => {
     const plan = collaborativeMode.buildPlan(['ana', 'bruno'], 2, perPlayer);
     expect(plan.assignments).toEqual([
@@ -84,9 +91,7 @@ describe('registry', () => {
     expect(getGameMode('collaborative')).toBe(collaborativeMode);
   });
 
-  it('R21: o modo individual ainda não pode ser iniciado (T36)', () => {
-    expect(() => getGameMode('individual')).toThrow(
-      expect.objectContaining({ code: 'INVALID_PAYLOAD' }),
-    );
+  it('R21: registra o modo individual', () => {
+    expect(getGameMode('individual')).toBe(individualMode);
   });
 });

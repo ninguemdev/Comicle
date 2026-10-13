@@ -47,8 +47,12 @@ export type PlayerTask =
       kind: 'draw_panel';
       status: 'drawing' | 'submitted';
       theme: string;
+      /** Position of the first panel the player draws this round. */
       panelPosition: number;
-      hasDraft: boolean;
+      /** R66: panels the player draws this round, all of the same story (1 in the collaborative mode). */
+      panelCount: number;
+      /** R48: panels with an autosave to restore (`GET /api/rooms/:code/my-draft`). */
+      draftPanels: number[];
       /**
        * R38: the drawing deadline, the same for everyone. During the reading of the others it is
        * the latest possible one and moves earlier if the reading ends early.

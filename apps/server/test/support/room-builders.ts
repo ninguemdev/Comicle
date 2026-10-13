@@ -4,6 +4,8 @@ import { buildCollaborativePlan } from '../../src/modules/game-modes/collaborati
 import {
   emptyRound,
   type Match,
+  type PanelFinal,
+  type PanelSubmitReason,
   type RoundState,
   type StoryState,
 } from '../../src/modules/matches/match';
@@ -57,13 +59,13 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
       playerId,
       nickname: playerId,
       themeId: `theme-${playerId}`,
-      storyId: `story-${playerId}`,
     })),
     totalRounds: playerIds.length,
     plan: buildCollaborativePlan(playerIds, playerIds.length, { authorDraws: true }),
     fallbackThemes: [],
+    storyIds: playerIds.map((author) => `story-${author}`),
     panelIds: playerIds.map((_, round) =>
-      playerIds.map((author) => `panel-${String(round)}-${author}`),
+      playerIds.map((author) => [`panel-${String(round)}-${author}`]),
     ),
     phase: 'theme_writing',
     phaseStartedAt: 0,
@@ -116,4 +118,14 @@ export function testRoundMatch(
     stories: testStories(playerIds, roundIndex),
     round: { ...emptyRound(TEST_DRAWING_DEADLINE_AT), ...round },
   });
+}
+
+/** A round's final submission of a player's only panel (collaborative mode). */
+export function finalPanel(reason: PanelSubmitReason, png: Uint8Array | null = null) {
+  return new Map<number, PanelFinal>([[0, { png, reason }]]);
+}
+
+/** A round's autosave of a player's only panel (collaborative mode). */
+export function draftPanel(png: Uint8Array) {
+  return new Map<number, Uint8Array>([[0, png]]);
 }

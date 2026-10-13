@@ -21,7 +21,7 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 | `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404 ROOM_NOT_FOUND` | Pré-checagem antes de entrar; o código é normalizado (R6) e um código mal formado responde como inexistente. `joinable` = sala não cheia (R9); a rota é anônima, então reconexão e expulsão (R12) só se resolvem no `room:join`. Rate limit de 30/min por IP (proteção contra varredura de códigos) |
 | `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R38, R54, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
-| `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` · `403 NOT_IN_ROOM` · `404 ROOM_NOT_FOUND` | Último autosave do próprio jogador na rodada atual, em `round_drawing` ou `round_closing` (R48); `204` sem rascunho ou fora dessas fases. `Cache-Control: private, no-store` |
+| `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` · `403 NOT_IN_ROOM` · `404 ROOM_NOT_FOUND` | Último autosave do quadro `?panelIndex=k` (padrão 0; fora de 0–5 → `400 INVALID_PAYLOAD`) do próprio jogador na rodada atual, em `round_drawing` ou `round_closing` (R48, R66); `204` sem rascunho, com o quadro já entregue (R67) ou fora dessas fases. `Cache-Control: private, no-store` |
 | `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
 
 Erros HTTP usam o corpo `{ error: { code, message } }`, com os mesmos `ErrorCode` do realtime. Status por código: `INVALID_PAYLOAD` e `IMAGE_INVALID` 400 · `UNAUTHORIZED` 401 · `KICKED`, `NOT_IN_ROOM`, `NOT_HOST` e `FORBIDDEN` 403 · `ROOM_NOT_FOUND` e `PANEL_NOT_FOUND` 404 · `ROOM_FULL`, `INVALID_STATE`, `NOT_ENOUGH_PLAYERS` e `DEADLINE_PASSED` 409 · `ROOM_CLOSED` 410 · `IMAGE_TOO_LARGE` 413 · `RATE_LIMITED` 429 · `INTERNAL` 500. Outros erros 4xx do Fastify (JSON malformado, por exemplo) saem como `INVALID_PAYLOAD` com o status original; nenhum erro expõe stack trace.
@@ -70,8 +70,8 @@ type Ack<T> =
 | `theme:draft` | `{ text }` | `{}` | participante, `theme_writing` | R28 |
 | `theme:submit` | `{ text }` | `{}` | participante, `theme_writing` | R27–R29 |
 | `round:ready` | `{ roundIndex }` | `{}` | participante, `round_reading` | R36, R37 |
-| `panel:autosave` | `{ roundIndex, png: Uint8Array }` | `{}` | participante, `round_drawing` (ou `round_reading` depois do próprio `round:ready`) | R38, R39 |
-| `panel:submit` | `{ roundIndex, reason: 'done' \| 'timeout', png: Uint8Array \| null }` | `{}` | participante, `round_drawing` ou `round_closing` (ou `round_reading` depois do próprio `round:ready`) | R38, R40–R44 |
+| `panel:autosave` | `{ roundIndex, panelIndex, png: Uint8Array }` | `{}` | participante, `round_drawing` (ou `round_reading` depois do próprio `round:ready`) | R38, R39 |
+| `panel:submit` | `{ roundIndex, panelIndex, reason: 'done' \| 'timeout', png: Uint8Array \| null }` | `{}` | participante, `round_drawing` ou `round_closing` (ou `round_reading` depois do próprio `round:ready`) | R38, R40–R44 |
 | `presentation:navigate` | `{ action: 'next' \| 'prev' \| 'showFull' \| 'nextStory' } \| { action: 'goToStory', storyIndex }` | `{}` | anfitrião, `presentation` | R52, R53 |
 | `presentation:end` | `{}` | `{}` | anfitrião, `presentation` | R56 |
 
@@ -87,15 +87,15 @@ Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate l
 
 Erros da partida e da etapa de temas:
 
-- `match:start`: de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`; menos de `MIN_PLAYERS` membros conectados → `NOT_ENOUGH_PLAYERS` (R22). Até a T36, com `mode: 'individual'` → `INVALID_PAYLOAD` (R21); o `room:updateSettings` já aceita o modo e os campos de `individual` (R18).
+- `match:start`: de outro membro → `NOT_HOST`; fora do lobby → `INVALID_STATE`; menos de `MIN_PLAYERS` membros conectados → `NOT_ENOUGH_PLAYERS` (R22).
 - `match:abort`: de outro membro → `NOT_HOST`; sem partida em andamento → `INVALID_STATE` (R57).
 - `theme:draft` e `theme:submit`: fora de `theme_writing`, de espectador ou depois do envio final → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED` (R61). O texto é normalizado (R1); no `theme:submit`, tamanho fora de `THEME_MIN_LENGTH`–`THEME_MAX_LENGTH` → `INVALID_PAYLOAD` (R27).
 
 Erros das rodadas:
 
 - `round:ready`: fora de `round_reading`, com outro `roundIndex` ou de espectador → `INVALID_STATE`; depois de `phaseDeadlineAt` → `DEADLINE_PASSED`. Confirmar de novo é idempotente.
-- `panel:autosave` e `panel:submit` (R44): de espectador, com `roundIndex` de uma rodada futura, na leitura antes do próprio `round:ready` ou depois do próprio envio final → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo comum do desenho (R38); a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
-- O `panel:autosave` não gera `room:view`: só mudaria o `hasDraft` do próprio jogador, que importa ao (re)conectar e chega com essa view.
+- `panel:autosave` e `panel:submit` (R44, R66): `panelIndex` diz qual dos quadros do jogador na rodada é enviado: sempre 0 no colaborativo, de 0 a `panelsPerStory − 1` no individual; fora disso → `INVALID_PAYLOAD`. Cada quadro aceita um envio final, e o jogador só termina a rodada quando todos chegaram. De espectador, com `roundIndex` de uma rodada futura, na leitura antes do próprio `round:ready` ou depois do envio final daquele quadro → `INVALID_STATE`; com `roundIndex` de uma rodada anterior, na apresentação ou depois da janela → `DEADLINE_PASSED`. A janela do autosave fecha no prazo comum do desenho (R38); a do envio, no fim de `round_closing` (prazo do desenho + `ROUND_CLOSING_MS`, R42, R61). PNG inválido → `IMAGE_INVALID` / `IMAGE_TOO_LARGE`.
+- O `panel:autosave` não gera `room:view`: só mudaria o `draftPanels` do próprio jogador, que importa ao (re)conectar e chega com essa view.
 
 Erros da apresentação:
 
@@ -179,8 +179,11 @@ type PanelRef = {
 type PlayerTask =
   | { kind: 'write_theme'; status: 'writing' | 'submitted'; draft: string }
   | { kind: 'read_story'; status: 'reading'; theme: string; previousPanels: PanelRef[] }
-  | { kind: 'draw_panel'; status: 'drawing' | 'submitted'; theme: string;
-      panelPosition: number; hasDraft: boolean;
+  | { kind: 'draw_panel'; status: 'drawing' | 'submitted';  // submitted: entregou todos os quadros
+      theme: string;
+      panelPosition: number;  // posição do primeiro quadro que o jogador desenha na rodada
+      panelCount: number;     // quadros que ele desenha na rodada: 1, ou panelsPerStory no individual (R66)
+      draftPanels: number[];  // quadros com autosave para baixar do my-draft (R48)
       deadlineAt: number;   // prazo comum do desenho (R38); na leitura, o mais tarde possível
       previousPanels: PanelRef[] }  // só com showPreviousPanels e até a entrega (R38); senão []
   | { kind: 'wait' }        // round_closing, ou nada a fazer

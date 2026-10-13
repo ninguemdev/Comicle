@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { testMatch, testRoundMatch, testStories } from '../../../test/support/room-builders';
+import {
+  finalPanel,
+  testMatch,
+  testRoundMatch,
+  testStories,
+} from '../../../test/support/room-builders';
 import { initialPresentationCursor, navigate } from '../presentation/presentation-cursor';
 import type { Match } from '../matches/match';
 import {
@@ -81,7 +86,7 @@ describe('PanelAccessPolicy', () => {
     it('depois de entregar, mais nada', () => {
       const handedIn = withReference(
         testRoundMatch(players, 'round_drawing', 2, {
-          finals: new Map([['ana', { png: null, reason: 'done' }]]),
+          finals: new Map([['ana', finalPanel('done')]]),
         }),
       );
 

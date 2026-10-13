@@ -44,8 +44,11 @@ export class DrawingService {
     return image.png;
   }
 
-  /** R48: the player's latest autosave of the round being drawn, or `null`. */
-  myDraft(guestId: string, roomCode: string): Uint8Array | null {
+  /**
+   * R48, R66, R67: the player's latest autosave of panel `panelIndex` of the round being drawn,
+   * or `null`; once that panel is handed in, nothing.
+   */
+  myDraft(guestId: string, roomCode: string, panelIndex: number): Uint8Array | null {
     const room = this.deps.registry.byCode(roomCode);
     if (!room || room.closed) {
       throw new DomainError('ROOM_NOT_FOUND', 'Sala não encontrada.');
@@ -59,7 +62,10 @@ export class DrawingService {
       return null;
     }
     // Drafts live only during the round; in its reading, only who confirmed can have one (R36).
-    return round.drafts.get(member.playerId) ?? null;
+    if (round.finals.get(member.playerId)?.has(panelIndex)) {
+      return null;
+    }
+    return round.drafts.get(member.playerId)?.get(panelIndex) ?? null;
   }
 
   private roomWithPanel(panelId: string): Room | undefined {

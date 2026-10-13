@@ -47,7 +47,8 @@ function drawingView({
       status: 'drawing',
       theme: 'Um gato',
       panelPosition: 1,
-      hasDraft,
+      panelCount: 1,
+      draftPanels: hasDraft ? [0] : [],
       deadlineAt: NOW + deadlineIn,
       previousPanels,
     },
@@ -69,7 +70,7 @@ function renderDrawing(view: PlayerView) {
       theme="Um gato"
       previousPanels={match.task.kind === 'draw_panel' ? match.task.previousPanels : []}
       deadlineAt={match.task.kind === 'draw_panel' ? match.task.deadlineAt : null}
-      hasDraft={match.task.kind === 'draw_panel' && match.task.hasDraft}
+      hasDraft={match.task.kind === 'draw_panel' && match.task.draftPanels.includes(0)}
       closing={false}
       onSent={onSent}
     />,
@@ -149,7 +150,8 @@ describe('tela de desenho', () => {
         status: 'drawing',
         theme: 'Um gato',
         panelPosition: 1,
-        hasDraft: false,
+        panelCount: 1,
+        draftPanels: [],
         deadlineAt: NOW + 5000 + DRAWING_MS,
         previousPanels: [],
       },

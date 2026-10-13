@@ -22,7 +22,7 @@ O que acontece quando a conexão de alguém cai e volta, em cada fase. Complemen
 | Leitura | Cai antes de confirmar | Volta vendo os quadros da história (R47) | `reconnection.test.ts` |
 | Leitura | Cai depois de confirmar | Volta ao desenho com o rascunho, mesmo com os demais ainda lendo; sem os quadros, e a imagem responde 403 (R36, R47, R48) | `reconnection.test.ts` |
 | Leitura | Fica fora | Não segura a fase: conta como pronto (R37) | `rounds.test.ts` |
-| Desenho | Cai depois de um autosave e volta | `hasDraft: true`; o cliente baixa `my-draft` e usa como camada base, com o desfazer vazio (R48) | `reconnection.test.ts` |
+| Desenho | Cai depois de um autosave e volta | `draftPanels` lista os quadros com rascunho; o cliente baixa cada um (`my-draft?panelIndex=k`) e usa como camada base, com o desfazer vazio (R48, R66) | `reconnection.test.ts`, `individual.test.ts` |
 | Desenho | O prazo local zera sem conexão | O envio por tempo é refeito ao voltar à sala, se o fechamento ainda aceitar; senão vale o último autosave (R42) | `drawing-screen.test.tsx` |
 | Desenho | Fica fora | O desenho espera o prazo (R41); o quadro é o último autosave ou vazio (R42, R43) | `reconnection.test.ts` (R46) |
 | Fechamento | Cai durante a janela | O quadro é resolvido com o que chegou: envio final, autosave ou vazio (R42) | `rounds.test.ts` |
