@@ -16,7 +16,8 @@ const draw = (status: 'drawing' | 'submitted'): PlayerTask => ({
   status,
   theme: 'Tema',
   panelPosition: 1,
-  hasDraft: false,
+  panelCount: 1,
+  draftPanels: [],
   deadlineAt: 100_000,
   previousPanels: [],
 });

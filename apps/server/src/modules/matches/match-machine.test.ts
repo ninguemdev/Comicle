@@ -31,7 +31,6 @@ const seats: Seat[] = players.map((playerId) => ({
   playerId,
   nickname: playerId.toUpperCase(),
   themeId: `theme-${playerId}`,
-  storyId: `story-${playerId}`,
 }));
 const fallbackThemes = ['Reserva 1', 'Reserva 2', 'Reserva 3', 'Reserva 4'];
 const png = (marker: number) => new Uint8Array([marker]);
@@ -47,8 +46,9 @@ function startEvent(previousMatchId: string | null = null, totalRounds = seats.l
     totalRounds,
     plan: buildCollaborativePlan(players, totalRounds, { authorDraws: true }),
     fallbackThemes,
+    storyIds: players.map((author) => `story-${author}`),
     panelIds: Array.from({ length: totalRounds }, (_, round) =>
-      players.map((author) => `panel-${String(round)}-${author}`),
+      players.map((author) => [`panel-${String(round)}-${author}`]),
     ),
     previousMatchId,
   };
@@ -107,12 +107,14 @@ const autosave = (playerId: string, marker: number, roundIndex = 0): MatchEvent 
   type: 'panel_autosave',
   playerId,
   roundIndex,
+  panelIndex: 0,
   png: png(marker),
 });
 const done = (playerId: string, marker: number | null, roundIndex = 0): MatchEvent => ({
   type: 'panel_submit',
   playerId,
   roundIndex,
+  panelIndex: 0,
   reason: 'done',
   png: marker === null ? null : png(marker),
 });
@@ -120,6 +122,7 @@ const timeout = (playerId: string, marker: number, roundIndex = 0): MatchEvent =
   type: 'panel_submit',
   playerId,
   roundIndex,
+  panelIndex: 0,
   reason: 'timeout',
   png: png(marker),
 });
@@ -449,11 +452,14 @@ describe('match machine', () => {
     it('R36, R39, R40: quem confirmou já desenha durante a leitura dos outros', () => {
       const { match } = readingMatch();
       const confirmed = run(match, [ready('ana'), autosave('ana', 7, 1)]).match;
-      expect(confirmed?.round?.drafts.get('ana')).toEqual(png(7));
+      expect(confirmed?.round?.drafts.get('ana')?.get(0)).toEqual(png(7));
 
       const handedIn = run(confirmed, [done('ana', 8, 1)]);
       expect(handedIn.match?.phase).toBe('round_reading');
-      expect(handedIn.match?.round?.finals.get('ana')).toEqual({ png: png(8), reason: 'done' });
+      expect(handedIn.match?.round?.finals.get('ana')?.get(0)).toEqual({
+        png: png(8),
+        reason: 'done',
+      });
       expect(handedIn.effects).toEqual([]);
       // Who has not confirmed is still reading.
       expect(errorCode(() => run(handedIn.match, [autosave('bia', 1, 1)]))).toBe('INVALID_STATE');
@@ -490,7 +496,7 @@ describe('match machine', () => {
     it('R39: guarda só o último autosave de cada jogador', () => {
       const { match } = run(drawingMatch(), [autosave('ana', 1), autosave('ana', 2)]);
 
-      expect(match?.round?.drafts.get('ana')).toEqual(png(2));
+      expect(match?.round?.drafts.get('ana')?.get(0)).toEqual(png(2));
     });
 
     it('R39, R61: autosave depois do prazo do desenho → DEADLINE_PASSED', () => {

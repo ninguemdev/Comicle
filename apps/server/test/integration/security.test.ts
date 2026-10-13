@@ -265,6 +265,7 @@ describe('segurança (integração)', () => {
           );
           await player.client.emitWithAck('panel:submit', {
             roundIndex,
+            panelIndex: 0,
             reason: 'done',
             png: panelPng(roundIndex + 1),
           });
@@ -339,7 +340,11 @@ describe('segurança (integração)', () => {
       await start();
       const [, bia] = await room({ drawing: true });
       const autosave = () =>
-        bia.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng(1) });
+        bia.client.emitWithAck('panel:autosave', {
+          roundIndex: 0,
+          panelIndex: 0,
+          png: panelPng(1),
+        });
 
       expect((await autosave()).ok).toBe(true);
       expect(await autosave()).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
@@ -464,6 +469,7 @@ describe('segurança (integração)', () => {
 
       await emitRaw(hostile.client, 'panel:autosave', {
         roundIndex: 0,
+        panelIndex: 0,
         png: new Uint8Array(3 * 1024 * 1024 + 1),
       }).catch(() => undefined);
 
@@ -497,6 +503,7 @@ describe('segurança (integração)', () => {
       expect(
         await emitRaw(bia.client, 'panel:autosave', {
           roundIndex: 0,
+          panelIndex: 0,
           png: new Uint8Array(PANEL_MAX_BYTES + 1),
         }),
       ).toMatchObject({ ok: false, error: { code: 'IMAGE_TOO_LARGE' } });
@@ -545,6 +552,7 @@ describe('segurança (integração)', () => {
         await player.views.waitFor(inPhase('round_drawing'));
         await player.client.emitWithAck('panel:submit', {
           roundIndex: 0,
+          panelIndex: 0,
           reason: 'done',
           png: panelPng(9),
         });

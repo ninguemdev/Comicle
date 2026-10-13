@@ -241,11 +241,12 @@ export function createRoomStore(deps: RoomStoreDeps) {
         confirmReading(roundIndex) {
           return emit('round:ready', { roundIndex });
         },
+        // The collaborative mode draws a single panel per round (R66); T37 sends the others.
         autosavePanel(roundIndex, png) {
-          return emit('panel:autosave', { roundIndex, png });
+          return emit('panel:autosave', { roundIndex, panelIndex: 0, png });
         },
         submitPanel(roundIndex, reason, png) {
-          return emit('panel:submit', { roundIndex, reason, png });
+          return emit('panel:submit', { roundIndex, panelIndex: 0, reason, png });
         },
         navigatePresentation(action) {
           return emit('presentation:navigate', action);

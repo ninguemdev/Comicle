@@ -49,13 +49,32 @@ describe('clientEventSchemas', () => {
 
   it('panel:submit aceita bytes ou null e recusa outros formatos', () => {
     const schema = clientEventSchemas['panel:submit'];
-    const base = { roundIndex: 0, reason: 'done' };
+    const base = { roundIndex: 0, panelIndex: 0, reason: 'done' };
 
     expect(schema.safeParse({ ...base, png: new Uint8Array([1, 2]) }).success).toBe(true);
     expect(schema.safeParse({ ...base, reason: 'timeout', png: null }).success).toBe(true);
     expect(schema.safeParse({ ...base, png: [1, 2] }).success).toBe(false);
     expect(schema.safeParse({ ...base, reason: 'later', png: null }).success).toBe(false);
     expect(schema.safeParse({ ...base, roundIndex: -1, png: null }).success).toBe(false);
+  });
+
+  it('R66: panelIndex vai de 0 ao último quadro possível de uma história', () => {
+    for (const name of ['panel:autosave', 'panel:submit'] as const) {
+      const schema = clientEventSchemas[name];
+      const payload = (panelIndex: unknown) => ({
+        roundIndex: 0,
+        panelIndex,
+        reason: 'done',
+        png: new Uint8Array([1]),
+      });
+      expect(schema.safeParse(payload(0)).success, name).toBe(true);
+      expect(schema.safeParse(payload(5)).success, name).toBe(true);
+      for (const invalid of [-1, 6, 1.5, undefined]) {
+        expect(schema.safeParse(payload(invalid)).success, `${name} ${String(invalid)}`).toBe(
+          false,
+        );
+      }
+    }
   });
 
   it('presentation:navigate exige storyIndex só em goToStory', () => {

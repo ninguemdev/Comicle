@@ -1,19 +1,19 @@
 import type { MatchPhase, MatchSettings, PanelStatus } from '@comicle/shared';
 
 import { storyForPlayer, type DistributionPlan } from '../game-modes/game-mode';
+import { getGameMode } from '../game-modes/registry';
 import type { PresentationCursor } from '../presentation/presentation-cursor';
 import type { NewMatch, ThemeSource } from '../stories/story-repository';
 
 // Match state in memory (docs/modelo-de-dados.md §1). Pure data: transitions live in
 // match-machine.ts.
 
-/** A participant's place in the match (R23); story `i` belongs to `seats[i]`. */
+/** A participant's place in the match (R23); the theme of `seats[i]` is told by the stories of `GameMode.themeOfStory`. */
 export interface Seat {
   readonly playerId: string;
   /** Copy taken when the match starts, persisted with the theme. */
   readonly nickname: string;
   readonly themeId: string;
-  readonly storyId: string;
 }
 
 /** R28: the latest draft and, once submitted, the final theme. */
@@ -48,14 +48,17 @@ export interface PanelFinal {
   readonly reason: PanelSubmitReason;
 }
 
+/** By panel index within what the player draws this round (0 in the collaborative mode). */
+export type PanelSlots<T> = ReadonlyMap<number, T>;
+
 /** The round in progress, by playerId; discarded when the round ends. */
 export interface RoundState {
   /** R36, R37: confirmed the reading. */
   readonly ready: ReadonlySet<string>;
-  /** R39: latest autosave. */
-  readonly drafts: ReadonlyMap<string, Uint8Array>;
-  /** R40, R42. */
-  readonly finals: ReadonlyMap<string, PanelFinal>;
+  /** R39, R66: latest autosave of each panel. */
+  readonly drafts: ReadonlyMap<string, PanelSlots<Uint8Array>>;
+  /** R40, R42, R66: final submission of each panel. */
+  readonly finals: ReadonlyMap<string, PanelSlots<PanelFinal>>;
   /**
    * R38: the drawing deadline, the same for everyone. While the reading lasts it is the latest
    * possible one (reading deadline + drawing time); it becomes final when the drawing starts.
@@ -76,8 +79,13 @@ export interface Match {
   readonly plan: DistributionPlan;
   /** R30: fallback themes already shuffled; used in order, never repeated. */
   readonly fallbackThemes: readonly string[];
-  /** `panelIds[r][i]`: ID of the panel drawn for story `i` in round `r`, drawn at the start. */
-  readonly panelIds: readonly (readonly string[])[];
+  /** One per story (R64), drawn at the start; `stories[i].id === storyIds[i]`. */
+  readonly storyIds: readonly string[];
+  /**
+   * `panelIds[r][i][k]`: ID of panel `k` drawn for story `i` in round `r`, drawn at the start;
+   * empty when story `i` is not drawn in round `r` (individual mode).
+   */
+  readonly panelIds: readonly (readonly (readonly string[])[])[];
   readonly phase: MatchPhase;
   readonly phaseStartedAt: number;
   readonly phaseDeadlineAt: number | null;
@@ -85,7 +93,7 @@ export interface Match {
   readonly roundIndex: number;
   /** By playerId; only during theme_writing. */
   readonly themes: ReadonlyMap<string, ThemeDraftState>;
-  /** Index = seat of the author; empty until the themes are resolved. */
+  /** In presentation order (R50, R64); empty until the themes are resolved. */
   readonly stories: readonly StoryState[];
   /** Only during the rounds (reading, drawing, closing). */
   readonly round: RoundState | null;
@@ -111,22 +119,57 @@ export function assignedStory(match: Match, playerId: string): StoryState | unde
   return index === undefined ? undefined : match.stories[index];
 }
 
+/** R62, R66: panels each participant draws per round (1 in the collaborative mode). */
+export function panelsPerRound(match: Match): number {
+  return getGameMode(match.settings.mode).panelsPerRound(match.settings);
+}
+
+/** R40, R66: the player handed in every panel of the round. */
+export function hasHandedIn(match: Match, round: RoundState, playerId: string): boolean {
+  return (round.finals.get(playerId)?.size ?? 0) >= panelsPerRound(match);
+}
+
+/** R48: the panels the player has an autosave of, in order. */
+export function draftPanels(round: RoundState, playerId: string): number[] {
+  return [...(round.drafts.get(playerId)?.keys() ?? [])].sort((a, b) => a - b);
+}
+
+/** `slots` of every player with `value` in panel `panelIndex` of `playerId`. */
+export function withSlot<T>(
+  slots: ReadonlyMap<string, PanelSlots<T>>,
+  playerId: string,
+  panelIndex: number,
+  value: T,
+): ReadonlyMap<string, PanelSlots<T>> {
+  const own = new Map(slots.get(playerId)).set(panelIndex, value);
+  return new Map(slots).set(playerId, own);
+}
+
 /** Row set written when the themes are resolved (arquitetura §4, Persistência). */
 export function newMatchRecord(roomId: string, match: Match): NewMatch {
+  // R64: in the individual mode several stories tell the same theme; it is written once.
+  const themes = new Map(match.stories.map((story) => [story.themeId, story]));
   return {
     id: match.id,
     roomId,
     settings: match.settings,
     totalRounds: match.totalRounds,
     startedAt: match.startedAt,
-    themes: match.stories.map((story, seat) => ({
-      id: story.themeId,
-      authorPlayerId: story.authorPlayerId,
-      authorNickname: story.authorNickname,
-      text: story.themeText,
-      source: story.themeSource,
-      seat,
-    })),
+    themes: match.seats.flatMap((seat, index) => {
+      const story = themes.get(seat.themeId);
+      return story
+        ? [
+            {
+              id: story.themeId,
+              authorPlayerId: story.authorPlayerId,
+              authorNickname: story.authorNickname,
+              text: story.themeText,
+              source: story.themeSource,
+              seat: index,
+            },
+          ]
+        : [];
+    }),
     stories: match.stories.map((story, position) => ({
       id: story.id,
       themeId: story.themeId,

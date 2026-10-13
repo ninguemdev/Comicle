@@ -305,8 +305,8 @@ describe('room-store', () => {
       ['theme:draft', { text: 'Um gato' }],
       ['theme:submit', { text: 'Um gato' }],
       ['round:ready', { roundIndex: 1 }],
-      ['panel:autosave', { roundIndex: 1, png }],
-      ['panel:submit', { roundIndex: 1, reason: 'timeout', png: null }],
+      ['panel:autosave', { roundIndex: 1, panelIndex: 0, png }],
+      ['panel:submit', { roundIndex: 1, panelIndex: 0, reason: 'timeout', png: null }],
       ['presentation:navigate', { action: 'goToStory', storyIndex: 2 }],
       ['presentation:end', {}],
     ]);

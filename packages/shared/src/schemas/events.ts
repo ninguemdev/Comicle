@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 
-import { TEXT_INPUT_MAX_LENGTH } from '../constants';
+import { INDIVIDUAL_PANEL_COUNT_MAX, TEXT_INPUT_MAX_LENGTH } from '../constants';
 import { matchSettingsSchema } from './match-settings';
 import { playerProfileSchema } from './profile';
 import { roomCodeSchema } from './room-code';
@@ -11,6 +11,12 @@ import { themeDraftSchema, themeSchema } from './text';
 const emptyPayloadSchema = z.object({});
 
 const roundIndexSchema = z.int().nonnegative();
+
+/** R66: which of the panels the player draws this round; always 0 in the collaborative mode. */
+export const panelIndexSchema = z
+  .int()
+  .min(0)
+  .max(INDIVIDUAL_PANEL_COUNT_MAX - 1);
 
 /** PNG bytes; Node's `Buffer` passes too. Content is checked on the server (panel-image.ts). */
 const pngSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array, 'PNG inválido.');
@@ -46,11 +52,13 @@ export const roundReadyPayloadSchema = z.object({ roundIndex: roundIndexSchema }
 
 export const panelAutosavePayloadSchema = z.object({
   roundIndex: roundIndexSchema,
+  panelIndex: panelIndexSchema,
   png: pngSchema,
 });
 
 export const panelSubmitPayloadSchema = z.object({
   roundIndex: roundIndexSchema,
+  panelIndex: panelIndexSchema,
   reason: z.enum(['done', 'timeout']),
   png: pngSchema.nullable(),
 });

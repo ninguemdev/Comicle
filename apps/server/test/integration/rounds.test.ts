@@ -134,6 +134,7 @@ describe('rodadas (integração)', () => {
   function done(player: Player, roundIndex: number, marker = 1) {
     return player.client.emitWithAck('panel:submit', {
       roundIndex,
+      panelIndex: 0,
       reason: 'done',
       png: panelPng(marker),
     });
@@ -170,7 +171,8 @@ describe('rodadas (integração)', () => {
       kind: 'draw_panel',
       status: 'drawing',
       panelPosition: 0,
-      hasDraft: false,
+      panelCount: 1,
+      draftPanels: [],
     });
 
     for (let roundIndex = 0; roundIndex < 3; roundIndex++) {
@@ -374,6 +376,7 @@ describe('rodadas (integração)', () => {
     expect(
       await bia.client.emitWithAck('panel:submit', {
         roundIndex: 0,
+        panelIndex: 0,
         reason: 'timeout',
         png: panelPng(2),
       }),
@@ -402,7 +405,13 @@ describe('rodadas (integração)', () => {
     expect(await done(ana, 0)).toEqual({ ok: true, data: {} });
     expect(code(await done(ana, 0))).toBe('INVALID_STATE');
     expect(
-      code(await ana.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng() })),
+      code(
+        await ana.client.emitWithAck('panel:autosave', {
+          roundIndex: 0,
+          panelIndex: 0,
+          png: panelPng(),
+        }),
+      ),
     ).toBe('INVALID_STATE');
     await ana.views.waitFor((v) => taskState(v) === 'draw_panel:submitted');
 
@@ -420,6 +429,7 @@ describe('rodadas (integração)', () => {
       code(
         await ana.client.emitWithAck('panel:submit', {
           roundIndex: 1,
+          panelIndex: 0,
           reason: 'done',
           png: new Uint8Array([1, 2, 3]),
         }),
@@ -438,13 +448,25 @@ describe('rodadas (integração)', () => {
     expect(empty.headers.get('cache-control')).toBe('private, no-store');
 
     expect(
-      await ana.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng(7) }),
+      await ana.client.emitWithAck('panel:autosave', {
+        roundIndex: 0,
+        panelIndex: 0,
+        png: panelPng(7),
+      }),
     ).toEqual({ ok: true, data: {} });
     // Rate limit (arquitetura §7): one autosave every 2 s.
     expect(
-      await ana.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng(8) }),
+      await ana.client.emitWithAck('panel:autosave', {
+        roundIndex: 0,
+        panelIndex: 0,
+        png: panelPng(8),
+      }),
     ).toMatchObject({ ok: false, error: { code: 'RATE_LIMITED' } });
-    await bia.client.emitWithAck('panel:autosave', { roundIndex: 0, png: panelPng(9) });
+    await bia.client.emitWithAck('panel:autosave', {
+      roundIndex: 0,
+      panelIndex: 0,
+      png: panelPng(9),
+    });
 
     const own = await draftOf(ana);
     expect(own.status).toBe(200);
@@ -453,14 +475,14 @@ describe('rodadas (integração)', () => {
     expect(new Uint8Array(await (await draftOf(bia)).arrayBuffer())).toEqual(panelPng(9));
     expect((await draftOf(caio)).status).toBe(204);
 
-    // R48: a reconnection sees `hasDraft`.
+    // R48: a reconnection sees `draftPanels`.
     ana.client.disconnect();
     const back = await connectClient(server.url, ana.token);
     clients.push(back);
     const backViews = new ViewRecorder(back);
     await back.emitWithAck('room:join', { roomCode: code, profile: ana.profile });
     expect(taskOf(await backViews.waitFor(inPhase('round_drawing', 0)))).toMatchObject({
-      hasDraft: true,
+      draftPanels: [0],
     });
 
     const stranger = await newPlayer('Zé');

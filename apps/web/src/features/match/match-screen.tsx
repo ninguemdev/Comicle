@@ -109,7 +109,7 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
           task.kind === 'draw_panel' ? task.previousPanels : (drawing?.previousPanels ?? [])
         }
         deadlineAt={task.kind === 'draw_panel' ? task.deadlineAt : match.phaseDeadlineAt}
-        hasDraft={task.kind === 'draw_panel' ? task.hasDraft : false}
+        hasDraft={task.kind === 'draw_panel' && task.draftPanels.includes(0)}
         closing={stillSending}
         onSent={setSentRound}
       />

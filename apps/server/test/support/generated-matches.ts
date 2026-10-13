@@ -116,13 +116,13 @@ export function generateMatch(rng: Rng): GeneratedMatch {
         playerId,
         nickname: playerId,
         themeId: `theme-${playerId}`,
-        storyId: `story-${playerId}`,
       })),
       totalRounds,
       plan: buildCollaborativePlan(players, totalRounds, { authorDraws: authorDrawsLast }),
       fallbackThemes: FALLBACK_THEMES,
+      storyIds: players.map((playerId) => `story-${playerId}`),
       panelIds: Array.from({ length: totalRounds }, (_, r) =>
-        players.map((_p, s) => panelIdOf(r, s)),
+        players.map((_p, s) => [panelIdOf(r, s)]),
       ),
       previousMatchId: null,
     },
@@ -150,7 +150,14 @@ export function generateMatch(rng: Rng): GeneratedMatch {
     }
     for (const playerId of subset(rng, players, players.length - 1)) {
       apply(
-        { type: 'panel_submit', playerId, roundIndex: round, reason: 'done', png: PNG },
+        {
+          type: 'panel_submit',
+          playerId,
+          roundIndex: round,
+          panelIndex: 0,
+          reason: 'done',
+          png: PNG,
+        },
         soon(),
       );
     }

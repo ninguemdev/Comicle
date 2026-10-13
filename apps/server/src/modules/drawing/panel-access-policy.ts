@@ -1,4 +1,4 @@
-import { assignedStory, type Match, type PanelMeta } from '../matches/match';
+import { assignedStory, hasHandedIn, type Match, type PanelMeta } from '../matches/match';
 import { isPanelRevealed } from '../presentation/presentation-cursor';
 
 // Who may see which panel image (R59). Pure; with buildPlayerView, the only place that decides it.
@@ -17,7 +17,7 @@ export function readablePanels(match: Match, playerId: string): readonly PanelMe
 /** Whether the player is drawing this round's panel right now (R38), whatever the phase. */
 function isDrawing(match: Match, playerId: string): boolean {
   const { round } = match;
-  if (round === null || round.finals.has(playerId)) {
+  if (round === null || hasHandedIn(match, round, playerId)) {
     return false;
   }
   switch (match.phase) {
@@ -36,10 +36,16 @@ function isDrawing(match: Match, playerId: string): boolean {
 
 /**
  * R38: with `showPreviousPanels`, the artist keeps seeing the earlier panels of the story they
- * draw, as a reference, until they hand the panel in; without it, nothing (R36).
+ * draw, as a reference, until they hand the panel in; without it, nothing (R36). The individual
+ * mode ignores the option: nobody sees anyone else's panels before the presentation (R62, R67).
  */
 export function referencePanels(match: Match, playerId: string): readonly PanelMeta[] {
-  if (!match.settings.showPreviousPanels || !isDrawing(match, playerId)) {
+  const { settings } = match;
+  if (
+    settings.mode !== 'collaborative' ||
+    !settings.showPreviousPanels ||
+    !isDrawing(match, playerId)
+  ) {
     return [];
   }
   return assignedStory(match, playerId)?.panels ?? [];

@@ -11,7 +11,7 @@ describe('@comicle/shared no servidor', () => {
   });
 
   it('aceita o Buffer do Node como PNG nos eventos de quadro', () => {
-    const payload = { roundIndex: 0, png: Buffer.from([0x89, 0x50, 0x4e, 0x47]) };
+    const payload = { roundIndex: 0, panelIndex: 0, png: Buffer.from([0x89, 0x50, 0x4e, 0x47]) };
 
     expect(clientEventSchemas['panel:autosave'].safeParse(payload).success).toBe(true);
   });

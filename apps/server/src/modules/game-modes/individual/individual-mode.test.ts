@@ -73,25 +73,48 @@ describe('individualMode', () => {
       const seats = seatsOf(n);
       const rounds = individualMode.totalRounds(settings, n);
       const { assignments } = individualMode.buildPlan(seats, rounds, settings);
+      const themeOf = (story: number | undefined) =>
+        story === undefined ? undefined : individualMode.themeOfStory(story, n);
       expect(assignments).toHaveLength(rounds);
 
       for (const round of assignments) {
         // A bijection: every theme goes to exactly one player each round.
-        expect(new Set(Object.values(round)).size, `N=${String(n)}`).toBe(n);
+        expect(new Set(Object.values(round).map(themeOf)).size, `N=${String(n)}`).toBe(n);
       }
       seats.forEach((playerId, seat) => {
-        const drawn = assignments.map((round) => round[playerId]);
+        const drawn = assignments.map((round) => themeOf(round[playerId]));
         expect(drawn, `N=${String(n)} ${playerId}`).not.toContain(seat);
         expect(new Set(drawn).size, `N=${String(n)} ${playerId}`).toBe(n - 1);
       });
     }
   });
 
-  it('R63: o plano segue a rotação do R31 sem o autor', () => {
+  it('R64: cada versão é uma história própria, desenhada numa rodada só', () => {
+    for (let n = MIN_PLAYERS; n <= MAX_PLAYERS; n += 1) {
+      const rounds = individualMode.totalRounds(settings, n);
+      const { assignments } = individualMode.buildPlan(seatsOf(n), rounds, settings);
+      const stories = assignments.flatMap((round) => Object.values(round));
+      expect(individualMode.storyCount(n), `N=${String(n)}`).toBe(n * (n - 1));
+      expect(new Set(stories).size, `N=${String(n)}`).toBe(individualMode.storyCount(n));
+      assignments.forEach((round, roundIndex) => {
+        for (const story of Object.values(round)) {
+          // Ordered by theme and, within it, by round.
+          expect(story % (n - 1), `N=${String(n)}`).toBe(roundIndex);
+        }
+      });
+    }
+  });
+
+  it('R63, R64: o plano segue a rotação do R31 sem o autor, em versões', () => {
     const { assignments } = individualMode.buildPlan(seatsOf(3), 2, settings);
+    // Theme t drawn in round r is story t × 2 + r.
     expect(assignments).toEqual([
-      { p0: 2, p1: 0, p2: 1 },
-      { p0: 1, p1: 2, p2: 0 },
+      { p0: 4, p1: 0, p2: 2 },
+      { p0: 3, p1: 5, p2: 1 },
     ]);
+  });
+
+  it('R62: cada jogador desenha todos os quadros da história na rodada', () => {
+    expect(individualMode.panelsPerRound(withIndividual({ panelsPerStory: 6 }))).toBe(6);
   });
 });

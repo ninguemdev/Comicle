@@ -7,7 +7,7 @@ import {
 
 import { DomainError } from '../../../platform/errors';
 import { buildCollaborativePlan } from '../collaborative/distribution';
-import type { GameMode, Result } from '../game-mode';
+import type { DistributionPlan, GameMode, Result } from '../game-mode';
 
 function invalid(message: string): Result<void> {
   return { ok: false, error: new DomainError('INVALID_PAYLOAD', message) };
@@ -34,9 +34,14 @@ function validateSettings(settings: MatchSettings): Result<void> {
   return { ok: true, value: undefined };
 }
 
+/** Versions of each theme: one per other player (R62). */
+function versionsPerTheme(participantCount: number): number {
+  return Math.max(1, participantCount - 1);
+}
+
 /** R62: every player draws every theme but their own, one per round. */
 function totalRounds(_settings: MatchSettings, participantCount: number): number {
-  return Math.max(1, participantCount - 1);
+  return versionsPerTheme(participantCount);
 }
 
 /** R65: every round starts straight at drawing; there is nothing earlier to read. */
@@ -45,13 +50,30 @@ function hasReadingPhase(): boolean {
 }
 
 /**
- * R63: the collaborative rotation with the author skipped (R31 with `C = N − 1`). In this mode
- * the plan's index is the theme a player draws in that round, not a shared story.
+ * R63, R64: the collaborative rotation with the author skipped (R31 with `C = N − 1`) picks the
+ * theme; the version of theme `t` drawn in round `r` is story `t × (N − 1) + r`, so the stories
+ * come ordered by theme and, within it, by round.
  */
+function buildPlan(seats: readonly string[], rounds: number): DistributionPlan {
+  const perTheme = versionsPerTheme(seats.length);
+  const themes = buildCollaborativePlan(seats, rounds, { authorDraws: false });
+  return {
+    assignments: themes.assignments.map((round, roundIndex) =>
+      Object.fromEntries(
+        Object.entries(round).map(([playerId, theme]) => [playerId, theme * perTheme + roundIndex]),
+      ),
+    ),
+  };
+}
+
 export const individualMode: GameMode = {
   id: 'individual',
   validateSettings,
   totalRounds,
-  buildPlan: (seats, rounds) => buildCollaborativePlan(seats, rounds, { authorDraws: false }),
+  buildPlan,
   hasReadingPhase,
+  storyCount: (participantCount) => participantCount * versionsPerTheme(participantCount),
+  panelsPerRound: (settings) => settings.individual.panelsPerStory,
+  themeOfStory: (storyIndex, participantCount) =>
+    Math.floor(storyIndex / versionsPerTheme(participantCount)),
 };

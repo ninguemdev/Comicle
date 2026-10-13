@@ -17,6 +17,7 @@ import {
   type Seat,
   type StoryState,
   type ThemeDraftState,
+  withSlot,
 } from './match';
 import {
   assertCanConfirmReading,
@@ -42,8 +43,10 @@ export type MatchEvent =
       plan: DistributionPlan;
       /** Already shuffled (R30). */
       fallbackThemes: readonly string[];
-      /** `panelIds[r][i]`: one fresh ID per round and story. */
-      panelIds: readonly (readonly string[])[];
+      /** One fresh ID per story (`GameMode.storyCount`). */
+      storyIds: readonly string[];
+      /** `panelIds[r][i][k]`: fresh IDs for the panels of story `i` drawn in round `r`. */
+      panelIds: readonly (readonly (readonly string[])[])[];
       /** R25: content of the room's previous match, deleted on start. */
       previousMatchId: string | null;
     }
@@ -56,11 +59,18 @@ export type MatchEvent =
       /** Players connected right now (R37). */
       connected: ReadonlySet<string>;
     }
-  | { type: 'panel_autosave'; playerId: string; roundIndex: number; png: Uint8Array }
+  | {
+      type: 'panel_autosave';
+      playerId: string;
+      roundIndex: number;
+      panelIndex: number;
+      png: Uint8Array;
+    }
   | {
       type: 'panel_submit';
       playerId: string;
       roundIndex: number;
+      panelIndex: number;
       reason: PanelSubmitReason;
       png: Uint8Array | null;
     }
@@ -136,7 +146,8 @@ function validDraft(draft: string): string | null {
 
 /**
  * R30: final theme, else the last valid draft, else the next fallback theme not used in this
- * match (including the themes the players wrote).
+ * match (including the themes the players wrote). R64: every story then tells the theme the mode
+ * gives it, one per seat in the collaborative mode and one per version in the individual one.
  */
 export function resolveThemes(match: Match): StoryState[] {
   const chosen = match.seats.map((seat) => {
@@ -145,21 +156,27 @@ export function resolveThemes(match: Match): StoryState[] {
   });
   const used = new Set(chosen.filter((text) => text !== null));
   const fallbacks = match.fallbackThemes.filter((text) => !used.has(text));
-  return match.seats.map((seat, index) => {
+  const themes = match.seats.map((seat, index): Omit<StoryState, 'id' | 'panels'> => {
     const own = chosen[index] ?? null;
     const text = own ?? fallbacks.shift();
     if (text === undefined) {
       throw new Error('Temas reserva insuficientes para a partida');
     }
     return {
-      id: seat.storyId,
       themeId: seat.themeId,
       authorPlayerId: seat.playerId,
       authorNickname: seat.nickname,
       themeText: text,
       themeSource: own === null ? 'fallback' : 'player',
-      panels: [],
     };
+  });
+  const mode = getGameMode(match.settings.mode);
+  return match.storyIds.map((id, storyIndex) => {
+    const theme = themes[mode.themeOfStory(storyIndex, match.seats.length)];
+    if (!theme) {
+      throw new Error(`História ${String(storyIndex)} sem tema`);
+    }
+    return { id, ...theme, panels: [] };
   });
 }
 
@@ -255,9 +272,9 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
     const finished: Match = {
       ...match,
       round: null,
-      stories: match.stories.map((story, index) => {
-        const panel = panels[index];
-        return panel ? { ...story, panels: [...story.panels, panelMeta(panel)] } : story;
+      stories: match.stories.map((story) => {
+        const drawn = panels.filter((panel) => panel.storyId === story.id).map(panelMeta);
+        return drawn.length > 0 ? { ...story, panels: [...story.panels, ...drawn] } : story;
       }),
     };
     const persist: MatchEffect = { type: 'persist_round', panels };
@@ -321,6 +338,7 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
       totalRounds: event.totalRounds,
       plan: event.plan,
       fallbackThemes: event.fallbackThemes,
+      storyIds: event.storyIds,
       panelIds: event.panelIds,
       phase: 'theme_writing',
       phaseStartedAt: now,
@@ -365,11 +383,12 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
       match,
       event.playerId,
       event.roundIndex,
+      event.panelIndex,
       'autosave',
       now,
       timing.roundClosingMs,
     );
-    const drafts = new Map(match.round.drafts).set(event.playerId, event.png);
+    const drafts = withSlot(match.round.drafts, event.playerId, event.panelIndex, event.png);
     return { match: { ...match, round: { ...match.round, drafts } }, effects: [] };
   }
 
@@ -383,11 +402,12 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
       match,
       event.playerId,
       event.roundIndex,
+      event.panelIndex,
       'submit',
       now,
       timing.roundClosingMs,
     );
-    const finals = new Map(match.round.finals).set(event.playerId, {
+    const finals = withSlot(match.round.finals, event.playerId, event.panelIndex, {
       png: event.png,
       reason: event.reason,
     });

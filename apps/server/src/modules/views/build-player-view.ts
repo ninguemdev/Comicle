@@ -14,7 +14,10 @@ import {
 import { presentedPanels, readablePanels, referencePanels } from '../drawing/panel-access-policy';
 import {
   assignedStory,
+  draftPanels,
+  hasHandedIn,
   isParticipant,
+  panelsPerRound,
   seatOf,
   type Match,
   type PanelMeta,
@@ -45,7 +48,7 @@ function isDone(match: Match, playerId: string): boolean | null {
       return match.round?.ready.has(playerId) ?? false;
     case 'round_drawing':
     case 'round_closing':
-      return match.round?.finals.has(playerId) ?? false;
+      return match.round !== null && hasHandedIn(match, match.round, playerId);
     case 'presentation':
       return null;
     default:
@@ -123,11 +126,12 @@ function drawTask(
 ): PlayerTask {
   return {
     kind: 'draw_panel',
-    status: round.finals.has(playerId) ? 'submitted' : 'drawing',
+    status: hasHandedIn(match, round, playerId) ? 'submitted' : 'drawing',
     theme,
-    panelPosition: match.roundIndex,
-    // R48: whether `GET /api/rooms/:code/my-draft` has something to restore.
-    hasDraft: round.drafts.has(playerId),
+    panelPosition: assignedStory(match, playerId)?.panels.length ?? match.roundIndex,
+    panelCount: panelsPerRound(match),
+    // R48: what `GET /api/rooms/:code/my-draft` has to restore.
+    draftPanels: draftPanels(round, playerId),
     deadlineAt: round.drawingDeadlineAt,
     previousPanels: referencePanels(match, playerId).map((panel) => panelRef(room, match, panel)),
   };

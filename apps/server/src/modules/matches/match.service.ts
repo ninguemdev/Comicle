@@ -5,6 +5,7 @@ import type { Clock } from '../../platform/clock';
 import { shuffled } from '../../platform/random';
 import type { Scheduler } from '../../platform/scheduler';
 import { assertValidPanelImage } from '../drawing/panel-image';
+import { playerForStory } from '../game-modes/game-mode';
 import { getGameMode } from '../game-modes/registry';
 import type { PresentationAction } from '../presentation/presentation-cursor';
 import { assertCanAbortMatch, assertCanStartMatch, assertHost } from '../rooms/host-policy';
@@ -45,6 +46,7 @@ const PERSIST_ATTEMPTS = 2;
 
 export interface PanelSubmission {
   roundIndex: number;
+  panelIndex: number;
   reason: PanelSubmitReason;
   png: Uint8Array | null;
 }
@@ -74,6 +76,13 @@ export class MatchService {
       // R23, R24: whoever is connected right now plays, in random seat order.
       const participants = shuffled(room.connectedMembers(), rng);
       const totalRounds = mode.totalRounds(settings, participants.length);
+      const plan = mode.buildPlan(
+        participants.map((member) => member.playerId),
+        totalRounds,
+        settings,
+      );
+      const storyCount = mode.storyCount(participants.length);
+      const panelsPerRound = mode.panelsPerRound(settings);
       await this.apply(room, {
         type: 'start',
         id: newId(),
@@ -82,16 +91,19 @@ export class MatchService {
           playerId: member.playerId,
           nickname: member.profile.nickname,
           themeId: newId(),
-          storyId: newId(),
         })),
         totalRounds,
-        plan: mode.buildPlan(
-          participants.map((member) => member.playerId),
-          totalRounds,
-          settings,
-        ),
+        plan,
         fallbackThemes: shuffled(FALLBACK_THEMES, rng),
-        panelIds: Array.from({ length: totalRounds }, () => participants.map(() => newId())),
+        storyIds: Array.from({ length: storyCount }, () => newId()),
+        // Only the stories someone draws in that round get panels (R64).
+        panelIds: Array.from({ length: totalRounds }, (_, round) =>
+          Array.from({ length: storyCount }, (_unused, story) =>
+            playerForStory(plan, round, story) === undefined
+              ? []
+              : Array.from({ length: panelsPerRound }, () => newId()),
+          ),
+        ),
         previousMatchId: room.lastMatchId,
       });
       return {};
@@ -136,27 +148,43 @@ export class MatchService {
     });
   }
 
-  /** R39. */
-  async autosavePanel(socketId: string, roundIndex: number, png: Uint8Array): Promise<Empty> {
+  /** R39, R66. */
+  async autosavePanel(
+    socketId: string,
+    { roundIndex, panelIndex, png }: { roundIndex: number; panelIndex: number; png: Uint8Array },
+  ): Promise<Empty> {
     assertValidPanelImage(png);
     return this.asMember(socketId, async (room, playerId) => {
-      // Only `hasDraft` changes, which matters when (re)connecting and comes with that view;
+      // Only `draftPanels` changes, which matters when (re)connecting and comes with that view;
       // publishing here would send every member a view per autosave for nothing.
-      await this.transition(room, { type: 'panel_autosave', playerId, roundIndex, png });
+      await this.transition(room, {
+        type: 'panel_autosave',
+        playerId,
+        roundIndex,
+        panelIndex,
+        png,
+      });
       return {};
     });
   }
 
-  /** R40–R44. */
+  /** R40–R44, R66. */
   async submitPanel(
     socketId: string,
-    { roundIndex, reason, png }: PanelSubmission,
+    { roundIndex, panelIndex, reason, png }: PanelSubmission,
   ): Promise<Empty> {
     if (png !== null) {
       assertValidPanelImage(png);
     }
     return this.asMember(socketId, async (room, playerId) => {
-      await this.apply(room, { type: 'panel_submit', playerId, roundIndex, reason, png });
+      await this.apply(room, {
+        type: 'panel_submit',
+        playerId,
+        roundIndex,
+        panelIndex,
+        reason,
+        png,
+      });
       return {};
     });
   }
