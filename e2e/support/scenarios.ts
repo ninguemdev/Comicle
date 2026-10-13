@@ -9,6 +9,7 @@ import {
   themeField,
   writeTheme,
 } from './game';
+import { strings } from '../../apps/web/src/strings/pt-BR';
 import { createPlayer, type CreatePlayerOptions, type Player } from './player';
 
 export interface TwoPlayerMatch {
@@ -20,12 +21,26 @@ export interface TwoPlayerMatch {
 /** A host and a guest in a started match, both with their themes in: round one is drawing (R34). */
 export async function startTwoPlayerMatch(
   browser: Browser,
-  options: { host?: CreatePlayerOptions; guest?: CreatePlayerOptions } = {},
+  options: {
+    host?: CreatePlayerOptions;
+    guest?: CreatePlayerOptions;
+    /** R38: the host turns on the earlier panels while drawing before starting. */
+    showPreviousPanels?: boolean;
+  } = {},
 ): Promise<TwoPlayerMatch> {
   const host = await createPlayer(browser, 'Ana', options.host);
   const guest = await createPlayer(browser, 'Bruno', options.guest);
   const roomCode = await createRoom(host);
   await joinRoom(guest, await inviteLinkOf(host));
+  if (options.showPreviousPanels === true) {
+    // Controlled by the room view: it flips when the server answers, not on the click.
+    const toggle = host.page.getByRole('checkbox', {
+      name: strings.room.settings.showPreviousPanels,
+    });
+    await toggle.click();
+    await expect(toggle).toBeChecked();
+    await expect(guest.page.getByText(strings.room.settings.yes, { exact: true })).toBeVisible();
+  }
   await startMatch(host);
   for (const player of [host, guest]) {
     await expect(themeField(player.page)).toBeVisible();
