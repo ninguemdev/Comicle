@@ -151,6 +151,7 @@ describe('segurança (integração)', () => {
       mode: 'collaborative',
       panelCount: { kind: 'fixed', value: 5 },
       drawingSeconds: 60,
+      showPreviousPanels: true,
     };
     const kickBia = (players: Record<string, Player>) => ({
       playerId: players.bia?.views.latest?.me.playerId ?? '',

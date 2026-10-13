@@ -7,6 +7,7 @@ const valid = {
   mode: 'collaborative',
   panelCount: { kind: 'per_player' },
   drawingSeconds: 90,
+  showPreviousPanels: false,
 } as const;
 
 function withFixed(value: number) {
@@ -34,6 +35,17 @@ describe('matchSettingsSchema', () => {
       expect(matchSettingsSchema.safeParse({ ...valid, drawingSeconds }).success).toBe(true);
     }
     expect(matchSettingsSchema.safeParse({ ...valid, drawingSeconds: 100 }).success).toBe(false);
+  });
+
+  it('R18: showPreviousPanels é obrigatório e booleano', () => {
+    expect(matchSettingsSchema.safeParse({ ...valid, showPreviousPanels: true }).success).toBe(
+      true,
+    );
+    expect(matchSettingsSchema.safeParse({ ...valid, showPreviousPanels: 'sim' }).success).toBe(
+      false,
+    );
+    const withoutIt = { mode: valid.mode, panelCount: valid.panelCount, drawingSeconds: 90 };
+    expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
   });
 
   it("R21: mode 'individual' é rejeitado", () => {

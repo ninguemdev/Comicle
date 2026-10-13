@@ -1,4 +1,4 @@
-import type { MatchView, PlayerView } from '@comicle/shared';
+import type { MatchView, PanelRef, PlayerView } from '@comicle/shared';
 import { useState } from 'react';
 
 import { PresentationScreen } from '../presentation/presentation-screen';
@@ -11,6 +11,8 @@ import { ThemeScreen } from './theme-screen';
 interface DrawingTask {
   roundIndex: number;
   theme: string;
+  /** Kept through the closing, while the panel is still on its way (R42). */
+  previousPanels: PanelRef[];
 }
 
 export type MatchScreenId =
@@ -84,7 +86,7 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
 
   if (task.kind === 'draw_panel' && drawing?.roundIndex !== roundIndex) {
     // Derived state, set during render: the next render already has it.
-    setDrawing({ roundIndex, theme: task.theme });
+    setDrawing({ roundIndex, theme: task.theme, previousPanels: task.previousPanels });
   }
   if (screen === 'presentation') {
     // Full screen with its own header: the host ends it with presentation:end (R56), which keeps
@@ -103,6 +105,9 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
         view={view}
         match={match}
         theme={task.kind === 'draw_panel' ? task.theme : (drawing?.theme ?? '')}
+        previousPanels={
+          task.kind === 'draw_panel' ? task.previousPanels : (drawing?.previousPanels ?? [])
+        }
         deadlineAt={task.kind === 'draw_panel' ? task.deadlineAt : match.phaseDeadlineAt}
         hasDraft={task.kind === 'draw_panel' ? task.hasDraft : false}
         closing={stillSending}

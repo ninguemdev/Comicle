@@ -196,6 +196,7 @@ describe('salas (integração)', () => {
       mode: 'collaborative',
       panelCount: { kind: 'fixed', value: 6 },
       drawingSeconds: 60,
+      showPreviousPanels: true,
     } as const;
 
     const denied = await bia.client.emitWithAck('room:updateSettings', { settings });
@@ -204,7 +205,9 @@ describe('salas (integração)', () => {
     const accepted = await host.client.emitWithAck('room:updateSettings', { settings });
     expect(accepted).toEqual({ ok: true, data: {} });
     for (const player of [host, bia]) {
-      await player.views.waitFor((view) => view.room.settings.drawingSeconds === 60);
+      await player.views.waitFor(
+        (view) => view.room.settings.drawingSeconds === 60 && view.room.settings.showPreviousPanels,
+      );
       expect(player.views.latest?.room.settings).toEqual(settings);
     }
   });
@@ -214,8 +217,13 @@ describe('salas (integração)', () => {
     const { host } = await createRoom();
 
     const ack = await host.client.emitWithAck('room:updateSettings', {
-      // @ts-expect-error: the v1 schema accepts only the collaborative mode
-      settings: { mode: 'individual', panelCount: { kind: 'per_player' }, drawingSeconds: 90 },
+      settings: {
+        // @ts-expect-error: the v1 schema accepts only the collaborative mode
+        mode: 'individual',
+        panelCount: { kind: 'per_player' },
+        drawingSeconds: 90,
+        showPreviousPanels: false,
+      },
     });
 
     expect(ack).toMatchObject({ ok: false, error: { code: 'INVALID_PAYLOAD' } });

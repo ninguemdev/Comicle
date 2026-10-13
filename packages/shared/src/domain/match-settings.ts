@@ -8,4 +8,6 @@ export interface MatchSettings {
   mode: GameModeId;
   panelCount: PanelCountSetting;
   drawingSeconds: number;
+  /** R38: the artist sees the story's earlier panels, small, while drawing. */
+  showPreviousPanels: boolean;
 }

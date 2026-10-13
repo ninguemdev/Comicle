@@ -8,6 +8,7 @@ const perPlayer: MatchSettings = {
   mode: 'collaborative',
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
+  showPreviousPanels: false,
 };
 
 const fixed = (value: number): MatchSettings => ({

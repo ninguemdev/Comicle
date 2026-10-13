@@ -37,7 +37,12 @@ describe('buildPlayerView no lobby', () => {
         code: 'K7PQ2M',
         status: 'lobby',
         hostPlayerId: 'ana',
-        settings: { mode: 'collaborative', panelCount: { kind: 'per_player' }, drawingSeconds: 90 },
+        settings: {
+          mode: 'collaborative',
+          panelCount: { kind: 'per_player' },
+          drawingSeconds: 90,
+          showPreviousPanels: false,
+        },
         members: [
           {
             playerId: 'ana',
@@ -201,6 +206,7 @@ describe('buildPlayerView na rodada 0', () => {
       panelPosition: 0,
       hasDraft: false,
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
+      previousPanels: [],
     });
     expect(buildPlayerView(drawingRoom(), 'bia', 0).match?.task).toMatchObject({
       theme: 'Tema de ana',
@@ -258,6 +264,7 @@ describe('buildPlayerView nas rodadas', () => {
       panelPosition: 1,
       hasDraft: false,
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
+      previousPanels: [],
     });
     expect(taskOf(reading, 'bia')).toMatchObject({ kind: 'read_story', status: 'reading' });
     expect(JSON.stringify(viewOf(reading, 'ana'))).not.toContain('panel-');
@@ -288,11 +295,35 @@ describe('buildPlayerView nas rodadas', () => {
       panelPosition: 2,
       hasDraft: true,
       deadlineAt: TEST_DRAWING_DEADLINE_AT,
+      previousPanels: [],
     });
     expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', hasDraft: false });
     for (const playerId of [...players, 'davi']) {
       expect(JSON.stringify(viewOf(drawing, playerId))).not.toContain('panel-');
     }
+  });
+
+  it('R38/R58: com showPreviousPanels, a tarefa de desenho traz os quadros da própria história', () => {
+    const base = testRoundMatch(players, 'round_drawing', 1, {
+      finals: new Map([['bia', { png: null, reason: 'done' }]]),
+    });
+    const drawing = { ...base, settings: { ...base.settings, showPreviousPanels: true } };
+
+    // Round 1 (R31): ana draws bia's story.
+    expect(taskOf(drawing, 'ana')).toMatchObject({
+      previousPanels: [
+        {
+          panelId: 'panel-0-bia',
+          position: 0,
+          artist: { playerId: 'caio', nickname: 'caio', avatar: defaultAvatar() },
+          status: 'complete',
+        },
+      ],
+    });
+    // Handed in: nothing more. Never anyone else's story.
+    expect(taskOf(drawing, 'bia')).toMatchObject({ status: 'submitted', previousPanels: [] });
+    expect(JSON.stringify(viewOf(drawing, 'ana'))).not.toMatch(/panel-d-(ana|caio)/);
+    expect(JSON.stringify(viewOf(drawing, 'davi'))).not.toContain('panel-');
   });
 
   it('no fechamento os participantes esperam', () => {

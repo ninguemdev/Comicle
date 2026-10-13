@@ -26,7 +26,12 @@ function newMatch(roomId: string, storyCount = 2): NewMatch {
   return {
     id: newId(),
     roomId,
-    settings: { mode: 'collaborative', panelCount: { kind: 'per_player' }, drawingSeconds: 90 },
+    settings: {
+      mode: 'collaborative',
+      panelCount: { kind: 'per_player' },
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+    },
     totalRounds: storyCount,
     startedAt: Date.UTC(2026, 0, 1),
     themes,

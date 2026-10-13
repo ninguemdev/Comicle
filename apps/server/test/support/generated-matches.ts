@@ -62,10 +62,21 @@ function stepLabel(match: Match): string {
   return `presentation ${String(cursor.storyIndex)}:${kind}`;
 }
 
+/** R38: the artist still drawing sees the story's earlier panels when the option is on. */
+export function seesReference(match: Match, viewer: string): boolean {
+  const { round } = match;
+  if (!match.settings.showPreviousPanels || round === null || round.finals.has(viewer)) {
+    return false;
+  }
+  return match.phase !== 'round_reading' || round.ready.has(viewer);
+}
+
 export function generateMatch(rng: Rng): GeneratedMatch {
   const machine = createMatchMachine(defaultGameTiming);
   const players = Array.from({ length: 2 + rng.nextInt(4) }, (_, i) => `p${String(i)}`);
   const totalRounds = players.length;
+  // R38: half of the matches show the earlier panels while drawing.
+  const showPreviousPanels = rng.nextInt(2) === 1;
   const snapshots: MatchSnapshot[] = [];
   let match: Match | null = null;
 
@@ -95,6 +106,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
         mode: 'collaborative',
         panelCount: { kind: 'per_player' },
         drawingSeconds: DRAWING_SECONDS_DEFAULT,
+        showPreviousPanels,
       },
       seats: players.map((playerId) => ({
         playerId,

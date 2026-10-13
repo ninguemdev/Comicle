@@ -45,7 +45,13 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
   const ids = { fixedValue: useId(), drawing: useId() };
   const drawingSeconds = drawingSecondsOf(settings);
   const change = (patch: Partial<SettingsInput>) => {
-    onChange({ mode: 'collaborative', panelCount: settings.panelCount, drawingSeconds, ...patch });
+    onChange({
+      mode: 'collaborative',
+      panelCount: settings.panelCount,
+      drawingSeconds,
+      showPreviousPanels: settings.showPreviousPanels,
+      ...patch,
+    });
   };
 
   return (
@@ -127,6 +133,21 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
         </select>
       </div>
 
+      <label className="flex items-start gap-2 font-semibold">
+        <input
+          type="checkbox"
+          checked={settings.showPreviousPanels}
+          onChange={(event) => {
+            change({ showPreviousPanels: event.target.checked });
+          }}
+          className="mt-0.5 size-5 shrink-0 accent-ink"
+        />
+        <span className="flex flex-col">
+          {texts.showPreviousPanels}
+          <span className="text-sm font-normal text-muted">{texts.showPreviousPanelsHint}</span>
+        </span>
+      </label>
+
       <fieldset>
         <legend className={LEGEND_CLASSES}>{texts.mode}</legend>
         <div className="flex flex-col gap-2">
@@ -157,6 +178,8 @@ function SettingsSummary({ settings }: { settings: MatchSettings }) {
         <dd className="font-bold">{panelCountText(settings.panelCount)}</dd>
         <dt className="font-semibold text-muted">{texts.drawingSeconds}</dt>
         <dd className="font-bold">{texts.duration(settings.drawingSeconds)}</dd>
+        <dt className="font-semibold text-muted">{texts.showPreviousPanels}</dt>
+        <dd className="font-bold">{settings.showPreviousPanels ? texts.yes : texts.no}</dd>
         <dt className="font-semibold text-muted">{texts.mode}</dt>
         <dd className="font-bold">{texts.collaborative}</dd>
       </dl>

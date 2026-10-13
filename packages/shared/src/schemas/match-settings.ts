@@ -20,4 +20,5 @@ export const matchSettingsSchema = z.object({
   mode: z.literal('collaborative', 'Modo de jogo indisponível.'),
   panelCount: panelCountSchema,
   drawingSeconds: z.literal(DRAWING_SECONDS_OPTIONS),
+  showPreviousPanels: z.boolean(),
 }) satisfies z.ZodType<MatchSettings>;

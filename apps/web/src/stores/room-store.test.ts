@@ -10,7 +10,12 @@ const VIEW: PlayerView = {
     code: 'K7PQ2M',
     status: 'lobby',
     hostPlayerId: 'p1',
-    settings: { mode: 'collaborative', panelCount: { kind: 'per_player' }, drawingSeconds: 90 },
+    settings: {
+      mode: 'collaborative',
+      panelCount: { kind: 'per_player' },
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+    },
     members: [],
   },
   me: { playerId: 'p1', isHost: true, role: 'member' },

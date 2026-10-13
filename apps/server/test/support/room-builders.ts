@@ -48,6 +48,7 @@ export function testMatch(playerIds: string[], overrides: Partial<Match> = {}): 
       mode: 'collaborative',
       panelCount: { kind: 'per_player' },
       drawingSeconds: DRAWING_SECONDS_DEFAULT,
+      showPreviousPanels: false,
     },
     startedAt: 0,
     seats: playerIds.map((playerId) => ({

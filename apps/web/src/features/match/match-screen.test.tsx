@@ -18,6 +18,7 @@ const draw = (status: 'drawing' | 'submitted'): PlayerTask => ({
   panelPosition: 1,
   hasDraft: false,
   deadlineAt: 100_000,
+  previousPanels: [],
 });
 
 beforeEach(() => {

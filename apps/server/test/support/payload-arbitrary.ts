@@ -18,6 +18,7 @@ const PAYLOAD_KEYS = [
   'kind',
   'value',
   'drawingSeconds',
+  'showPreviousPanels',
   'text',
   'roundIndex',
   'png',

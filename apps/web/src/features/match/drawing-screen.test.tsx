@@ -1,4 +1,11 @@
-import { AUTOSAVE_INTERVAL_MS, fail, ok, type PlayerView } from '@comicle/shared';
+import {
+  AUTOSAVE_INTERVAL_MS,
+  defaultAvatar,
+  fail,
+  ok,
+  type PanelRef,
+  type PlayerView,
+} from '@comicle/shared';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useImperativeHandle } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,7 +33,11 @@ vi.mock('../drawing/drawing-editor', () => ({
 const NOW = 1_000_000;
 const DRAWING_MS = 90_000;
 
-function drawingView({ hasDraft = false, deadlineIn = DRAWING_MS } = {}): PlayerView {
+function drawingView({
+  hasDraft = false,
+  deadlineIn = DRAWING_MS,
+  previousPanels = [] as PanelRef[],
+} = {}): PlayerView {
   return matchView({
     phase: 'round_drawing',
     roundIndex: 1,
@@ -38,6 +49,7 @@ function drawingView({ hasDraft = false, deadlineIn = DRAWING_MS } = {}): Player
       panelPosition: 1,
       hasDraft,
       deadlineAt: NOW + deadlineIn,
+      previousPanels,
     },
   });
 }
@@ -55,6 +67,7 @@ function renderDrawing(view: PlayerView) {
       view={view}
       match={match}
       theme="Um gato"
+      previousPanels={match.task.kind === 'draw_panel' ? match.task.previousPanels : []}
       deadlineAt={match.task.kind === 'draw_panel' ? match.task.deadlineAt : null}
       hasDraft={match.task.kind === 'draw_panel' && match.task.hasDraft}
       closing={false}
@@ -138,6 +151,7 @@ describe('tela de desenho', () => {
         panelPosition: 1,
         hasDraft: false,
         deadlineAt: NOW + 5000 + DRAWING_MS,
+        previousPanels: [],
       },
     });
     const actions = setUpStores(view);
@@ -281,6 +295,29 @@ describe('tela de desenho', () => {
 
     await advance(AUTOSAVE_INTERVAL_MS);
     expect(actions.autosavePanel).toHaveBeenCalledTimes(2);
+  });
+
+  it('R38: com quadros anteriores, mostra as miniaturas numeradas ao lado do editor', () => {
+    const panel = (position: number, nickname: string): PanelRef => ({
+      panelId: `panel-${String(position)}`,
+      position,
+      artist: { playerId: nickname, nickname, avatar: defaultAvatar() },
+      status: position === 1 ? 'empty' : 'complete',
+    });
+    renderDrawing(drawingView({ previousPanels: [panel(0, 'Bia'), panel(1, 'Caio')] }));
+
+    const strip = screen.getByRole('list', { name: 'Quadros anteriores' });
+    expect(
+      within(strip)
+        .getAllByRole('img')
+        .map((image) => image.getAttribute('aria-label')),
+    ).toEqual(['Quadro 1 de Bia', 'Quadro 2 de Caio']);
+  });
+
+  it('R36: sem quadros anteriores (opção desligada), nenhuma miniatura', () => {
+    renderDrawing(drawingView());
+
+    expect(screen.queryByRole('list', { name: 'Quadros anteriores' })).toBeNull();
   });
 
   it('sem hasDraft, nada é buscado', async () => {
