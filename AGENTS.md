@@ -142,4 +142,4 @@ Use o comando `/task NN` (em `.claude/commands/task.md`) para seguir esse fluxo.
 
 ## Fora do escopo da v1
 
-Não implemente, mesmo que pareça fácil: contas, login, perfis públicos, pontuação, rankings, conquistas, moedas, loja, matchmaking público, feed, chat, sons, modo Quadrinhos Individuais, editor avançado (camadas, formas, balde), salvar ou compartilhar histórias publicamente, múltiplas instâncias do servidor.
+Não implemente, mesmo que pareça fácil: contas, login, perfis públicos, pontuação, rankings, conquistas, moedas, loja, matchmaking público, feed, chat, sons, modo Quadrinhos Individuais, editor avançado (camadas, formas), salvar ou compartilhar histórias publicamente, múltiplas instâncias do servidor.

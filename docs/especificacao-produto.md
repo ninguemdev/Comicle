@@ -329,6 +329,7 @@ O editor contempla ferramentas fundamentais:
 
 - Pincel para desenho livre.
 - Borracha.
+- Balde de tinta, para preencher áreas fechadas com uma cor.
 - Seleção de cores.
 - Ajuste de espessura do traço.
 - Desfazer a última ação.
