@@ -5,8 +5,9 @@ import { loadImage } from '../drawing/load-image';
 import { computeComicLayout, type MaxColumns } from './compute-comic-layout';
 import type { PanelImageLoader } from './use-panel-image';
 
-// The whole story as one PNG to keep (interface.md §5, "Baixar HQ"): the page of the full view,
-// drawn on a canvas in the light theme, with the theme on top and the credits under each panel.
+// The whole story as one PNG to keep (interface.md §5, "Baixar HQ"): drawn on a canvas in the
+// light theme like a printed comic, with the theme as its title, the panels glued together and
+// the credits in a footer.
 
 export interface ComicStory {
   theme: { text: string; author: ArtistRef };
@@ -19,13 +20,15 @@ export const COMIC_EXPORT = {
   panelWidth: 512,
   panelHeight: 384,
   margin: 48,
-  gutter: 24,
-  caption: 40,
   themeLine: 64,
   maxThemeLines: 4,
   themeGap: 8,
   author: 40,
   headerGap: 32,
+  /** Space between the panels and the credits. */
+  creditsGap: 24,
+  creditLine: 32,
+  maxCreditLines: 3,
   footer: 56,
 } as const;
 
@@ -38,14 +41,12 @@ const COLORS = {
   halftone: 'rgba(22, 22, 29, 0.12)',
 } as const;
 
-const CAPTION_FONT_SIZE = 22;
-
 const FONTS = {
   theme: '56px Bangers, Impact, sans-serif',
   number: '24px Bangers, Impact, sans-serif',
   footer: '28px Bangers, Impact, sans-serif',
   author: '600 26px "Nunito Variable", Nunito, sans-serif',
-  caption: `600 ${String(CAPTION_FONT_SIZE)}px "Nunito Variable", Nunito, sans-serif`,
+  credits: '600 22px "Nunito Variable", Nunito, sans-serif',
   placeholder: 'bold 24px "Nunito Variable", Nunito, sans-serif',
 } as const;
 
@@ -69,10 +70,9 @@ export function exportColumns(panelCount: number): MaxColumns {
   return panelCount === 2 || panelCount === 4 ? 2 : 3;
 }
 
-/** Width of the panels area: the theme wraps to it. */
+/** Width of the panels area: the theme and the credits wrap to it. */
 export function exportContentWidth(panelCount: number): number {
-  const columns = exportColumns(panelCount);
-  return columns * COMIC_EXPORT.panelWidth + (columns - 1) * COMIC_EXPORT.gutter;
+  return exportColumns(panelCount) * COMIC_EXPORT.panelWidth;
 }
 
 export interface ComicExportPlan {
@@ -81,38 +81,60 @@ export interface ComicExportPlan {
   /** Top of each line of the theme, centered horizontally. */
   themeTops: number[];
   authorTop: number;
-  /** Top-left corner of each panel picture, in reading order. */
+  /** Top-left corner of each panel, in reading order; neighbors share an edge. */
   panels: { x: number; y: number }[];
+  /** Top of each line of the credits, centered horizontally. */
+  creditTops: number[];
   footerTop: number;
 }
 
-/** Where everything goes on a page with `panelCount` panels and a theme of `themeLines` lines. */
-export function planComicExport(panelCount: number, themeLines: number): ComicExportPlan {
+/**
+ * Where everything goes on a page with `panelCount` panels, a theme of `themeLines` lines and
+ * credits of `creditLines` lines. Panels touch, as in a printed comic; a shorter last row is
+ * centered, its panels still touching.
+ */
+export function planComicExport(
+  panelCount: number,
+  themeLines: number,
+  creditLines: number,
+): ComicExportPlan {
   const e = COMIC_EXPORT;
   const contentWidth = exportContentWidth(panelCount);
   const themeTops = Array.from({ length: themeLines }, (_, line) => e.margin + line * e.themeLine);
   const authorTop = e.margin + themeLines * e.themeLine + e.themeGap;
-  const rows = computeComicLayout(panelCount, exportColumns(panelCount));
-  const rowHeight = e.panelHeight + e.caption;
   let y = authorTop + e.author + e.headerGap;
   const panels: ComicExportPlan['panels'] = [];
-  for (const count of rows) {
-    const rowWidth = count * e.panelWidth + (count - 1) * e.gutter;
-    const left = e.margin + (contentWidth - rowWidth) / 2;
+  for (const count of computeComicLayout(panelCount, exportColumns(panelCount))) {
+    const left = e.margin + (contentWidth - count * e.panelWidth) / 2;
     for (let index = 0; index < count; index++) {
-      panels.push({ x: left + index * (e.panelWidth + e.gutter), y });
+      panels.push({ x: left + index * e.panelWidth, y });
     }
-    y += rowHeight + e.gutter;
+    y += e.panelHeight;
   }
-  const footerTop = rows.length > 0 ? y - e.gutter : y;
+  const creditsTop = y + e.creditsGap;
+  const creditTops = Array.from(
+    { length: creditLines },
+    (_, line) => creditsTop + line * e.creditLine,
+  );
+  const footerTop = creditsTop + creditLines * e.creditLine;
   return {
     width: contentWidth + 2 * e.margin,
     height: footerTop + e.footer + e.margin,
     themeTops,
     authorTop,
     panels,
+    creditTops,
     footerTop,
   };
+}
+
+/** R55 for the whole page at once: "Quadros: 1 Ana · 2 Bia", in reading order. */
+export function comicCredits(panels: readonly PanelRef[]): string {
+  return strings.comic.exportCredits(
+    [...panels]
+      .sort((a, b) => a.position - b.position)
+      .map((panel) => `${String(panel.position + 1)} ${panel.artist.nickname}`),
+  );
 }
 
 /** Cuts `text` to fit `width` (as `measure` sees it), ending with "…" when it ran out. */
@@ -237,7 +259,7 @@ function drawPanel(
   picture: PanelPicture,
   at: { x: number; y: number },
 ) {
-  const { panelWidth, panelHeight, caption } = COMIC_EXPORT;
+  const { panelWidth, panelHeight } = COMIC_EXPORT;
   const centerX = at.x + panelWidth / 2;
   if (picture.kind === 'image') {
     ctx.drawImage(picture.image, at.x, at.y, panelWidth, panelHeight);
@@ -279,16 +301,6 @@ function drawPanel(
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(panel.position + 1), badgeX, badgeY + 1);
-
-  // R55: who drew it.
-  ctx.font = FONTS.caption;
-  ctx.fillStyle = COLORS.muted;
-  const credit = fitWithEllipsis(
-    panel.artist.nickname,
-    panelWidth,
-    (text) => ctx.measureText(text).width,
-  );
-  drawCentered(ctx, credit, centerX, at.y + panelHeight + (caption - CAPTION_FONT_SIZE) / 2);
 }
 
 /** Waits for the game fonts, so the canvas does not fall back to the system ones. */
@@ -297,7 +309,7 @@ async function fontsReady(): Promise<void> {
     return;
   }
   await Promise.all(
-    [FONTS.theme, FONTS.author, FONTS.caption, FONTS.placeholder].map((font) =>
+    [FONTS.theme, FONTS.author, FONTS.credits, FONTS.placeholder].map((font) =>
       document.fonts.load(font).catch(() => []),
     ),
   );
@@ -315,7 +327,7 @@ function canvasToPng(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-/** The story as one PNG page: theme, every panel with its number and artist, and a footer. */
+/** The story as one PNG page: theme on top, the numbered panels glued together, the credits. */
 export async function exportComicPng(
   story: ComicStory,
   loader: PanelImageLoader,
@@ -332,14 +344,18 @@ export async function exportComicPng(
     throw new Error('Canvas 2D indisponível neste navegador');
   }
 
+  const contentWidth = exportContentWidth(panels.length);
+  const measure = (text: string) => ctx.measureText(text).width;
   ctx.font = FONTS.theme;
-  const themeLines = wrapText(
-    story.theme.text,
-    exportContentWidth(panels.length),
-    (text) => ctx.measureText(text).width,
-    COMIC_EXPORT.maxThemeLines,
+  const themeLines = wrapText(story.theme.text, contentWidth, measure, COMIC_EXPORT.maxThemeLines);
+  ctx.font = FONTS.credits;
+  const creditLines = wrapText(
+    comicCredits(panels),
+    contentWidth,
+    measure,
+    COMIC_EXPORT.maxCreditLines,
   );
-  const plan = planComicExport(panels.length, themeLines.length);
+  const plan = planComicExport(panels.length, themeLines.length, creditLines.length);
   // Resizing resets the context, so it comes after measuring.
   canvas.width = plan.width;
   canvas.height = plan.height;
@@ -371,8 +387,12 @@ export async function exportComicPng(
   });
 
   ctx.fillStyle = COLORS.muted;
+  ctx.font = FONTS.credits;
+  creditLines.forEach((line, index) => {
+    drawCentered(ctx, line, centerX, plan.creditTops[index] ?? 0);
+  });
   ctx.font = FONTS.footer;
-  drawCentered(ctx, strings.comic.exportFooter, centerX, plan.footerTop + COMIC_EXPORT.gutter);
+  drawCentered(ctx, strings.comic.exportFooter, centerX, plan.footerTop + COMIC_EXPORT.creditsGap);
 
   return canvasToPng(canvas);
 }
