@@ -17,11 +17,27 @@ function seatsOf(n: number): string[] {
   return range(0, n - 1).map((i) => `p${String(i)}`);
 }
 
-/** Every (N, totalRounds) pair required by R32. */
+const WITH_AUTHOR = { authorDraws: true };
+const WITHOUT_AUTHOR = { authorDraws: false };
+
+/** Every (N, totalRounds) pair required by R32, with the author in the rotation. */
 const cases = range(MIN_PLAYERS, MAX_PLAYERS).flatMap((n) =>
   range(FIXED_PANEL_COUNT_MIN, FIXED_PANEL_COUNT_MAX).map((totalRounds) => {
     const seats = seatsOf(n);
-    return { n, totalRounds, seats, plan: buildCollaborativePlan(seats, totalRounds) };
+    return { n, totalRounds, seats, plan: buildCollaborativePlan(seats, totalRounds, WITH_AUTHOR) };
+  }),
+);
+
+/** The same pairs, plus a single round (2 players per player), with the author skipped (D45). */
+const casesWithoutAuthor = range(MIN_PLAYERS, MAX_PLAYERS).flatMap((n) =>
+  range(1, FIXED_PANEL_COUNT_MAX).map((totalRounds) => {
+    const seats = seatsOf(n);
+    return {
+      n,
+      totalRounds,
+      seats,
+      plan: buildCollaborativePlan(seats, totalRounds, WITHOUT_AUTHOR),
+    };
   }),
 );
 
@@ -36,7 +52,11 @@ function artistsOf(plan: DistributionPlan, story: number): (string | undefined)[
 
 describe('buildCollaborativePlan', () => {
   it('R31: tabela do exemplo com 5 jogadores', () => {
-    const plan = buildCollaborativePlan(['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa'], 5);
+    const plan = buildCollaborativePlan(
+      ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa'],
+      5,
+      WITH_AUTHOR,
+    );
 
     expect(artistsOf(plan, 0)).toEqual(['Bruno', 'Carla', 'Diego', 'Elisa', 'Ana']);
     expect(artistsOf(plan, 1)).toEqual(['Carla', 'Diego', 'Elisa', 'Ana', 'Bruno']);
@@ -113,15 +133,92 @@ describe('buildCollaborativePlan', () => {
   });
 
   it('rejeita assentos vazios ou repetidos e totalRounds inválido', () => {
-    expect(() => buildCollaborativePlan([], 2)).toThrow(RangeError);
-    expect(() => buildCollaborativePlan(['a', 'a'], 2)).toThrow(RangeError);
-    expect(() => buildCollaborativePlan(['a', 'b'], 0)).toThrow(RangeError);
-    expect(() => buildCollaborativePlan(['a', 'b'], 1.5)).toThrow(RangeError);
+    expect(() => buildCollaborativePlan([], 2, WITH_AUTHOR)).toThrow(RangeError);
+    expect(() => buildCollaborativePlan(['a', 'a'], 2, WITH_AUTHOR)).toThrow(RangeError);
+    expect(() => buildCollaborativePlan(['a', 'b'], 0, WITH_AUTHOR)).toThrow(RangeError);
+    expect(() => buildCollaborativePlan(['a', 'b'], 1.5, WITH_AUTHOR)).toThrow(RangeError);
+  });
+});
+
+describe('buildCollaborativePlan sem o autor na rotação (D45)', () => {
+  it('R31: tabela com 5 jogadores e 4 quadros', () => {
+    const plan = buildCollaborativePlan(
+      ['Ana', 'Bruno', 'Carla', 'Diego', 'Elisa'],
+      4,
+      WITHOUT_AUTHOR,
+    );
+
+    expect(artistsOf(plan, 0)).toEqual(['Bruno', 'Carla', 'Diego', 'Elisa']);
+    expect(artistsOf(plan, 4)).toEqual(['Ana', 'Bruno', 'Carla', 'Diego']);
+  });
+
+  it('R31: a história s_i vai para o assento (i + 1 + (r mod (N − 1))) mod N', () => {
+    for (const { n, totalRounds, seats, plan } of casesWithoutAuthor) {
+      for (let round = 0; round < totalRounds; round++) {
+        for (let story = 0; story < n; story++) {
+          expect(playerForStory(plan, round, story), label(n, totalRounds)).toBe(
+            seats[(story + 1 + (round % (n - 1))) % n],
+          );
+        }
+      }
+    }
+  });
+
+  it('R32: cada rodada é uma bijeção entre jogadores e histórias', () => {
+    for (const { n, totalRounds, seats, plan } of casesWithoutAuthor) {
+      expect(plan.assignments, label(n, totalRounds)).toHaveLength(totalRounds);
+      for (const round of plan.assignments) {
+        expect(Object.keys(round).sort(), label(n, totalRounds)).toEqual([...seats].sort());
+        expect(
+          Object.values(round).sort((a, b) => a - b),
+          label(n, totalRounds),
+        ).toEqual(range(0, n - 1));
+      }
+    }
+  });
+
+  it('R32: o autor nunca desenha a própria história, com qualquer quantidade de quadros', () => {
+    for (const { n, totalRounds, seats, plan } of casesWithoutAuthor) {
+      seats.forEach((author, story) => {
+        expect(artistsOf(plan, story), label(n, totalRounds)).not.toContain(author);
+      });
+    }
+  });
+
+  it('R32: com 3 ou mais jogadores, ninguém recebe a mesma história em rodadas consecutivas', () => {
+    for (const { n, totalRounds, seats, plan } of casesWithoutAuthor.filter((c) => c.n >= 3)) {
+      for (const playerId of seats) {
+        for (let round = 1; round < totalRounds; round++) {
+          expect(storyForPlayer(plan, round, playerId), label(n, totalRounds)).not.toBe(
+            storyForPlayer(plan, round - 1, playerId),
+          );
+        }
+      }
+    }
+  });
+
+  it('R32: com totalRounds = N − 1, cada outro jogador contribui exatamente uma vez', () => {
+    for (const { n, totalRounds, seats, plan } of casesWithoutAuthor.filter(
+      (c) => c.totalRounds === c.n - 1,
+    )) {
+      seats.forEach((author, story) => {
+        expect(artistsOf(plan, story).sort(), label(n, totalRounds)).toEqual(
+          seats.filter((seat) => seat !== author).sort(),
+        );
+      });
+    }
+  });
+
+  it('com 2 jogadores, o outro desenha todos os quadros da história', () => {
+    const plan = buildCollaborativePlan(['ana', 'bia'], 3, WITHOUT_AUTHOR);
+
+    expect(artistsOf(plan, 0)).toEqual(['bia', 'bia', 'bia']);
+    expect(artistsOf(plan, 1)).toEqual(['ana', 'ana', 'ana']);
   });
 });
 
 describe('storyForPlayer / playerForStory', () => {
-  const plan = buildCollaborativePlan(['ana', 'bruno', 'carla'], 3);
+  const plan = buildCollaborativePlan(['ana', 'bruno', 'carla'], 3, WITH_AUTHOR);
 
   it('R31: encontram quem desenha cada história e vice-versa', () => {
     expect(playerForStory(plan, 0, 0)).toBe('bruno');

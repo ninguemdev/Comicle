@@ -50,6 +50,7 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
       panelCount: settings.panelCount,
       drawingSeconds,
       showPreviousPanels: settings.showPreviousPanels,
+      authorDrawsLast: settings.authorDrawsLast,
       ...patch,
     });
   };
@@ -70,7 +71,9 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
               className="size-5 accent-ink"
             />
             {texts.perPlayer}
-            <span className="text-sm font-normal text-muted">{texts.perPlayerHint}</span>
+            <span className="text-sm font-normal text-muted">
+              {settings.authorDrawsLast ? texts.perPlayerHint : texts.perPlayerHintWithoutAuthor}
+            </span>
           </label>
           <label className="flex items-center gap-2 font-semibold">
             <input
@@ -136,6 +139,21 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
       <label className="flex items-start gap-2 font-semibold">
         <input
           type="checkbox"
+          checked={settings.authorDrawsLast}
+          onChange={(event) => {
+            change({ authorDrawsLast: event.target.checked });
+          }}
+          className="mt-0.5 size-5 shrink-0 accent-ink"
+        />
+        <span className="flex flex-col">
+          {texts.authorDrawsLast}
+          <span className="text-sm font-normal text-muted">{texts.authorDrawsLastHint}</span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-2 font-semibold">
+        <input
+          type="checkbox"
           checked={settings.showPreviousPanels}
           onChange={(event) => {
             change({ showPreviousPanels: event.target.checked });
@@ -178,6 +196,8 @@ function SettingsSummary({ settings }: { settings: MatchSettings }) {
         <dd className="font-bold">{panelCountText(settings.panelCount)}</dd>
         <dt className="font-semibold text-muted">{texts.drawingSeconds}</dt>
         <dd className="font-bold">{texts.duration(settings.drawingSeconds)}</dd>
+        <dt className="font-semibold text-muted">{texts.authorDrawsLast}</dt>
+        <dd className="font-bold">{settings.authorDrawsLast ? texts.yes : texts.no}</dd>
         <dt className="font-semibold text-muted">{texts.showPreviousPanels}</dt>
         <dd className="font-bold">{settings.showPreviousPanels ? texts.yes : texts.no}</dd>
         <dt className="font-semibold text-muted">{texts.mode}</dt>

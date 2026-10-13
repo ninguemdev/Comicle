@@ -9,6 +9,7 @@ const perPlayer: MatchSettings = {
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
+  authorDrawsLast: true,
 };
 
 const fixed = (value: number): MatchSettings => ({
@@ -25,6 +26,13 @@ describe('collaborativeMode', () => {
   it('R20: per_player com 7 participantes → 7 rodadas; fixed(3) → 3', () => {
     expect(collaborativeMode.totalRounds(perPlayer, 7)).toBe(7);
     expect(collaborativeMode.totalRounds(fixed(3), 7)).toBe(3);
+  });
+
+  it('R20: sem o autor desenhando, per_player dá um quadro a menos; a quantidade fixa não muda', () => {
+    const withoutAuthor = { ...perPlayer, authorDrawsLast: false };
+    expect(collaborativeMode.totalRounds(withoutAuthor, 7)).toBe(6);
+    expect(collaborativeMode.totalRounds(withoutAuthor, 2)).toBe(1);
+    expect(collaborativeMode.totalRounds({ ...fixed(5), authorDrawsLast: false }, 3)).toBe(5);
   });
 
   it('R34/R35: só a rodada 0 começa sem leitura', () => {
@@ -51,10 +59,21 @@ describe('collaborativeMode', () => {
   });
 
   it('R31: buildPlan usa a distribuição colaborativa', () => {
-    const plan = collaborativeMode.buildPlan(['ana', 'bruno'], 2);
+    const plan = collaborativeMode.buildPlan(['ana', 'bruno'], 2, perPlayer);
     expect(plan.assignments).toEqual([
       { ana: 1, bruno: 0 },
       { ana: 0, bruno: 1 },
+    ]);
+  });
+
+  it('R31: com authorDrawsLast desligada, buildPlan pula o autor', () => {
+    const plan = collaborativeMode.buildPlan(['ana', 'bruno'], 2, {
+      ...perPlayer,
+      authorDrawsLast: false,
+    });
+    expect(plan.assignments).toEqual([
+      { ana: 1, bruno: 0 },
+      { ana: 1, bruno: 0 },
     ]);
   });
 });

@@ -14,6 +14,7 @@ const settings: MatchSettings = {
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
+  authorDrawsLast: true,
 };
 
 describe('game timing', () => {

@@ -74,9 +74,11 @@ export function seesReference(match: Match, viewer: string): boolean {
 export function generateMatch(rng: Rng): GeneratedMatch {
   const machine = createMatchMachine(defaultGameTiming);
   const players = Array.from({ length: 2 + rng.nextInt(4) }, (_, i) => `p${String(i)}`);
-  const totalRounds = players.length;
   // R38: half of the matches show the earlier panels while drawing.
   const showPreviousPanels = rng.nextInt(2) === 1;
+  // R20, R31: half of them skip the author, with one round less.
+  const authorDrawsLast = rng.nextInt(2) === 1;
+  const totalRounds = authorDrawsLast ? players.length : players.length - 1;
   const snapshots: MatchSnapshot[] = [];
   let match: Match | null = null;
 
@@ -107,6 +109,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
         panelCount: { kind: 'per_player' },
         drawingSeconds: DRAWING_SECONDS_DEFAULT,
         showPreviousPanels,
+        authorDrawsLast,
       },
       seats: players.map((playerId) => ({
         playerId,
@@ -115,7 +118,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
         storyId: `story-${playerId}`,
       })),
       totalRounds,
-      plan: buildCollaborativePlan(players, totalRounds),
+      plan: buildCollaborativePlan(players, totalRounds, { authorDraws: authorDrawsLast }),
       fallbackThemes: FALLBACK_THEMES,
       panelIds: Array.from({ length: totalRounds }, (_, r) =>
         players.map((_p, s) => panelIdOf(r, s)),

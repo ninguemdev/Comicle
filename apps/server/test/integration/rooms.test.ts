@@ -197,6 +197,7 @@ describe('salas (integração)', () => {
       panelCount: { kind: 'fixed', value: 6 },
       drawingSeconds: 60,
       showPreviousPanels: true,
+      authorDrawsLast: true,
     } as const;
 
     const denied = await bia.client.emitWithAck('room:updateSettings', { settings });
@@ -223,6 +224,7 @@ describe('salas (integração)', () => {
         panelCount: { kind: 'per_player' },
         drawingSeconds: 90,
         showPreviousPanels: false,
+        authorDrawsLast: true,
       },
     });
 

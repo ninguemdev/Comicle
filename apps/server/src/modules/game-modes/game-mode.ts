@@ -18,7 +18,11 @@ export interface GameMode {
   readonly id: GameModeId;
   validateSettings(settings: MatchSettings): Result<void>;
   totalRounds(settings: MatchSettings, participantCount: number): number;
-  buildPlan(seats: readonly string[], totalRounds: number): DistributionPlan;
+  buildPlan(
+    seats: readonly string[],
+    totalRounds: number,
+    settings: MatchSettings,
+  ): DistributionPlan;
   hasReadingPhase(roundIndex: number): boolean;
 }
 

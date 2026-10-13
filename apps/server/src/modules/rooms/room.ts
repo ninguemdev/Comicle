@@ -37,6 +37,7 @@ export function defaultMatchSettings(): MatchSettings {
     panelCount: { kind: 'per_player' },
     drawingSeconds: DRAWING_SECONDS_DEFAULT,
     showPreviousPanels: false,
+    authorDrawsLast: true,
   };
 }
 

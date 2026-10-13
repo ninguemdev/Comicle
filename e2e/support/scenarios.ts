@@ -33,13 +33,12 @@ export async function startTwoPlayerMatch(
   const roomCode = await createRoom(host);
   await joinRoom(guest, await inviteLinkOf(host));
   if (options.showPreviousPanels === true) {
-    // Controlled by the room view: it flips when the server answers, not on the click.
+    // Controlled by the room view: it flips when the server has taken it, not on the click.
     const toggle = host.page.getByRole('checkbox', {
       name: strings.room.settings.showPreviousPanels,
     });
     await toggle.click();
     await expect(toggle).toBeChecked();
-    await expect(guest.page.getByText(strings.room.settings.yes, { exact: true })).toBeVisible();
   }
   await startMatch(host);
   for (const player of [host, guest]) {

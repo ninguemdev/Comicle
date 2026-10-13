@@ -8,6 +8,7 @@ const valid = {
   panelCount: { kind: 'per_player' },
   drawingSeconds: 90,
   showPreviousPanels: false,
+  authorDrawsLast: true,
 } as const;
 
 function withFixed(value: number) {
@@ -50,6 +51,18 @@ describe('matchSettingsSchema', () => {
       false,
     );
     const withoutIt = { mode: valid.mode, panelCount: valid.panelCount, drawingSeconds: 90 };
+    expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
+  });
+
+  it('R18: authorDrawsLast é obrigatório e booleano', () => {
+    expect(matchSettingsSchema.safeParse({ ...valid, authorDrawsLast: false }).success).toBe(true);
+    expect(matchSettingsSchema.safeParse({ ...valid, authorDrawsLast: 0 }).success).toBe(false);
+    const withoutIt = {
+      mode: valid.mode,
+      panelCount: valid.panelCount,
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+    };
     expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
   });
 

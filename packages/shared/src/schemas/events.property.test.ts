@@ -26,6 +26,7 @@ const PAYLOAD_KEYS = [
   'value',
   'drawingSeconds',
   'showPreviousPanels',
+  'authorDrawsLast',
   'text',
   'roundIndex',
   'png',
