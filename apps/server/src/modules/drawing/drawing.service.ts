@@ -54,11 +54,12 @@ export class DrawingService {
     if (!member) {
       throw notInRoom();
     }
-    const { match } = room;
-    if (match?.phase !== 'round_drawing' && match?.phase !== 'round_closing') {
+    const round = room.match?.round;
+    if (!round) {
       return null;
     }
-    return match.round?.drafts.get(member.playerId) ?? null;
+    // Drafts live only during the round; in its reading, only who confirmed can have one (R36).
+    return round.drafts.get(member.playerId) ?? null;
   }
 
   private roomWithPanel(panelId: string): Room | undefined {

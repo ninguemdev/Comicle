@@ -309,11 +309,11 @@ O desenho não acontece com os quadros anteriores permanentemente visíveis.
 
 ### Tempo e preparação
 
-A preparação para desenhar e o período efetivo de desenho são etapas distintas.
+Quem confirma a leitura começa a desenhar na hora, mesmo que os demais ainda estejam lendo.
 
-O tempo de desenho configurado é compartilhado pelos participantes da rodada, mantendo condições equivalentes de criação.
+O prazo de desenho é o mesmo para todos: termina um tempo de desenho configurado depois do fim da leitura. Quem confirma antes ganha o tempo que sobrou da leitura.
 
-A transição entre leitura e desenho é coordenada para evitar que participantes obtenham tempo adicional simplesmente por permanecerem indefinidamente na visualização.
+A leitura tem prazo próprio, então ninguém ganha tempo adicional permanecendo indefinidamente na visualização.
 
 ## 6.6 Editor de desenho
 

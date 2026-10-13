@@ -55,8 +55,7 @@ Animações curtas (≤ 250 ms) e desligadas com `prefers-reduced-motion`. A rev
 | Lobby | `/sala/:code`, `room.status = 'lobby'` | Código, link do convite visível e botão **Copiar convite**; grade de `PlayerChip`; painel de configurações (editável só pelo anfitrião, leitura para os demais); **Iniciar** destacado só para o anfitrião e desabilitado com motivo ("Precisa de pelo menos 2 jogadores") |
 | Temas | `task.kind = 'write_theme'` | Campo grande, contador de caracteres, exemplos rotativos de inspiração, timer, **Pronto** |
 | Leitura | `task.kind = 'read_story'`, `status = 'reading'` | Tema no topo, `ComicPage` com os quadros anteriores, aviso "Depois de começar, você não verá estes quadros de novo", botão **Começar a desenhar**, timer de leitura |
-| Preparação | `read_story`, `status = 'ready'` | `SpeechBubble` "Guarde bem na memória…", progresso dos demais. Sem quadros |
-| Desenho | `task.kind = 'draw_panel'`, `status = 'drawing'` | Canvas ocupando o máximo de espaço, barra de ferramentas compacta, timer, "Quadro 3 de 5", tema em uma linha recolhível |
+| Desenho | `task.kind = 'draw_panel'`, `status = 'drawing'` (também na `round_reading`, para quem já confirmou, R38) | Canvas ocupando o máximo de espaço, barra de ferramentas compacta, timer do `deadlineAt` da tarefa, "Quadro 3 de 5", tema em uma linha recolhível |
 | Espera | `draw_panel/submitted`, `write_theme/submitted`, `wait` | Confirmação "Recebido!", progresso, lista de quem falta. Nunca mostra desenhos de outros |
 | Transição | `phase = 'round_closing'` | "Recolhendo quadros e passando as histórias adiante…". Quem ainda não tinha concluído continua no editor, desabilitado e com o aviso "Tempo esgotado! Enviando o seu quadro…", até o envio sair (R42) |
 | Espectador | `task.kind = 'spectate'` | "Partida em andamento — você entra na próxima", lista de jogadores |

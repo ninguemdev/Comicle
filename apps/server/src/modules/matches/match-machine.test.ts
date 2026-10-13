@@ -417,6 +417,63 @@ describe('match machine', () => {
       expect(errorCode(() => run(match, [ready('bia')], readingDeadline))).toBe('DEADLINE_PASSED');
     });
 
+    it('R38: na leitura, o prazo comum do desenho é o mais tarde possível', () => {
+      const { match, at } = readingMatch();
+      const readingDeadline = present(match).phaseDeadlineAt ?? 0;
+
+      expect(readingDeadline).toBe(at + defaultGameTiming.readingMs(1));
+      expect(match.round?.drawingDeadlineAt).toBe(readingDeadline + DRAWING_MS);
+    });
+
+    it('R38: todos confirmam antes do prazo → o prazo comum fica fixo a partir desse instante', () => {
+      const { match } = readingMatch();
+      const now = T0 + 9000;
+      const drawing = run(match, [ready('ana')], T0 + 5000).match;
+      const { match: started } = run(drawing, [ready('bia'), ready('caio')], now);
+
+      expect(started?.round?.drawingDeadlineAt).toBe(now + DRAWING_MS);
+      expect(started?.phaseDeadlineAt).toBe(now + DRAWING_MS);
+    });
+
+    it('R38: o prazo da leitura acaba → o prazo comum continua o mais tarde possível', () => {
+      const { match } = readingMatch();
+      const readingDeadline = present(match).phaseDeadlineAt ?? 0;
+      const { match: drawing } = run(match, [deadline], readingDeadline);
+
+      expect(drawing?.round?.drawingDeadlineAt).toBe(readingDeadline + DRAWING_MS);
+    });
+
+    it('R36, R39, R40: quem confirmou já desenha durante a leitura dos outros', () => {
+      const { match } = readingMatch();
+      const confirmed = run(match, [ready('ana'), autosave('ana', 7, 1)]).match;
+      expect(confirmed?.round?.drafts.get('ana')).toEqual(png(7));
+
+      const handedIn = run(confirmed, [done('ana', 8, 1)]);
+      expect(handedIn.match?.phase).toBe('round_reading');
+      expect(handedIn.match?.round?.finals.get('ana')).toEqual({ png: png(8), reason: 'done' });
+      expect(handedIn.effects).toEqual([]);
+      // Who has not confirmed is still reading.
+      expect(errorCode(() => run(handedIn.match, [autosave('bia', 1, 1)]))).toBe('INVALID_STATE');
+    });
+
+    it('R41: quem entregou na leitura conta para o fim antecipado do desenho', () => {
+      const { match } = readingMatch();
+      const early = run(match, [ready('ana'), done('ana', 1, 1)]).match;
+      const result = run(early, [
+        ready('bia'),
+        ready('caio'),
+        done('bia', 2, 1),
+        done('caio', 3, 1),
+      ]);
+
+      expect(result.match).toMatchObject({ phase: 'round_reading', roundIndex: 2 });
+      expect(persisted(result.effects).map((panel) => panel.status)).toEqual([
+        'complete',
+        'complete',
+        'complete',
+      ]);
+    });
+
     it('R37: mudança de presença fora da leitura não muda nada', () => {
       const drawing = drawingMatch();
       expect(run(drawing, [{ type: 'presence_changed', connected: new Set() }])).toEqual({

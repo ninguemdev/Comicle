@@ -56,10 +56,15 @@ export interface RoundState {
   readonly drafts: ReadonlyMap<string, Uint8Array>;
   /** R40, R42. */
   readonly finals: ReadonlyMap<string, PanelFinal>;
+  /**
+   * R38: the drawing deadline, the same for everyone. While the reading lasts it is the latest
+   * possible one (reading deadline + drawing time); it becomes final when the drawing starts.
+   */
+  readonly drawingDeadlineAt: number;
 }
 
-export function emptyRound(): RoundState {
-  return { ready: new Set(), drafts: new Map(), finals: new Map() };
+export function emptyRound(drawingDeadlineAt: number): RoundState {
+  return { ready: new Set(), drafts: new Map(), finals: new Map(), drawingDeadlineAt };
 }
 
 export interface Match {

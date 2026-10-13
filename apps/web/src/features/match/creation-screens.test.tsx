@@ -160,21 +160,6 @@ describe('leitura', () => {
     });
     expect(actions.confirmReading).toHaveBeenCalledWith(1);
   });
-
-  it('R36: com status ready nenhum quadro é renderizado', () => {
-    const view = matchView({
-      phase: 'round_reading',
-      roundIndex: 1,
-      task: { kind: 'read_story', status: 'ready', theme: 'Um gato' },
-    });
-    setUpStores(view);
-    renderMatch(view);
-
-    expect(screen.getByText('Um gato')).toBeTruthy();
-    expect(screen.queryByRole('img', { name: /Quadro/ })).toBeNull();
-    expect(screen.queryByRole('group', { name: 'Página de HQ' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Começar a desenhar' })).toBeNull();
-  });
 });
 
 function never(): never {

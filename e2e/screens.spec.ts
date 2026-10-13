@@ -108,14 +108,14 @@ for (const layout of LAYOUTS) {
       await drawAndFinish(bruno.page);
     });
 
-    await test.step('rodada 2: leitura, preparação e desenho', async () => {
+    await test.step('rodada 2: leitura e desenho durante a leitura do outro', async () => {
       await expect(startReadingButton(page)).toBeVisible();
       await review(page, '13-leitura');
       await confirmReading(page);
-      await expect(page.getByText(texts.prepare.waiting)).toBeVisible();
-      await review(page, '14-preparacao');
-      await confirmReading(bruno.page);
+      // R36: drawing already, while Bruno is still reading. The drawing screen was reviewed in
+      // round 1; reviewing it again here could outlast the short E2E reading.
       await expect(drawingCanvas(page)).toBeVisible();
+      await confirmReading(bruno.page);
       await Promise.all([drawAndFinish(page), drawAndFinish(bruno.page)]);
     });
 

@@ -227,10 +227,6 @@ export const strings = {
       warning: 'Depois de começar, você não verá estes quadros de novo.',
       start: 'Começar a desenhar',
     },
-    prepare: {
-      message: 'Guarde bem na memória… você não verá estes quadros de novo!',
-      waiting: 'Esperando os outros terminarem de ler.',
-    },
     drawing: {
       theme: 'Tema',
       showTheme: 'Mostrar o tema inteiro',

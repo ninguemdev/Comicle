@@ -19,6 +19,7 @@ import {
   presentationHeading,
   presentationNext,
   startMatch,
+  startReadingButton,
   themeField,
   writeTheme,
 } from './support/game';
@@ -80,11 +81,19 @@ test('uma partida completa com 3 jogadores e 3 quadros', async ({ browser }) => 
   for (let round = 2; round <= PLAYER_COUNT; round++) {
     await test.step(`rodada ${String(round)}: leitura e desenho`, async () => {
       const previousPanels = round - 1;
+      // Only real images: a panel still loading is a placeholder, not a `figure img`.
+      await Promise.all(
+        players.map(({ page }) => expect(page.locator('figure img')).toHaveCount(previousPanels)),
+      );
+      // R36: whoever confirms first is drawing already, while the others still read.
+      await confirmReading(ana.page);
+      await expect(drawingCanvas(ana.page)).toBeVisible();
+      await expect(startReadingButton(bruno.page)).toBeVisible();
       await Promise.all(
         players.map(async ({ page }) => {
-          // Only real images: a panel still loading is a placeholder, not a `figure img`.
-          await expect(page.locator('figure img')).toHaveCount(previousPanels);
-          await confirmReading(page);
+          if (page !== ana.page) {
+            await confirmReading(page);
+          }
           // R36: from "Começar a desenhar" on, the previous panels are gone from the screen.
           await expect(panelImages(page)).toHaveCount(0);
         }),

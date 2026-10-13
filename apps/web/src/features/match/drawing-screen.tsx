@@ -21,6 +21,11 @@ export interface DrawingScreenProps {
   view: PlayerView;
   match: MatchView;
   theme: string;
+  /**
+   * R38: the drawing deadline, which may start during the others' reading (R36); while the
+   * panel is still on its way in the closing (R42), the end of the closing window.
+   */
+  deadlineAt: number | null;
   hasDraft: boolean;
   /** `round_closing` while this player's panel is still on its way (R42). */
   closing: boolean;
@@ -36,6 +41,7 @@ export function DrawingScreen({
   view,
   match,
   theme,
+  deadlineAt,
   hasDraft,
   closing,
   onSent,
@@ -49,12 +55,12 @@ export function DrawingScreen({
   const [confirming, setConfirming] = useState(false);
   const baseImageUrl = useMyDraft(view.room.code, hasDraft);
   const { report, toast } = useActionError();
-  const { roundIndex, phaseDeadlineAt } = match;
+  const { roundIndex } = match;
 
   const submission = usePanelSubmission({
     editor,
     roundIndex,
-    deadlineAt: phaseDeadlineAt,
+    deadlineAt,
     offsetMs,
     send: (round, reason, png) => actions.submitPanel(round, reason, png),
     onSent,
@@ -75,7 +81,7 @@ export function DrawingScreen({
     if (disabled || !online) {
       return;
     }
-    const left = phaseDeadlineAt === null ? 0 : secondsLeft(phaseDeadlineAt, offsetMs);
+    const left = deadlineAt === null ? 0 : secondsLeft(deadlineAt, offsetMs);
     if (left > view.room.settings.drawingSeconds / HALF) {
       setConfirming(true);
     } else {
@@ -115,7 +121,7 @@ export function DrawingScreen({
           </span>
           <span className={`font-bold ${themeOpen ? '' : 'truncate'}`}>{theme}</span>
         </button>
-        {phaseDeadlineAt !== null && <Timer deadlineAt={phaseDeadlineAt} offsetMs={offsetMs} />}
+        {deadlineAt !== null && <Timer deadlineAt={deadlineAt} offsetMs={offsetMs} />}
         <Button onClick={requestDone} disabled={disabled || !online}>
           {submission.status === 'idle' ? texts.submit : texts.submitting}
         </Button>

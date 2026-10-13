@@ -41,14 +41,19 @@ export interface PanelRef {
 
 export type PlayerTask =
   | { kind: 'write_theme'; status: 'writing' | 'submitted'; draft: string }
+  /** Until `round:ready`; afterwards the player is already drawing (R36). */
   | { kind: 'read_story'; status: 'reading'; theme: string; previousPanels: PanelRef[] }
-  | { kind: 'read_story'; status: 'ready'; theme: string }
   | {
       kind: 'draw_panel';
       status: 'drawing' | 'submitted';
       theme: string;
       panelPosition: number;
       hasDraft: boolean;
+      /**
+       * R38: the drawing deadline, the same for everyone. During the reading of the others it is
+       * the latest possible one and moves earlier if the reading ends early.
+       */
+      deadlineAt: number;
     }
   /** round_closing, or nothing to do. */
   | { kind: 'wait' }

@@ -1,7 +1,6 @@
 import { expect, test, type Browser } from '@playwright/test';
 
 import { AUTOSAVE_INTERVAL_MS } from '../packages/shared/src/constants';
-import { strings } from '../apps/web/src/strings/pt-BR';
 import {
   canvasHasInk,
   confirmReading,
@@ -12,7 +11,6 @@ import {
 } from './support/game';
 import { startTwoPlayerMatch } from './support/scenarios';
 
-const texts = strings.match;
 /** One autosave tick, plus the time to hand the PNG to the server. */
 const AUTOSAVE_SETTLE_MS = AUTOSAVE_INTERVAL_MS + 1500;
 
@@ -60,16 +58,16 @@ test('R47: recarregar na leitura antes de confirmar mostra os quadros de novo', 
   await expect(startReadingButton(host.page)).toBeVisible();
 });
 
-test('R47: recarregar na leitura depois de confirmar não mostra os quadros', async ({
+test('R47, R48: recarregar na leitura depois de confirmar volta ao desenho, sem os quadros', async ({
   browser,
 }) => {
   const { guest } = await startReadingRound(browser);
   await confirmReading(guest.page);
-  await expect(guest.page.getByText(texts.prepare.message)).toBeVisible();
+  await expect(drawingCanvas(guest.page)).toBeVisible();
 
   await guest.page.reload();
 
-  await expect(guest.page.getByText(texts.prepare.message)).toBeVisible();
+  await expect(drawingCanvas(guest.page)).toBeVisible();
   await expect(guest.page.locator('figure img')).toHaveCount(0);
   await expect(startReadingButton(guest.page)).toHaveCount(0);
 });

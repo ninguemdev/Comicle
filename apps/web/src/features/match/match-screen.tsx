@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { PresentationScreen } from '../presentation/presentation-screen';
 import { DrawingScreen } from './drawing-screen';
 import { MatchHeader } from './match-header';
-import { PrepareScreen } from './prepare-screen';
 import { ReadingScreen } from './reading-screen';
 import { SpectatorScreen, TransitionScreen, WaitingScreen } from './simple-screens';
 import { ThemeScreen } from './theme-screen';
@@ -15,14 +14,7 @@ interface DrawingTask {
 }
 
 export type MatchScreenId =
-  | 'theme'
-  | 'reading'
-  | 'prepare'
-  | 'drawing'
-  | 'waiting'
-  | 'transition'
-  | 'spectator'
-  | 'presentation';
+  'theme' | 'reading' | 'drawing' | 'waiting' | 'transition' | 'spectator' | 'presentation';
 
 /** The screen for a match view (interface.md §2): decided by `phase` and the player's task only. */
 export function screenFor(match: MatchView): MatchScreenId {
@@ -31,7 +23,7 @@ export function screenFor(match: MatchView): MatchScreenId {
     case 'write_theme':
       return task.status === 'writing' ? 'theme' : 'waiting';
     case 'read_story':
-      return task.status === 'reading' ? 'reading' : 'prepare';
+      return 'reading';
     case 'draw_panel':
       return task.status === 'drawing' ? 'drawing' : 'waiting';
     case 'wait':
@@ -59,15 +51,13 @@ function ScreenBody({
     case 'theme':
       return <ThemeScreen draft={task.kind === 'write_theme' ? task.draft : ''} />;
     case 'reading':
-      return task.kind === 'read_story' && task.status === 'reading' ? (
+      return task.kind === 'read_story' ? (
         <ReadingScreen
           theme={task.theme}
           panels={task.previousPanels}
           roundIndex={match.roundIndex}
         />
       ) : null;
-    case 'prepare':
-      return task.kind === 'read_story' ? <PrepareScreen view={view} theme={task.theme} /> : null;
     case 'waiting':
       return (
         <WaitingScreen view={view} received={'status' in task && task.status === 'submitted'} />
@@ -113,6 +103,7 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
         view={view}
         match={match}
         theme={task.kind === 'draw_panel' ? task.theme : (drawing?.theme ?? '')}
+        deadlineAt={task.kind === 'draw_panel' ? task.deadlineAt : match.phaseDeadlineAt}
         hasDraft={task.kind === 'draw_panel' ? task.hasDraft : false}
         closing={stillSending}
         onSent={setSentRound}
