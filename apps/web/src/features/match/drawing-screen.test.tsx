@@ -7,7 +7,6 @@ import {
   type PlayerView,
 } from '@comicle/shared';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { useImperativeHandle } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useRoomStore } from '../../stores/room-store';
@@ -25,20 +24,26 @@ const editor = vi.hoisted(() => ({
 vi.mock('../drawing/drawing-editor', () => ({
   DrawingEditor: (props: DrawingEditorProps) => {
     editor.props = props;
-    useImperativeHandle(props.ref, () => ({ exportPng: () => Promise.resolve(editor.png) }));
     return null;
   },
+}));
+vi.mock('../drawing/engine/export', () => ({
+  exportPng: () => Promise.resolve(editor.png),
+}));
+vi.mock('../drawing/load-image', () => ({
+  loadImage: () => Promise.resolve(new Image()),
 }));
 
 const NOW = 1_000_000;
 const DRAWING_MS = 90_000;
 
 function drawingView({
-  hasDraft = false,
+  draftPanels = [] as number[],
   deadlineIn = DRAWING_MS,
   previousPanels = [] as PanelRef[],
+  panelCount = 1,
 } = {}): PlayerView {
-  return matchView({
+  const view = matchView({
     phase: 'round_drawing',
     roundIndex: 1,
     phaseDeadlineAt: NOW + deadlineIn,
@@ -47,12 +52,15 @@ function drawingView({
       status: 'drawing',
       theme: 'Um gato',
       panelPosition: 1,
-      panelCount: 1,
-      draftPanels: hasDraft ? [0] : [],
+      panelCount,
+      draftPanels,
       deadlineAt: NOW + deadlineIn,
       previousPanels,
     },
   });
+  // R62: several panels per round only happen in the individual mode.
+  const mode = panelCount > 1 ? 'individual' : 'collaborative';
+  return { ...view, room: { ...view.room, settings: { ...view.room.settings, mode } } };
 }
 
 function renderDrawing(view: PlayerView) {
@@ -70,7 +78,8 @@ function renderDrawing(view: PlayerView) {
       theme="Um gato"
       previousPanels={match.task.kind === 'draw_panel' ? match.task.previousPanels : []}
       deadlineAt={match.task.kind === 'draw_panel' ? match.task.deadlineAt : null}
-      hasDraft={match.task.kind === 'draw_panel' && match.task.draftPanels.includes(0)}
+      panelCount={match.task.kind === 'draw_panel' ? match.task.panelCount : 1}
+      draftPanels={match.task.kind === 'draw_panel' ? match.task.draftPanels : []}
       closing={false}
       onSent={onSent}
     />,
@@ -85,9 +94,12 @@ async function advance(ms: number): Promise<void> {
   });
 }
 
-function change(revision: number): void {
+/** The player draws on the panel in the editor: its document changes. */
+function change(): void {
   act(() => {
-    editor.props?.onChange(revision);
+    const document = editor.props?.document;
+    document?.setBaseImage(null);
+    editor.props?.onChange(document?.revision ?? 0);
   });
 }
 
@@ -109,15 +121,15 @@ describe('tela de desenho', () => {
     await advance(AUTOSAVE_INTERVAL_MS * 2);
     expect(actions.autosavePanel).not.toHaveBeenCalled();
 
-    change(1);
-    change(2);
+    change();
+    change();
     await advance(AUTOSAVE_INTERVAL_MS);
     expect(actions.autosavePanel).toHaveBeenCalledTimes(1);
-    expect(actions.autosavePanel).toHaveBeenCalledWith(1, editor.png);
+    expect(actions.autosavePanel).toHaveBeenCalledWith(1, 0, editor.png);
 
     await advance(AUTOSAVE_INTERVAL_MS * 2);
     expect(actions.autosavePanel).toHaveBeenCalledTimes(1);
-    change(3);
+    change();
     await advance(AUTOSAVE_INTERVAL_MS);
     expect(actions.autosavePanel).toHaveBeenCalledTimes(2);
   });
@@ -129,7 +141,7 @@ describe('tela de desenho', () => {
     expect(actions.submitPanel).not.toHaveBeenCalled();
     await advance(1);
     expect(actions.submitPanel).toHaveBeenCalledTimes(1);
-    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'timeout', editor.png);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 0, 'timeout', editor.png);
     expect(onSent).toHaveBeenCalledWith(1);
     expect(editor.props?.disabled).toBe(true);
 
@@ -165,7 +177,7 @@ describe('tela de desenho', () => {
     await advance(5000 + DRAWING_MS - 1);
     expect(actions.submitPanel).not.toHaveBeenCalled();
     await advance(1);
-    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'timeout', editor.png);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 0, 'timeout', editor.png);
   });
 
   it('R42: round:collect da rodada envia timeout na hora; de outra rodada, não', async () => {
@@ -181,7 +193,7 @@ describe('tela de desenho', () => {
       useRoomStore.setState({ collect: { seq: 2, payload: { roundIndex: 1 } } });
     });
     await advance(0);
-    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'timeout', editor.png);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 0, 'timeout', editor.png);
   });
 
   it('R40: Concluir com mais da metade do tempo pede confirmação, e então envia done', async () => {
@@ -193,7 +205,7 @@ describe('tela de desenho', () => {
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'Concluir' }));
     await advance(0);
-    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'done', editor.png);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 0, 'done', editor.png);
     expect(actions.submitPanel).toHaveBeenCalledTimes(1);
   });
 
@@ -203,10 +215,10 @@ describe('tela de desenho', () => {
     fireEvent.keyDown(window, { key: 'Enter', ctrlKey: true });
     await advance(0);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(actions.submitPanel).toHaveBeenCalledWith(1, 'done', editor.png);
+    expect(actions.submitPanel).toHaveBeenCalledWith(1, 0, 'done', editor.png);
   });
 
-  it('R48: com hasDraft, o editor recebe o rascunho como imagem base', async () => {
+  it('R48: com rascunho, o documento do quadro recebe a imagem base, sem novo autosave', async () => {
     useSessionStore.setState({ status: 'ready', token: 'tok' });
     const fetchMock = vi.fn<typeof fetch>(() =>
       Promise.resolve(new Response(new Blob([new Uint8Array([1])]), { status: 200 })),
@@ -215,11 +227,13 @@ describe('tela de desenho', () => {
     URL.createObjectURL = vi.fn(() => 'blob:rascunho');
     URL.revokeObjectURL = vi.fn();
 
-    renderDrawing(drawingView({ hasDraft: true }));
+    const { actions } = renderDrawing(drawingView({ draftPanels: [0] }));
     await advance(0);
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/rooms/K7PQ2M/my-draft');
-    expect(editor.props?.baseImageUrl).toBe('blob:rascunho');
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/rooms/K7PQ2M/my-draft?panelIndex=0');
+    expect(editor.props?.document?.baseImage).toBeInstanceOf(HTMLImageElement);
+    await advance(AUTOSAVE_INTERVAL_MS);
+    expect(actions.autosavePanel).not.toHaveBeenCalled();
   });
 
   it('T18: quadro que caiu sem conexão é reenviado quando o jogador volta à sala', async () => {
@@ -245,7 +259,7 @@ describe('tela de desenho', () => {
     });
     await advance(0);
     expect(actions.submitPanel).toHaveBeenCalledTimes(2);
-    expect(actions.submitPanel).toHaveBeenLastCalledWith(1, 'timeout', editor.png);
+    expect(actions.submitPanel).toHaveBeenLastCalledWith(1, 0, 'timeout', editor.png);
     expect(onSent).toHaveBeenCalledWith(1);
   });
 
@@ -270,8 +284,8 @@ describe('tela de desenho', () => {
       useRoomStore.setState((state) => ({ connection: 'connected', joins: state.joins + 1 }));
     });
     await advance(0);
-    expect(actions.submitPanel).toHaveBeenNthCalledWith(1, 1, 'done', editor.png);
-    expect(actions.submitPanel).toHaveBeenNthCalledWith(2, 1, 'done', editor.png);
+    expect(actions.submitPanel).toHaveBeenNthCalledWith(1, 1, 0, 'done', editor.png);
+    expect(actions.submitPanel).toHaveBeenNthCalledWith(2, 1, 0, 'done', editor.png);
     expect(onSent).toHaveBeenCalledWith(1);
   });
 
@@ -290,7 +304,7 @@ describe('tela de desenho', () => {
     actions.autosavePanel.mockResolvedValueOnce(fail('INTERNAL', 'Sem conexão com o servidor.'));
     actions.autosavePanel.mockResolvedValue(ok({}));
 
-    change(1);
+    change();
     await advance(AUTOSAVE_INTERVAL_MS);
     await advance(AUTOSAVE_INTERVAL_MS);
     expect(actions.autosavePanel).toHaveBeenCalledTimes(2);
@@ -352,7 +366,7 @@ describe('tela de desenho', () => {
     expect(screen.queryByRole('list', { name: 'Quadros anteriores' })).toBeNull();
   });
 
-  it('sem hasDraft, nada é buscado', async () => {
+  it('sem rascunho, nada é buscado', async () => {
     useSessionStore.setState({ status: 'ready', token: 'tok' });
     const fetchMock = vi.fn<typeof fetch>();
     vi.stubGlobal('fetch', fetchMock);
@@ -361,7 +375,132 @@ describe('tela de desenho', () => {
     await advance(0);
 
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(editor.props?.baseImageUrl).toBeUndefined();
+    expect(editor.props?.document?.baseImage).toBeNull();
+  });
+});
+
+describe('tela de desenho da história completa (modo individual)', () => {
+  const STORY = 3;
+
+  function panelButton(number: number) {
+    return screen.getByRole('button', { name: `Quadro ${String(number)} de ${String(STORY)}` });
+  }
+
+  it('R65: a faixa numera os quadros e cada um guarda o próprio desenho', () => {
+    renderDrawing(drawingView({ panelCount: STORY }));
+
+    expect(screen.getByText('História 2 de 3')).toBeInstanceOf(HTMLElement);
+    expect(panelButton(1).getAttribute('aria-current')).toBe('step');
+    const first = editor.props?.document;
+    change();
+
+    fireEvent.click(panelButton(3));
+    expect(panelButton(3).getAttribute('aria-current')).toBe('step');
+    const third = editor.props?.document;
+    expect(third).not.toBe(first);
+    expect(third?.revision).toBe(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Quadro anterior' }));
+    fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true });
+    expect(editor.props?.document).toBe(first);
+    expect(first?.revision).toBe(1);
+    expect(screen.getByRole('button', { name: 'Quadro anterior' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+
+  it('R66: Enviar história entrega cada quadro uma vez, em ordem', async () => {
+    const { actions, onSent } = renderDrawing(
+      drawingView({ panelCount: STORY, deadlineIn: 10_000 }),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar história' }));
+    await advance(0);
+
+    expect(actions.submitPanel.mock.calls.map((call) => call.slice(0, 3))).toEqual([
+      [1, 0, 'done'],
+      [1, 1, 'done'],
+      [1, 2, 'done'],
+    ]);
+    expect(onSent).toHaveBeenCalledTimes(1);
+  });
+
+  it('R66: com mais da metade do tempo, pede confirmação para enviar a história (metade do tempo da história)', () => {
+    renderDrawing(drawingView({ panelCount: STORY, deadlineIn: 200_000 }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar história' }));
+    expect(screen.getByRole('dialog', { name: 'Enviar a história agora?' })).toBeTruthy();
+  });
+
+  it('R42, R66: no fim do tempo, todos os quadros vão como timeout', async () => {
+    const { actions, onSent } = renderDrawing(drawingView({ panelCount: STORY, deadlineIn: 3000 }));
+
+    await advance(3000);
+    expect(actions.submitPanel.mock.calls.map((call) => call.slice(0, 3))).toEqual([
+      [1, 0, 'timeout'],
+      [1, 1, 'timeout'],
+      [1, 2, 'timeout'],
+    ]);
+    expect(onSent).toHaveBeenCalledWith(1);
+  });
+
+  it('T18, R66: quadro perdido na queda é reenviado na volta, sem repetir os já entregues', async () => {
+    const { actions, onSent } = renderDrawing(
+      drawingView({ panelCount: STORY, deadlineIn: 10_000 }),
+    );
+    actions.submitPanel.mockResolvedValueOnce(ok({})).mockImplementationOnce(() => {
+      useRoomStore.setState({ connection: 'reconnecting' });
+      return Promise.resolve(fail('INTERNAL', 'Sem conexão com o servidor.'));
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar história' }));
+    await advance(0);
+    expect(actions.submitPanel).toHaveBeenCalledTimes(2);
+    expect(onSent).not.toHaveBeenCalled();
+
+    act(() => {
+      useRoomStore.setState((state) => ({ connection: 'connected', joins: state.joins + 1 }));
+    });
+    await advance(0);
+    expect(actions.submitPanel.mock.calls.map((call) => call[1])).toEqual([0, 1, 1, 2]);
+    expect(onSent).toHaveBeenCalledWith(1);
+  });
+
+  it('R39, R66: o autosave reveza os quadros que mudaram, um por intervalo', async () => {
+    const { actions } = renderDrawing(drawingView({ panelCount: STORY }));
+
+    change();
+    fireEvent.click(panelButton(3));
+    change();
+    await advance(AUTOSAVE_INTERVAL_MS);
+    await advance(AUTOSAVE_INTERVAL_MS);
+    await advance(AUTOSAVE_INTERVAL_MS);
+
+    expect(actions.autosavePanel.mock.calls.map((call) => call[1])).toEqual([0, 2]);
+  });
+
+  it('R48, R66: na volta, cada quadro com rascunho recebe o seu', async () => {
+    useSessionStore.setState({ status: 'ready', token: 'tok' });
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response(new Blob([new Uint8Array([1])]), { status: 200 })),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    URL.createObjectURL = vi.fn(() => 'blob:rascunho');
+    URL.revokeObjectURL = vi.fn();
+
+    renderDrawing(drawingView({ panelCount: STORY, draftPanels: [0, 2] }));
+    await advance(0);
+
+    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
+      '/api/rooms/K7PQ2M/my-draft?panelIndex=0',
+      '/api/rooms/K7PQ2M/my-draft?panelIndex=2',
+    ]);
+    expect(editor.props?.document?.baseImage).toBeInstanceOf(HTMLImageElement);
+    fireEvent.click(panelButton(2));
+    expect(editor.props?.document?.baseImage).toBeNull();
+    fireEvent.click(panelButton(3));
+    expect(editor.props?.document?.baseImage).toBeInstanceOf(HTMLImageElement);
   });
 });
 

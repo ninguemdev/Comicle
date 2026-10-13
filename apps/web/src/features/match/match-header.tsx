@@ -1,4 +1,4 @@
-import type { MatchView, PlayerView } from '@comicle/shared';
+import type { GameModeId, MatchView, PlayerView } from '@comicle/shared';
 
 import { useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
@@ -8,12 +8,16 @@ import { AbortMatchButton } from './abort-match-button';
 
 const texts = strings.match;
 
-/** "Quadro 2 de 4" once the rounds started; nothing during the themes. */
-export function roundLabel(match: MatchView): string | null {
+/**
+ * "Quadro 2 de 4" once the rounds started, or "História 2 de 3" in the individual mode, where each
+ * round is a whole story (R62); nothing during the themes.
+ */
+export function roundLabel(match: MatchView, mode: GameModeId): string | null {
   if (match.roundIndex < 0) {
     return null;
   }
-  return texts.panelOf(match.roundIndex + 1, match.totalRounds);
+  const label = mode === 'individual' ? texts.storyOf : texts.panelOf;
+  return label(match.roundIndex + 1, match.totalRounds);
 }
 
 /**
@@ -22,7 +26,7 @@ export function roundLabel(match: MatchView): string | null {
  */
 export function MatchHeader({ view, match }: { view: PlayerView; match: MatchView }) {
   const clockOffsetMs = useRoomStore((state) => state.clockOffsetMs);
-  const label = roundLabel(match);
+  const label = roundLabel(match, view.room.settings.mode);
   return (
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-col">

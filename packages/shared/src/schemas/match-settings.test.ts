@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DRAWING_SECONDS_OPTIONS, STORY_SECONDS_OPTIONS } from '../constants';
+import { drawingSecondsFor } from '../domain/match-settings';
 import { matchSettingsSchema } from './match-settings';
 
 const valid = {
@@ -107,5 +108,10 @@ describe('matchSettingsSchema', () => {
       authorDrawsLast: true,
     };
     expect(matchSettingsSchema.safeParse(withoutIt).success).toBe(false);
+  });
+
+  it('R38, R65: o tempo de desenho é por quadro no colaborativo e da história no individual', () => {
+    expect(drawingSecondsFor(valid)).toBe(90);
+    expect(drawingSecondsFor({ ...valid, mode: 'individual' })).toBe(300);
   });
 });

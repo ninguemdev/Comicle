@@ -11,8 +11,9 @@ import { ThemeScreen } from './theme-screen';
 interface DrawingTask {
   roundIndex: number;
   theme: string;
-  /** Kept through the closing, while the panel is still on its way (R42). */
+  /** Kept through the closing, while the panels are still on their way (R42). */
   previousPanels: PanelRef[];
+  panelCount: number;
 }
 
 export type MatchScreenId =
@@ -86,7 +87,12 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
 
   if (task.kind === 'draw_panel' && drawing?.roundIndex !== roundIndex) {
     // Derived state, set during render: the next render already has it.
-    setDrawing({ roundIndex, theme: task.theme, previousPanels: task.previousPanels });
+    setDrawing({
+      roundIndex,
+      theme: task.theme,
+      previousPanels: task.previousPanels,
+      panelCount: task.panelCount,
+    });
   }
   if (screen === 'presentation') {
     // Full screen with its own header: the host ends it with presentation:end (R56), which keeps
@@ -109,7 +115,8 @@ export function MatchScreen({ view, match }: { view: PlayerView; match: MatchVie
           task.kind === 'draw_panel' ? task.previousPanels : (drawing?.previousPanels ?? [])
         }
         deadlineAt={task.kind === 'draw_panel' ? task.deadlineAt : match.phaseDeadlineAt}
-        hasDraft={task.kind === 'draw_panel' && task.draftPanels.includes(0)}
+        panelCount={task.kind === 'draw_panel' ? task.panelCount : (drawing?.panelCount ?? 1)}
+        draftPanels={task.kind === 'draw_panel' ? task.draftPanels : []}
         closing={stillSending}
         onSent={setSentRound}
       />

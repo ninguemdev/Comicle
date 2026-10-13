@@ -295,8 +295,8 @@ describe('room-store', () => {
     await actions.draftTheme('Um gato');
     await actions.submitTheme('Um gato');
     await actions.confirmReading(1);
-    await actions.autosavePanel(1, png);
-    await actions.submitPanel(1, 'timeout', null);
+    await actions.autosavePanel(1, 0, png);
+    await actions.submitPanel(1, 0, 'timeout', null);
     await actions.navigatePresentation({ action: 'goToStory', storyIndex: 2 });
     await actions.endPresentation();
 

@@ -78,9 +78,11 @@ interface RoomState {
     draftTheme(text: string): Promise<Ack<Empty>>;
     submitTheme(text: string): Promise<Ack<Empty>>;
     confirmReading(roundIndex: number): Promise<Ack<Empty>>;
-    autosavePanel(roundIndex: number, png: Uint8Array): Promise<Ack<Empty>>;
+    /** R39, R66: `panelIndex` is 0 in the collaborative mode, which draws a single panel. */
+    autosavePanel(roundIndex: number, panelIndex: number, png: Uint8Array): Promise<Ack<Empty>>;
     submitPanel(
       roundIndex: number,
+      panelIndex: number,
       reason: PanelSubmitReason,
       png: Uint8Array | null,
     ): Promise<Ack<Empty>>;
@@ -241,12 +243,11 @@ export function createRoomStore(deps: RoomStoreDeps) {
         confirmReading(roundIndex) {
           return emit('round:ready', { roundIndex });
         },
-        // The collaborative mode draws a single panel per round (R66); T37 sends the others.
-        autosavePanel(roundIndex, png) {
-          return emit('panel:autosave', { roundIndex, panelIndex: 0, png });
+        autosavePanel(roundIndex, panelIndex, png) {
+          return emit('panel:autosave', { roundIndex, panelIndex, png });
         },
-        submitPanel(roundIndex, reason, png) {
-          return emit('panel:submit', { roundIndex, panelIndex: 0, reason, png });
+        submitPanel(roundIndex, panelIndex, reason, png) {
+          return emit('panel:submit', { roundIndex, panelIndex, reason, png });
         },
         navigatePresentation(action) {
           return emit('presentation:navigate', action);

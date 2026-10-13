@@ -85,6 +85,9 @@ export function matchView(match: Partial<MatchView> = {}, me = 'p1'): PlayerView
 }
 
 /** Store actions that succeed without a socket; tests override the ones they inspect. */
+/** The store's actions, typed, so tests can read the arguments of each call. */
+type RoomActions = ReturnType<typeof useRoomStore.getState>['actions'];
+
 export function mockRoomActions() {
   return {
     connect: vi.fn(),
@@ -98,8 +101,8 @@ export function mockRoomActions() {
     draftTheme: vi.fn(() => Promise.resolve(ok({}))),
     submitTheme: vi.fn(() => Promise.resolve(ok({}))),
     confirmReading: vi.fn(() => Promise.resolve(ok({}))),
-    autosavePanel: vi.fn(() => Promise.resolve(ok({}))),
-    submitPanel: vi.fn(() => Promise.resolve(ok({}))),
+    autosavePanel: vi.fn<RoomActions['autosavePanel']>(() => Promise.resolve(ok({}))),
+    submitPanel: vi.fn<RoomActions['submitPanel']>(() => Promise.resolve(ok({}))),
     navigatePresentation: vi.fn(() => Promise.resolve(ok({}))),
     endPresentation: vi.fn(() => Promise.resolve(ok({}))),
   };

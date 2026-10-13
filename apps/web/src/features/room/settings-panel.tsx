@@ -4,8 +4,11 @@ import {
   FIXED_PANEL_COUNT_DEFAULT,
   FIXED_PANEL_COUNT_MAX,
   FIXED_PANEL_COUNT_MIN,
+  INDIVIDUAL_PANEL_COUNT_MAX,
+  INDIVIDUAL_PANEL_COUNT_MIN,
   STORY_SECONDS_DEFAULT,
   STORY_SECONDS_OPTIONS,
+  type GameModeId,
   type MatchSettings,
   type PanelCountSetting,
 } from '@comicle/shared';
@@ -22,6 +25,13 @@ const FIXED_COUNTS = Array.from(
   { length: FIXED_PANEL_COUNT_MAX - FIXED_PANEL_COUNT_MIN + 1 },
   (_, index) => FIXED_PANEL_COUNT_MIN + index,
 );
+
+const INDIVIDUAL_COUNTS = Array.from(
+  { length: INDIVIDUAL_PANEL_COUNT_MAX - INDIVIDUAL_PANEL_COUNT_MIN + 1 },
+  (_, index) => INDIVIDUAL_PANEL_COUNT_MIN + index,
+);
+
+const MODES: readonly GameModeId[] = ['collaborative', 'individual'];
 
 /** The view carries any number; the server only takes the R18 options. */
 function drawingSecondsOf(settings: MatchSettings): SettingsInput['drawingSeconds'] {
@@ -55,11 +65,10 @@ interface EditorProps {
 
 /** R11, R18–R21: the host's controls. */
 function SettingsEditor({ settings, onChange }: EditorProps) {
-  const ids = { fixedValue: useId(), drawing: useId() };
   const drawingSeconds = drawingSecondsOf(settings);
   const change = (patch: Partial<SettingsInput>) => {
     onChange({
-      mode: 'collaborative',
+      mode: settings.mode,
       panelCount: settings.panelCount,
       drawingSeconds,
       showPreviousPanels: settings.showPreviousPanels,
@@ -71,6 +80,54 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
 
   return (
     <div className="flex flex-col gap-5">
+      <fieldset>
+        <legend className={LEGEND_CLASSES}>{texts.mode}</legend>
+        <div className="flex flex-col gap-2">
+          {MODES.map((mode) => (
+            <label key={mode} className="flex items-start gap-2 font-semibold">
+              <input
+                type="radio"
+                name="mode"
+                checked={settings.mode === mode}
+                onChange={() => {
+                  change({ mode });
+                }}
+                className="mt-0.5 size-5 shrink-0 accent-ink"
+              />
+              <span className="flex flex-col">
+                {texts.modes[mode].name}
+                <span className="text-sm font-normal text-muted">{texts.modes[mode].hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {settings.mode === 'individual' ? (
+        <IndividualFields
+          individual={individualOf(settings)}
+          onChange={(individual) => {
+            change({ individual });
+          }}
+        />
+      ) : (
+        <CollaborativeFields settings={settings} drawingSeconds={drawingSeconds} change={change} />
+      )}
+    </div>
+  );
+}
+
+interface CollaborativeFieldsProps {
+  settings: MatchSettings;
+  drawingSeconds: SettingsInput['drawingSeconds'];
+  change: (patch: Partial<SettingsInput>) => void;
+}
+
+/** R18–R20, R31, R38: what only the collaborative mode reads. */
+function CollaborativeFields({ settings, drawingSeconds, change }: CollaborativeFieldsProps) {
+  const ids = { fixedValue: useId(), drawing: useId() };
+  return (
+    <>
       <fieldset>
         <legend className={LEGEND_CLASSES}>{texts.panelCount}</legend>
         <div className="flex flex-col gap-2">
@@ -181,25 +238,65 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
           <span className="text-sm font-normal text-muted">{texts.showPreviousPanelsHint}</span>
         </span>
       </label>
+    </>
+  );
+}
 
-      <fieldset>
-        <legend className={LEGEND_CLASSES}>{texts.mode}</legend>
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2 font-semibold">
-            <input type="radio" name="mode" checked readOnly className="size-5 accent-ink" />
-            {texts.collaborative}
-          </label>
-          {/* R21: shown as coming soon, never selectable in v1. */}
-          <label className="flex items-center gap-2 font-semibold text-muted">
-            <input type="radio" name="mode" disabled className="size-5" />
-            {texts.individual}
-            <span className="rounded-full border-2 border-ink bg-pop-yellow px-2 text-xs">
-              {texts.soon}
-            </span>
-          </label>
-        </div>
-      </fieldset>
-    </div>
+interface IndividualFieldsProps {
+  individual: SettingsInput['individual'];
+  onChange: (individual: SettingsInput['individual']) => void;
+}
+
+/** R18, R62, R65: panels per story and the time for the whole story. */
+function IndividualFields({ individual, onChange }: IndividualFieldsProps) {
+  const ids = { panels: useId(), seconds: useId() };
+  return (
+    <>
+      <div className="flex flex-col gap-1">
+        <label htmlFor={ids.panels} className={LEGEND_CLASSES}>
+          {texts.panelsPerStory}
+        </label>
+        <select
+          id={ids.panels}
+          value={individual.panelsPerStory}
+          onChange={(event) => {
+            onChange({ ...individual, panelsPerStory: Number(event.target.value) });
+          }}
+          className={`${SELECT_CLASSES} self-start`}
+        >
+          {INDIVIDUAL_COUNTS.map((count) => (
+            <option key={count} value={count}>
+              {count}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor={ids.seconds} className={LEGEND_CLASSES}>
+          {texts.storySeconds}
+        </label>
+        <select
+          id={ids.seconds}
+          value={individual.storySeconds}
+          onChange={(event) => {
+            const chosen = STORY_SECONDS_OPTIONS.find(
+              (option) => option === Number(event.target.value),
+            );
+            if (chosen !== undefined) {
+              onChange({ ...individual, storySeconds: chosen });
+            }
+          }}
+          className={`${SELECT_CLASSES} self-start`}
+        >
+          {STORY_SECONDS_OPTIONS.map((seconds) => (
+            <option key={seconds} value={seconds}>
+              {texts.duration(seconds)}
+            </option>
+          ))}
+        </select>
+        <span className="text-sm text-muted">{texts.storySecondsHint}</span>
+      </div>
+    </>
   );
 }
 
@@ -208,16 +305,27 @@ function SettingsSummary({ settings }: { settings: MatchSettings }) {
   return (
     <div className="flex flex-col gap-3">
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-        <dt className="font-semibold text-muted">{texts.panelCount}</dt>
-        <dd className="font-bold">{panelCountText(settings.panelCount)}</dd>
-        <dt className="font-semibold text-muted">{texts.drawingSeconds}</dt>
-        <dd className="font-bold">{texts.duration(settings.drawingSeconds)}</dd>
-        <dt className="font-semibold text-muted">{texts.authorDrawsLast}</dt>
-        <dd className="font-bold">{settings.authorDrawsLast ? texts.yes : texts.no}</dd>
-        <dt className="font-semibold text-muted">{texts.showPreviousPanels}</dt>
-        <dd className="font-bold">{settings.showPreviousPanels ? texts.yes : texts.no}</dd>
         <dt className="font-semibold text-muted">{texts.mode}</dt>
-        <dd className="font-bold">{texts.collaborative}</dd>
+        <dd className="font-bold">{texts.modes[settings.mode].name}</dd>
+        {settings.mode === 'individual' ? (
+          <>
+            <dt className="font-semibold text-muted">{texts.panelsPerStory}</dt>
+            <dd className="font-bold">{texts.panels(settings.individual.panelsPerStory)}</dd>
+            <dt className="font-semibold text-muted">{texts.storySeconds}</dt>
+            <dd className="font-bold">{texts.duration(settings.individual.storySeconds)}</dd>
+          </>
+        ) : (
+          <>
+            <dt className="font-semibold text-muted">{texts.panelCount}</dt>
+            <dd className="font-bold">{panelCountText(settings.panelCount)}</dd>
+            <dt className="font-semibold text-muted">{texts.drawingSeconds}</dt>
+            <dd className="font-bold">{texts.duration(settings.drawingSeconds)}</dd>
+            <dt className="font-semibold text-muted">{texts.authorDrawsLast}</dt>
+            <dd className="font-bold">{settings.authorDrawsLast ? texts.yes : texts.no}</dd>
+            <dt className="font-semibold text-muted">{texts.showPreviousPanels}</dt>
+            <dd className="font-bold">{settings.showPreviousPanels ? texts.yes : texts.no}</dd>
+          </>
+        )}
       </dl>
       <p className="text-sm text-muted">{texts.hostOnly}</p>
     </div>

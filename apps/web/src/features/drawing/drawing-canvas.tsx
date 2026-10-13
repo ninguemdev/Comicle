@@ -66,8 +66,14 @@ export function DrawingCanvas({
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [cssSize, setCssSize] = useState<Size>({ width: 0, height: 0 });
-  /** The committed drawing at logical size; the screen shows it scaled. */
-  const committed = useRef<{ layer: Layer; cache: SnapshotCache } | null>(null);
+  /**
+   * The committed drawing at logical size; the screen shows it scaled. One snapshot cache per
+   * document, so switching between the panels of a story (R65) keeps each one's.
+   */
+  const committed = useRef<{
+    layer: Layer;
+    caches: WeakMap<DrawingDocument, SnapshotCache>;
+  } | null>(null);
   const policy = useRef(new PointerPolicy());
   const live = useRef<NewStroke | null>(null);
   const frameRequest = useRef<number | null>(null);
@@ -135,15 +141,22 @@ export function DrawingCanvas({
   useEffect(() => {
     committed.current ??= (() => {
       const layer = tryCreateLayer();
-      return layer && { layer, cache: new SnapshotCache(createPanelLayer) };
+      return layer && { layer, caches: new WeakMap() };
     })();
     if (committed.current) {
-      renderDocument(committed.current.layer.ctx, document, committed.current.cache);
+      const { caches } = committed.current;
+      let cache = caches.get(document);
+      if (!cache) {
+        cache = new SnapshotCache(createPanelLayer);
+        caches.set(document, cache);
+      }
+      renderDocument(committed.current.layer.ctx, document, cache);
     }
     paint();
   }, [document, revision]);
 
-  // Disabling mid-stroke drops the stroke: the panel may already be on its way.
+  // Disabling mid-stroke drops the stroke: the panel may already be on its way. Another document
+  // (another panel of the story, R65) drops it too: it belongs to the panel left behind.
   useEffect(() => {
     if (disabled) {
       policy.current.reset();
@@ -151,6 +164,10 @@ export function DrawingCanvas({
       paint();
     }
   }, [disabled]);
+  useEffect(() => {
+    policy.current.reset();
+    live.current = null;
+  }, [document]);
 
   function handlePointerDown(event: ReactPointerEvent<HTMLCanvasElement>): void {
     if (disabled || (event.pointerType === 'mouse' && event.button !== 0)) {
