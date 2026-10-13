@@ -216,6 +216,7 @@ O anfitrião possui controle sobre as seguintes opções:
 | Quantidade fixa | O anfitrião escolhe um número específico de quadros |
 | Quantidade baseada nos jogadores | Cada história possui tantos quadros quanto jogadores participando da partida |
 | Tempo por quadrinho | Determina a duração disponível para desenhar cada contribuição |
+| O autor desenha o último quadro | Ligada por padrão: com a quantidade baseada nos jogadores, quem escreveu o tema desenha o último quadro da própria história. Desligada, o autor nunca desenha a própria história, e a quantidade baseada nos jogadores fica com um quadro a menos |
 | Mostrar quadros anteriores ao desenhar | Desligada por padrão. Ligada, quem desenha vê os quadros anteriores da história em miniatura, ao lado do desenho, só para conferir |
 
 As duas opções de quantidade de quadrinhos são alternativas.

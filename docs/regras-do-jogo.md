@@ -84,11 +84,11 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 ## 4. Configurações da partida
 
-**R18 — Formato.** `MatchSettings = { mode: 'collaborative', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds, showPreviousPanels }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX`, `drawingSeconds` em `DRAWING_SECONDS_OPTIONS` e `showPreviousPanels` booleano (R38).
+**R18 — Formato.** `MatchSettings = { mode: 'collaborative', panelCount: { kind: 'per_player' } | { kind: 'fixed', value }, drawingSeconds, showPreviousPanels, authorDrawsLast }`, com `value` entre `FIXED_PANEL_COUNT_MIN` e `_MAX`, `drawingSeconds` em `DRAWING_SECONDS_OPTIONS` e `showPreviousPanels` (R38) e `authorDrawsLast` (R31) booleanos.
 
-**R19 — Padrões.** `per_player`, `DRAWING_SECONDS_DEFAULT` e `showPreviousPanels: false`.
+**R19 — Padrões.** `per_player`, `DRAWING_SECONDS_DEFAULT`, `showPreviousPanels: false` e `authorDrawsLast: true`.
 
-**R20 — Quantidade baseada nos jogadores.** `totalRounds` = número de participantes no início da partida.
+**R20 — Quantidade baseada nos jogadores.** `totalRounds` = número de participantes no início da partida; com `authorDrawsLast: false`, um a menos (no mínimo 1: com 2 jogadores, cada história tem um quadro).
 
 **R21 — Modo individual.** O tipo `mode` já prevê `'individual'`, mas a v1 o rejeita (`INVALID_PAYLOAD`). A interface mostra o modo como "Em breve", desabilitado.
 
@@ -122,7 +122,7 @@ Em testes, os tempos são injetados por `GameTimingConfig` (ver [arquitetura](./
 
 ## 7. Distribuição das histórias
 
-**R31 — Fórmula.** Com assentos `p_0 … p_{N-1}` e história `s_i` do assento `p_i`, na rodada `r` (base 0) a história `s_i` vai para o jogador `p_{(i + 1 + (r mod N)) mod N}`.
+**R31 — Fórmula.** Com assentos `p_0 … p_{N-1}` e história `s_i` do assento `p_i`, na rodada `r` (base 0) a história `s_i` vai para o jogador `p_{(i + 1 + (r mod C)) mod N}`, com `C = N` quando `authorDrawsLast` está ligada (o padrão) e `C = N − 1` quando está desligada: aí a rotação pula o autor, que nunca desenha a própria história, com qualquer quantidade de quadros.
 
 Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 
@@ -134,12 +134,16 @@ Exemplo com 5 jogadores (Ana=0, Bruno=1, Carla=2, Diego=3, Elisa=4) e 5 quadros:
 | 3 | Elisa | Ana |
 | 4 | Ana (autora desenha o último quadro) | Bruno |
 
-**R32 — Propriedades garantidas** (testadas para todo `N` de 2 a 12 e todo total de rodadas de 2 a 12):
+Com `authorDrawsLast` desligada e "baseada nos jogadores", são 4 quadros: a rodada 4 não existe, e a Ana nunca desenha a própria história.
+
+**R32 — Propriedades garantidas** (testadas para todo `N` de 2 a 12 e todo total de rodadas de 2 a 12, com `authorDrawsLast` ligada):
 1. Em cada rodada, a atribuição é uma bijeção: cada jogador recebe exatamente uma história e cada história, exatamente um jogador.
 2. Nenhum jogador recebe a mesma história em rodadas consecutivas.
 3. Com `totalRounds ≤ N − 1`, o autor nunca desenha a própria história.
 4. Com `totalRounds ≤ N`, todos os quadros de uma história têm artistas diferentes.
 5. Com `totalRounds = N`, cada jogador contribui exatamente uma vez para cada história.
+
+Com `authorDrawsLast` desligada (testadas para todo `N` de 2 a 12 e todo total de 1 a 12): vale 1; o autor nunca desenha a própria história; com `N ≥ 3`, vale 2; com `totalRounds = N − 1`, cada outro jogador contribui exatamente uma vez para cada história. Com 2 jogadores e mais de um quadro, o outro jogador desenha todos os quadros da história, inclusive em rodadas seguidas.
 
 **R33 — Plano.** A distribuição é uma função pura, calculada no início da partida para todas as rodadas e guardada como plano imutável.
 
