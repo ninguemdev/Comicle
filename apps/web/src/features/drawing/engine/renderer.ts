@@ -1,12 +1,14 @@
 import { PANEL_HEIGHT, PANEL_WIDTH } from '@comicle/shared';
 
-import type { DrawingDocument, DrawingOperation, NewStroke } from './drawing-document';
+import type { DrawingDocument, DrawingOperation, NewFill, NewStroke } from './drawing-document';
+import { floodFill } from './flood-fill';
 import type { CreateLayer, Layer, PaintContext } from './layers';
 import { BACKGROUND_COLOR } from './palette';
 import { smoothPath } from './smoothing';
 
 // Paints a drawing in logical coordinates (PANEL_WIDTH × PANEL_HEIGHT). Callers scale the
-// context for the screen; the export paints at 1:1.
+// context for the screen; the export paints at 1:1. Fills read pixels, so the context they get
+// must be at 1:1 too: the committed layer and the export are, the screen only copies them.
 
 /** A snapshot of the rendered drawing every this many operations (interface.md §4). */
 export const SNAPSHOT_INTERVAL = 20;
@@ -49,6 +51,14 @@ export function drawStroke(ctx: PaintContext, stroke: NewStroke): void {
   ctx.stroke();
 }
 
+/** The bucket works on pixels: it reads what is painted so far and writes the area back. */
+function paintFill(ctx: PaintContext, fill: NewFill): void {
+  const pixels = ctx.getImageData(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
+  if (floodFill(pixels, fill.at, fill.color)) {
+    ctx.putImageData(pixels, 0, 0);
+  }
+}
+
 function drawOperation(ctx: PaintContext, op: DrawingOperation): void {
   switch (op.kind) {
     case 'stroke':
@@ -56,6 +66,9 @@ function drawOperation(ctx: PaintContext, op: DrawingOperation): void {
       return;
     case 'clear':
       paintBackground(ctx);
+      return;
+    case 'fill':
+      paintFill(ctx, op);
       return;
     default:
       op satisfies never;

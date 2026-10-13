@@ -1,7 +1,13 @@
 // The drawing as a list of operations, with undo and redo (interface.md §4, Modelo). Pure: no
 // canvas, no React.
 
-export type DrawingTool = 'brush' | 'eraser';
+import { BACKGROUND_COLOR } from './palette';
+
+/** Tools that paint along the pointer. */
+export type StrokeTool = 'brush' | 'eraser';
+
+/** The bucket fills the area around one click instead. */
+export type DrawingTool = StrokeTool | 'fill';
 
 /** A point in the logical space of the panel (PANEL_WIDTH × PANEL_HEIGHT). */
 export interface Point {
@@ -11,7 +17,7 @@ export interface Point {
 
 export interface StrokeOperation {
   readonly kind: 'stroke';
-  readonly tool: DrawingTool;
+  readonly tool: StrokeTool;
   readonly color: string;
   readonly size: number;
   readonly points: readonly Point[];
@@ -21,9 +27,31 @@ export interface ClearOperation {
   readonly kind: 'clear';
 }
 
-export type DrawingOperation = StrokeOperation | ClearOperation;
+/** The paint bucket at one point, over the pixels as they are when it is applied. */
+export interface FillOperation {
+  readonly kind: 'fill';
+  readonly color: string;
+  readonly at: Point;
+}
+
+export type DrawingOperation = StrokeOperation | ClearOperation | FillOperation;
 
 export type NewStroke = Omit<StrokeOperation, 'kind'>;
+export type NewFill = Omit<FillOperation, 'kind'>;
+
+/** Whether an operation leaves a mark: the eraser and a background-colored fill do not. */
+function marks(op: DrawingOperation): boolean {
+  switch (op.kind) {
+    case 'stroke':
+      return op.tool === 'brush';
+    case 'fill':
+      return op.color.toUpperCase() !== BACKGROUND_COLOR;
+    case 'clear':
+      return false;
+    default:
+      return op satisfies never;
+  }
+}
 
 /** How many steps can be undone. */
 export const UNDO_LIMIT = 100;
@@ -59,14 +87,12 @@ export class DrawingDocument {
   }
 
   /**
-   * Nothing visible to hand in (R40): no brush stroke after the last `clear`, and no base image
-   * unless a `clear` covered it. Eraser strokes only paint the background.
+   * Nothing visible to hand in (R40): no brush stroke or fill after the last `clear`, and no
+   * base image unless a `clear` covered it. The eraser and a white fill only paint the background.
    */
   get isEmpty(): boolean {
     const lastClear = this.ops.findLastIndex((op) => op.kind === 'clear');
-    const drawnSince = this.ops
-      .slice(lastClear + 1)
-      .some((op) => op.kind === 'stroke' && op.tool === 'brush');
+    const drawnSince = this.ops.slice(lastClear + 1).some(marks);
     return !drawnSince && (this.base === null || lastClear >= 0);
   }
 
@@ -75,6 +101,10 @@ export class DrawingDocument {
       return;
     }
     this.push({ kind: 'stroke', ...stroke });
+  }
+
+  addFill(fill: NewFill): void {
+    this.push({ kind: 'fill', ...fill });
   }
 
   /** Clearing is a step of its own, so it can be undone. Clearing nothing does nothing. */

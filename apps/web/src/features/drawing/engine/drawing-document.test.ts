@@ -93,6 +93,22 @@ describe('DrawingDocument', () => {
     expect(doc.operations).toHaveLength(2);
   });
 
+  it('R40: o balde conta como desenho, exceto na cor do fundo; desfaz como qualquer passo', () => {
+    const doc = new DrawingDocument();
+
+    doc.addFill({ color: '#ffffff', at: { x: 5, y: 5 } });
+    expect(doc.isEmpty).toBe(true);
+    doc.addFill({ color: '#E53935', at: { x: 5, y: 5 } });
+    expect(doc.isEmpty).toBe(false);
+    expect(doc.operations.at(-1)).toEqual({ kind: 'fill', color: '#E53935', at: { x: 5, y: 5 } });
+
+    expect(doc.undo()).toBe(true);
+    expect(doc.isEmpty).toBe(true);
+    expect(doc.redo()).toBe(true);
+    expect(doc.clear()).toBe(true);
+    expect(doc.isEmpty).toBe(true);
+  });
+
   it('R48: a imagem base conta como conteúdo, não entra no histórico e some com limpar', () => {
     const doc = new DrawingDocument();
     const base = new Image();

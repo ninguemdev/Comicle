@@ -57,6 +57,25 @@ export class RecordingContext implements PaintContext {
     this.images.push(image);
     this.calls.push('drawImage');
   }
+
+  /** A white area: what a fill reads does not depend on the recorded calls. */
+  getImageData(sx: number, sy: number, sw: number, sh: number): ImageData {
+    this.calls.push(`getImageData ${String(sx)},${String(sy)},${String(sw)},${String(sh)}`);
+    // jsdom has no ImageData; a plain object of the same shape is what the engine needs.
+    return {
+      data: new Uint8ClampedArray(sw * sh * 4).fill(255),
+      width: sw,
+      height: sh,
+      colorSpace: 'srgb',
+    };
+  }
+
+  putImageData(imageData: ImageData, dx: number, dy: number): void {
+    const [r, g, b] = imageData.data;
+    this.calls.push(
+      `putImageData ${String(r)},${String(g)},${String(b)} at ${String(dx)},${String(dy)}`,
+    );
+  }
 }
 
 /** A layer over a RecordingContext whose PNG is the given bytes. */
