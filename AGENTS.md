@@ -23,6 +23,7 @@ Em caso de dúvida, nesta ordem:
 | [`docs/cenarios-de-reconexao.md`](docs/cenarios-de-reconexao.md) | Quedas, recarregamentos e reinício do servidor em cada fase |
 | [`docs/avatares.md`](docs/avatares.md) | Catálogo, renderização e artes |
 | [`docs/avatares-guia-de-artes.md`](docs/avatares-guia-de-artes.md) | Guia para desenhar as artes: estilo, tamanhos, gabarito, zonas |
+| [`docs/sons.md`](docs/sons.md) | Catálogo de sons, quando tocam, volume (v1.1) |
 | [`docs/deploy.md`](docs/deploy.md) | Imagem de produção, variáveis, proxy reverso, integração com o site |
 | [`docs/decisoes.md`](docs/decisoes.md) | Decisões tomadas e seus motivos |
 | [`docs/tasks/`](docs/tasks/README.md) | O que fazer agora, critérios de aceite, status |
@@ -140,6 +141,8 @@ Use o comando `/task NN` (em `.claude/commands/task.md`) para seguir esse fluxo.
 - [ ] Índice de tasks e checklist atualizados.
 - [ ] PR aberto, sem nenhuma linha de atribuição.
 
-## Fora do escopo da v1
+## Fora do escopo
 
-Não implemente, mesmo que pareça fácil: contas, login, perfis públicos, pontuação, rankings, conquistas, moedas, loja, matchmaking público, feed, chat, sons, modo Quadrinhos Individuais, editor avançado (camadas, formas), salvar histórias no servidor ou compartilhá-las publicamente (baixar a HQ no próprio aparelho é permitido, D40), múltiplas instâncias do servidor.
+A versão em desenvolvimento é a **1.1**: a v1 mais sons ([`docs/sons.md`](docs/sons.md)) e o modo Quadrinhos Individuais (D47).
+
+Não implemente, mesmo que pareça fácil: contas, login, perfis públicos, pontuação, rankings, conquistas, moedas, loja, matchmaking público, feed, chat, música ou arquivos de áudio de terceiros (os sons são sintetizados, D47), editor avançado (camadas, formas), salvar histórias no servidor ou compartilhá-las publicamente (baixar a HQ no próprio aparelho é permitido, D40), múltiplas instâncias do servidor.

@@ -39,6 +39,19 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T31 | [Quadros anteriores em miniatura ao desenhar](./T31-miniaturas-ao-desenhar.md) | T30 | ✅ |
 | T32 | [Ampliar a miniatura ao desenhar](./T32-ampliar-miniatura.md) | T31 | ✅ |
 
+### Versão 1.1
+
+Sons e o modo Quadrinhos Individuais ([D47](../decisoes.md)). Os sons vêm primeiro; o modo individual tem perguntas em aberto, listadas nas suas tasks, a decidir antes da T35.
+
+| # | Task | Depende de | Status |
+|---|---|---|---|
+| T33 | [Motor de som e volume](./T33-motor-de-som.md) | T21 | 🟨 |
+| T34 | [Sons nos eventos do jogo](./T34-sons-na-partida.md) | T33 | ⬜ |
+| T35 | [Modo individual: regras e contratos](./T35-individual-regras-e-contratos.md) | T12, T16 | ⬜ |
+| T36 | [Modo individual: rodadas no servidor](./T36-individual-rodadas-no-servidor.md) | T35 | ⬜ |
+| T37 | [Modo individual: editor de história completa](./T37-individual-editor-de-historia-completa.md) | T36 | ⬜ |
+| T38 | [Modo individual: apresentação das versões](./T38-individual-apresentacao-das-versoes.md) | T37 | ⬜ |
+
 Podem andar em paralelo, se houver mais de uma pessoa ou sessão: T06/T07/T13/T14 (cliente) com T03–T05/T08/T10–T12 (servidor).
 
 **Marco jogável:** ao fim da T17 existe uma partida completa de ponta a ponta. T18–T22 deixam o jogo robusto e publicável.

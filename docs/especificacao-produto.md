@@ -910,6 +910,15 @@ O modo Quadrinhos Individuais integra a visão geral do produto, mas não o esco
 
 Esses limites preservam a proposta principal: oferecer uma experiência multiplayer de desenho de histórias em quadrinhos que seja completa, simples e divertida.
 
+## 16.1 Versão 1.1
+
+A versão 1.1 acrescenta duas coisas à primeira versão:
+
+- **Sons.** Efeitos curtos de interface e de partida (cliques, avisos de tempo, a vez de desenhar, revelações na apresentação), gerados no próprio navegador, com controle de volume e opção de silenciar na tela inicial. Sem música. Detalhes em [`sons.md`](./sons.md).
+- **Modo Quadrinhos Individuais** (§9), que passa a ser jogável.
+
+O restante dos limites desta seção continua valendo.
+
 ---
 
 # 17. Identidade e diferencial do jogo
