@@ -894,6 +894,7 @@ A primeira versão representa um produto jogável completo, concentrado exclusiv
 - Controle exclusivo do anfitrião.
 - Revelação progressiva dos quadrinhos.
 - Visualização das histórias completas.
+- Download da história completa como imagem, para cada jogador guardar no próprio aparelho.
 - Navegação entre histórias.
 - Encerramento e nova partida.
 
