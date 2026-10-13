@@ -41,13 +41,13 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 
 ### Versão 1.1
 
-Sons e o modo Quadrinhos Individuais ([D47](../decisoes.md)). Os sons vêm primeiro; o modo individual tem perguntas em aberto, listadas nas suas tasks, a decidir antes da T35.
+Sons e o modo Quadrinhos Individuais ([D47](../decisoes.md)). Os sons vêm primeiro; as regras do modo individual foram decididas na T35 ([D48](../decisoes.md), R62–R68).
 
 | # | Task | Depende de | Status |
 |---|---|---|---|
 | T33 | [Motor de som e volume](./T33-motor-de-som.md) | T21 | ✅ |
 | T34 | [Sons nos eventos do jogo](./T34-sons-na-partida.md) | T33 | ✅ |
-| T35 | [Modo individual: regras e contratos](./T35-individual-regras-e-contratos.md) | T12, T16 | 🟨 |
+| T35 | [Modo individual: regras e contratos](./T35-individual-regras-e-contratos.md) | T12, T16 | ✅ |
 | T36 | [Modo individual: rodadas no servidor](./T36-individual-rodadas-no-servidor.md) | T35 | ⬜ |
 | T37 | [Modo individual: editor de história completa](./T37-individual-editor-de-historia-completa.md) | T36 | ⬜ |
 | T38 | [Modo individual: apresentação das versões](./T38-individual-apresentacao-das-versoes.md) | T37 | ⬜ |
