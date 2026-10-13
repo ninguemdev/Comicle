@@ -89,6 +89,7 @@ describe('sala no cliente', () => {
       drawingSeconds: 60,
       showPreviousPanels: false,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     });
     expect(actions.updateSettings).toHaveBeenNthCalledWith(2, {
       mode: 'collaborative',
@@ -96,6 +97,7 @@ describe('sala no cliente', () => {
       drawingSeconds: 90,
       showPreviousPanels: false,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     });
   });
 
@@ -111,6 +113,7 @@ describe('sala no cliente', () => {
       drawingSeconds: 90,
       showPreviousPanels: false,
       authorDrawsLast: false,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     });
     cleanup();
 
@@ -134,6 +137,7 @@ describe('sala no cliente', () => {
       drawingSeconds: 90,
       showPreviousPanels: true,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     });
     cleanup();
 

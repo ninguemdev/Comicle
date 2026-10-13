@@ -16,6 +16,7 @@ const VIEW: PlayerView = {
       drawingSeconds: 90,
       showPreviousPanels: false,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     },
     members: [],
   },
@@ -175,6 +176,7 @@ describe('room-store', () => {
       ...VIEW.room.settings,
       mode: 'collaborative',
       drawingSeconds: 60,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     });
     expect(await actions.startMatch()).toEqual({ ok: true, data: {} });
 

@@ -12,6 +12,11 @@ describe('constantes', () => {
       FIXED_PANEL_COUNT_DEFAULT: 4,
       DRAWING_SECONDS_OPTIONS: [30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600],
       DRAWING_SECONDS_DEFAULT: 90,
+      INDIVIDUAL_PANEL_COUNT_MIN: 2,
+      INDIVIDUAL_PANEL_COUNT_MAX: 6,
+      INDIVIDUAL_PANEL_COUNT_DEFAULT: 4,
+      STORY_SECONDS_OPTIONS: [120, 180, 240, 300, 360, 480, 600],
+      STORY_SECONDS_DEFAULT: 300,
       THEME_WRITING_SECONDS: 90,
       THEME_MIN_LENGTH: 3,
       THEME_MAX_LENGTH: 140,
@@ -43,6 +48,13 @@ describe('constantes', () => {
     );
     expect(constants.FIXED_PANEL_COUNT_DEFAULT).toBeLessThanOrEqual(
       constants.FIXED_PANEL_COUNT_MAX,
+    );
+    expect(constants.STORY_SECONDS_OPTIONS).toContain(constants.STORY_SECONDS_DEFAULT);
+    expect(constants.INDIVIDUAL_PANEL_COUNT_DEFAULT).toBeGreaterThanOrEqual(
+      constants.INDIVIDUAL_PANEL_COUNT_MIN,
+    );
+    expect(constants.INDIVIDUAL_PANEL_COUNT_DEFAULT).toBeLessThanOrEqual(
+      constants.INDIVIDUAL_PANEL_COUNT_MAX,
     );
   });
 });

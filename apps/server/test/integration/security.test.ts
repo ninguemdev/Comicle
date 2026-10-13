@@ -153,6 +153,7 @@ describe('segurança (integração)', () => {
       drawingSeconds: 60,
       showPreviousPanels: true,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     };
     const kickBia = (players: Record<string, Player>) => ({
       playerId: players.bia?.views.latest?.me.playerId ?? '',

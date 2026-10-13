@@ -4,6 +4,8 @@ import {
   FIXED_PANEL_COUNT_DEFAULT,
   FIXED_PANEL_COUNT_MAX,
   FIXED_PANEL_COUNT_MIN,
+  STORY_SECONDS_DEFAULT,
+  STORY_SECONDS_OPTIONS,
   type MatchSettings,
   type PanelCountSetting,
 } from '@comicle/shared';
@@ -29,6 +31,16 @@ function drawingSecondsOf(settings: MatchSettings): SettingsInput['drawingSecond
   );
 }
 
+/** Same for the individual mode's settings, which this editor carries along unchanged. */
+function individualOf(settings: MatchSettings): SettingsInput['individual'] {
+  const { panelsPerStory, storySeconds } = settings.individual;
+  return {
+    panelsPerStory,
+    storySeconds:
+      STORY_SECONDS_OPTIONS.find((option) => option === storySeconds) ?? STORY_SECONDS_DEFAULT,
+  };
+}
+
 function panelCountText(panelCount: PanelCountSetting): string {
   return panelCount.kind === 'fixed' ? texts.panels(panelCount.value) : texts.perPlayer;
 }
@@ -52,6 +64,7 @@ function SettingsEditor({ settings, onChange }: EditorProps) {
       drawingSeconds,
       showPreviousPanels: settings.showPreviousPanels,
       authorDrawsLast: settings.authorDrawsLast,
+      individual: individualOf(settings),
       ...patch,
     });
   };

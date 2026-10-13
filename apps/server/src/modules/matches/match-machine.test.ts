@@ -23,6 +23,7 @@ const settings: MatchSettings = {
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
   authorDrawsLast: true,
+  individual: { panelsPerStory: 4, storySeconds: 300 },
 };
 const players = ['ana', 'bia', 'caio'];
 const everyone: ReadonlySet<string> = new Set(players);

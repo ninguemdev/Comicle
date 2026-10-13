@@ -198,6 +198,7 @@ describe('salas (integração)', () => {
       drawingSeconds: 60,
       showPreviousPanels: true,
       authorDrawsLast: true,
+      individual: { panelsPerStory: 4, storySeconds: 300 },
     } as const;
 
     const denied = await bia.client.emitWithAck('room:updateSettings', { settings });
@@ -213,22 +214,29 @@ describe('salas (integração)', () => {
     }
   });
 
-  it('R21: modo individual é recusado com INVALID_PAYLOAD', async () => {
+  it('R21: o modo individual é aceito nas configurações, mas ainda não inicia (T36)', async () => {
     await start();
-    const { host } = await createRoom();
+    const { host, code } = await createRoom();
+    await joinNew(code, 'Bia');
+    const settings = {
+      mode: 'individual',
+      panelCount: { kind: 'per_player' },
+      drawingSeconds: 90,
+      showPreviousPanels: false,
+      authorDrawsLast: true,
+      individual: { panelsPerStory: 6, storySeconds: 600 },
+    } as const;
 
-    const ack = await host.client.emitWithAck('room:updateSettings', {
-      settings: {
-        // @ts-expect-error: the v1 schema accepts only the collaborative mode
-        mode: 'individual',
-        panelCount: { kind: 'per_player' },
-        drawingSeconds: 90,
-        showPreviousPanels: false,
-        authorDrawsLast: true,
-      },
+    const ack = await host.client.emitWithAck('room:updateSettings', { settings });
+    expect(ack).toEqual({ ok: true, data: {} });
+    await host.views.waitFor((view) => view.room.settings.mode === 'individual');
+    expect(host.views.latest?.room.settings).toEqual(settings);
+
+    expect(await host.client.emitWithAck('match:start', {})).toMatchObject({
+      ok: false,
+      error: { code: 'INVALID_PAYLOAD' },
     });
-
-    expect(ack).toMatchObject({ ok: false, error: { code: 'INVALID_PAYLOAD' } });
+    expect(host.views.latest?.room.status).toBe('lobby');
   });
 
   it('R14, R15: anfitrião sai → função vai para o membro conectado mais antigo', async () => {

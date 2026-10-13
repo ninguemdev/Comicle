@@ -37,6 +37,7 @@ const SETTINGS = {
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
   authorDrawsLast: true,
+  individual: { panelsPerStory: 4, storySeconds: 300 },
 } as const;
 
 const inPhase = (phase: string, roundIndex?: number) => (view: PlayerView) =>

@@ -10,6 +10,7 @@ const perPlayer: MatchSettings = {
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
   showPreviousPanels: false,
   authorDrawsLast: true,
+  individual: { panelsPerStory: 4, storySeconds: 300 },
 };
 
 const fixed = (value: number): MatchSettings => ({
@@ -54,7 +55,7 @@ describe('collaborativeMode', () => {
     expect(errorCodeOf({ ...perPlayer, drawingSeconds: 100 })).toBe('INVALID_PAYLOAD');
   });
 
-  it('R21: rejeita o modo individual', () => {
+  it('R18: recusa configurações de outro modo', () => {
     expect(errorCodeOf({ ...perPlayer, mode: 'individual' })).toBe('INVALID_PAYLOAD');
   });
 
@@ -83,7 +84,7 @@ describe('registry', () => {
     expect(getGameMode('collaborative')).toBe(collaborativeMode);
   });
 
-  it('R21: o modo individual ainda não existe', () => {
+  it('R21: o modo individual ainda não pode ser iniciado (T36)', () => {
     expect(() => getGameMode('individual')).toThrow(
       expect.objectContaining({ code: 'INVALID_PAYLOAD' }),
     );

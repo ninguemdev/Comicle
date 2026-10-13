@@ -43,6 +43,7 @@ describe('buildPlayerView no lobby', () => {
           drawingSeconds: 90,
           showPreviousPanels: false,
           authorDrawsLast: true,
+          individual: { panelsPerStory: 4, storySeconds: 300 },
         },
         members: [
           {

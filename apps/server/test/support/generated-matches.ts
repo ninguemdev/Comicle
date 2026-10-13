@@ -110,6 +110,7 @@ export function generateMatch(rng: Rng): GeneratedMatch {
         drawingSeconds: DRAWING_SECONDS_DEFAULT,
         showPreviousPanels,
         authorDrawsLast,
+        individual: { panelsPerStory: 4, storySeconds: 300 },
       },
       seats: players.map((playerId) => ({
         playerId,
