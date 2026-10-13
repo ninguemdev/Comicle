@@ -140,14 +140,14 @@ describe('PresentationScreen: vistas', () => {
     expect(screen.getByText('HQ completa')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Um gato prefeito' })).toBeTruthy();
     const page = screen.getByRole('group', { name: 'Página de HQ' });
+    // The loading placeholder is an `img` too: wait for the texts, which only settle once loaded.
     await waitFor(() => {
-      expect(within(page).getAllByRole('img')).toHaveLength(3);
+      expect(
+        within(page)
+          .getAllByRole('figure')
+          .map((figure) => figure.textContent),
+      ).toEqual(['1Bia', 'Caio não desenhou a tempo2Caio', '3Ana']);
     });
-    expect(
-      within(page)
-        .getAllByRole('figure')
-        .map((figure) => figure.textContent),
-    ).toEqual(['1Bia', 'Caio não desenhou a tempo2Caio', '3Ana']);
     expect(screen.queryByRole('list', { name: 'Quadros já revelados' })).toBeNull();
   });
 
