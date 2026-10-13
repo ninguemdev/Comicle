@@ -38,7 +38,10 @@ export function panelImages(page: Page): Locator {
 }
 
 export function presentationHeading(page: Page): Locator {
-  return page.getByRole('heading', { name: /^História \d+ de \d+$/ });
+  // "História 2 de 5", or "Tema 1 de 3 · versão 2 de 2" in the individual mode (R68).
+  return page.getByRole('heading', {
+    name: /^(História \d+ de \d+|Tema \d+ de \d+ · versão \d+ de \d+)$/,
+  });
 }
 
 export function finishedHeading(page: Page): Locator {

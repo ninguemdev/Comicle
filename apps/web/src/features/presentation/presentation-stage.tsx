@@ -1,4 +1,4 @@
-import type { PanelRef, PresentationView } from '@comicle/shared';
+import type { PanelRef, PresentationVersion, PresentationView } from '@comicle/shared';
 
 import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
@@ -17,8 +17,11 @@ const THUMBNAIL_WIDTH = 96;
 
 type Story = PresentationView['story'];
 
-/** `theme`: the premise in a giant balloon, with whoever wrote it (R55). */
-function ThemeView({ story }: { story: Story }) {
+/**
+ * `theme`: the premise in a giant balloon, with whoever wrote it (R55). In the individual mode it
+ * opens each version, and reveals who drew it (R68).
+ */
+function ThemeView({ story, version }: { story: Story; version: PresentationVersion | null }) {
   const { text, author } = story.theme;
   return (
     <div className="flex size-full flex-col items-center justify-center gap-6 overflow-y-auto p-4">
@@ -31,6 +34,14 @@ function ThemeView({ story }: { story: Story }) {
         <AvatarRenderer avatar={author.avatar} size={160} />
         <p className="text-xl font-bold">{texts.themeBy(author.nickname)}</p>
       </div>
+      {version && (
+        <div className="flex items-center gap-3 rounded-xl border-comic bg-pop-yellow px-4 py-2">
+          <AvatarRenderer avatar={version.artist.avatar} size={64} />
+          <p className="font-display text-2xl tracking-wide">
+            {texts.versionIntro(version.index + 1, version.count, version.artist.nickname)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -70,7 +81,15 @@ function PanelView({ story, position }: { story: Story; position: number }) {
 }
 
 /** `full`: the whole story as a comic page with credits — the main view of the result. */
-function FullView({ story, storyNumber }: { story: Story; storyNumber: number }) {
+function FullView({
+  story,
+  storyNumber,
+  version,
+}: {
+  story: Story;
+  storyNumber: number;
+  version: PresentationVersion | null;
+}) {
   return (
     <div className="flex size-full flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-x-3">
@@ -81,6 +100,7 @@ function FullView({ story, storyNumber }: { story: Story; storyNumber: number })
           {story.theme.text}
         </h2>
         <p className="text-muted">{texts.themeBy(story.theme.author.nickname)}</p>
+        {version && <p className="font-bold">{texts.versionBy(version.artist.nickname)}</p>}
         <div className="ml-auto">
           <DownloadComicButton story={story} storyNumber={storyNumber} />
         </div>
@@ -136,11 +156,17 @@ export function PresentationStage({
   const { story, step } = presentation;
   switch (step.kind) {
     case 'theme':
-      return <ThemeView story={story} />;
+      return <ThemeView story={story} version={presentation.version} />;
     case 'panel':
       return <PanelView story={story} position={step.position} />;
     case 'full':
-      return <FullView story={story} storyNumber={presentation.storyIndex + 1} />;
+      return (
+        <FullView
+          story={story}
+          storyNumber={presentation.storyIndex + 1}
+          version={presentation.version}
+        />
+      );
     default:
       return step satisfies never;
   }

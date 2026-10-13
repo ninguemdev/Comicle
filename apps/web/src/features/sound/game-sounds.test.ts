@@ -44,6 +44,7 @@ function presentation(
     maxStoryReached: storyIndex,
     story: { theme: { text: 'Um gato', author }, panelCount: 3, revealedPanels: [] },
     reachedStories: [],
+    version: null,
   };
 }
 

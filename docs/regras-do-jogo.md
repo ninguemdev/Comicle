@@ -207,9 +207,10 @@ Com `authorDrawsLast` desligada (testadas para todo `N` de 2 a 12 e todo total d
 | `prev` | `panel(0)` → `theme`; `panel(k)` → `panel(k−1)`; `full` → último quadro; `theme` → `full` da história anterior (se houver); `finished` → `full` da última |
 | `showFull` | vai para `full` da história atual |
 | `nextStory` | vai para `theme` da próxima história; a atual passa a contar como totalmente revelada; na última, vai para `finished` |
+| `nextTheme` | vai para `theme` da primeira história do próximo tema; a atual e as que faltam do tema passam a contar como totalmente reveladas; no último tema, vai para `finished`. No modo colaborativo, cada história é o seu tema, e a ação equivale a `nextStory` (R68) |
 | `goToStory(i)` | só para `i ≤ maxStoryReached` (senão `INVALID_STATE`); vai para `full` da história `i`, também a partir de `finished` |
 
-Ações sem efeito definido na tabela — `prev` no `theme` da primeira história; `next`, `showFull` e `nextStory` em `finished` — não mudam o cursor e respondem `ok` (D29). Navegar ou encerrar fora da apresentação → `INVALID_STATE`; de quem não é anfitrião → `NOT_HOST`.
+Ações sem efeito definido na tabela — `prev` no `theme` da primeira história; `next`, `showFull`, `nextStory` e `nextTheme` em `finished` — não mudam o cursor e respondem `ok` (D29). Navegar ou encerrar fora da apresentação → `INVALID_STATE`; de quem não é anfitrião → `NOT_HOST`.
 
 **R53 — Revelação.** Cada história tem `revealedCount`, que só cresce: `panel(k)` revela até `k+1`; `full`, `nextStory` ou sair da história para frente revela tudo. `maxStoryReached` também só cresce.
 
@@ -251,4 +252,4 @@ Modo Quadrinhos Individuais ([especificação §9](./especificacao-produto.md), 
 
 **R67 — Privacidade.** Até a apresentação, um jogador só tem acesso aos quadros da versão que desenha na rodada atual, e só enquanto não a entregou. O `my-draft` deixa de servir um quadro assim que ele é entregue, e `showPreviousPanels` (R38) não vale neste modo. Depois da entrega, nem a própria versão volta a ser vista antes da apresentação.
 
-**R68 — Apresentação por tema.** Os temas são apresentados na ordem dos assentos dos autores e, para cada tema, todas as suas versões em seguida, na ordem do R64. O tema mostra o autor; cada versão mostra o artista, revela os quadros um a um e depois a página completa (como R51–R53); a última versão de um tema leva ao tema seguinte. Créditos e quadros vazios seguem o R55; baixar a HQ (D40), também, por versão.
+**R68 — Apresentação por tema.** Os temas são apresentados na ordem dos assentos dos autores e, para cada tema, todas as suas versões em seguida, na ordem do R64. O tema mostra o autor; cada versão mostra o artista, revela os quadros um a um e depois a página completa (como R51–R53); a última versão de um tema leva ao tema seguinte. Créditos e quadros vazios seguem o R55; baixar a HQ (D40), também, por versão. Na prática, o cursor do R51–R53 percorre as histórias na ordem do R64, e o passo `theme` de cada uma é a **abertura da versão**: o tema, o autor e "Versão k de N · desenhada por {artista}". O cabeçalho mostra "Tema t de T · versão k de N". O anfitrião tem, além do R52, **Próxima versão** (`nextStory`) e **Próximo tema** (`nextTheme`), e o menu **Temas** agrupa as versões alcançadas sob o seu tema.

@@ -464,7 +464,11 @@ export function createMatchMachine(timing: GameTimingConfig): MatchMachine {
         case 'presentation_navigate': {
           assertPresenting(match);
           const panelCounts = match.stories.map((story) => story.panels.length);
-          const presentation = navigate(match.presentation, event.action, panelCounts);
+          const mode = getGameMode(match.settings.mode);
+          const themeOf = match.stories.map((_, index) =>
+            mode.themeOfStory(index, match.seats.length),
+          );
+          const presentation = navigate(match.presentation, event.action, panelCounts, themeOf);
           return { match: { ...match, presentation }, effects: [] };
         }
         case 'presentation_end':

@@ -86,7 +86,29 @@ export interface PresentationView {
     /** Only the revealed panels (R53, R54). */
     revealedPanels: PanelRef[];
   };
-  reachedStories: { index: number; themeText: string; author: ArtistRef }[];
+  /**
+   * R68, individual mode: which version of which theme is on stage, with its artist; `null` in
+   * the collaborative mode, where each story is its own theme.
+   */
+  version: PresentationVersion | null;
+  /** `themeIndex` groups the versions of a theme; `artist` is `null` in the collaborative mode. */
+  reachedStories: {
+    index: number;
+    themeIndex: number;
+    themeText: string;
+    author: ArtistRef;
+    artist: ArtistRef | null;
+  }[];
+}
+
+export interface PresentationVersion {
+  /** 0-based, in the order of the presentation (R68). */
+  themeIndex: number;
+  themeCount: number;
+  /** 0-based, among the versions of this theme. */
+  index: number;
+  count: number;
+  artist: ArtistRef;
 }
 
 export interface MatchView {

@@ -163,6 +163,7 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 - A apresentação ocupa a tela inteira, com cabeçalho próprio; o **Encerrar partida** do cabeçalho da partida (R57, que apaga o conteúdo) não aparece nela.
 - Demais jogadores: sem controles; um indicador "O anfitrião está conduzindo".
 - Indicador de posição: "História 2 de 5".
+- **Modo individual (R68):** o indicador vira "Tema 1 de 3 · versão 2 de 2". O passo `theme` abre cada versão: o balão do tema e o autor, como sempre, e logo abaixo um selo amarelo com o avatar do artista e "Versão 2 de 2 · desenhada por Bia". Na HQ completa, "Versão de Bia" fica ao lado do tema, e o **Baixar HQ** baixa aquela versão. Na barra do anfitrião, **Próxima história** vira **Próxima versão**, entra **Próximo tema**, e o menu **Histórias** vira **Temas**, com as versões alcançadas ("Versão de Bia") sob cada tema.
 
 ---
 

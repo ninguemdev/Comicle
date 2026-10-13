@@ -15,6 +15,28 @@ const SMALL = 'min-h-10 px-3 py-1 text-sm';
 
 type OpenDialog = 'stories' | 'end' | null;
 
+type ReachedStory = PresentationView['reachedStories'][number];
+
+interface ThemeGroup {
+  themeIndex: number;
+  themeText: string;
+  stories: ReachedStory[];
+}
+
+/** R68: the stories reached, grouped by theme (one per group in the collaborative mode). */
+function themeGroups(stories: readonly ReachedStory[]): ThemeGroup[] {
+  const groups: ThemeGroup[] = [];
+  for (const story of stories) {
+    const last = groups.at(-1);
+    if (last?.themeIndex === story.themeIndex) {
+      last.stories.push(story);
+    } else {
+      groups.push({ themeIndex: story.themeIndex, themeText: story.themeText, stories: [story] });
+    }
+  }
+  return groups;
+}
+
 export interface HostControlsProps {
   presentation: PresentationView;
   /** Offline, every control waits for the connection. */
@@ -38,6 +60,7 @@ export function HostControls({
   // D29: these would not move the cursor, so they are not offered.
   const atStart = !finished && storyIndex === 0 && step.kind === 'theme';
   const atFull = !finished && step.kind === 'full';
+  const individual = presentation.version !== null;
   const offline = !online;
 
   function open(next: OpenDialog): void {
@@ -97,8 +120,20 @@ export function HostControls({
           onNavigate({ action: 'nextStory' });
         }}
       >
-        {texts.nextStory}
+        {individual ? texts.nextVersion : texts.nextStory}
       </Button>
+      {individual && (
+        <Button
+          variant="secondary"
+          className={SMALL}
+          disabled={offline || finished}
+          onClick={() => {
+            onNavigate({ action: 'nextTheme' });
+          }}
+        >
+          {texts.nextTheme}
+        </Button>
+      )}
       <Button
         variant="secondary"
         className={SMALL}
@@ -108,7 +143,7 @@ export function HostControls({
           open('stories');
         }}
       >
-        {texts.stories}
+        {individual ? texts.themes : texts.stories}
       </Button>
       <Button
         variant="ghost"
@@ -129,27 +164,40 @@ export function HostControls({
 
       <Dialog
         open={dialog === 'stories'}
-        title={texts.storiesTitle}
+        title={individual ? texts.themesTitle : texts.storiesTitle}
         onClose={() => {
           open(null);
         }}
       >
-        <ul className="flex flex-col gap-2">
-          {presentation.reachedStories.map((story) => (
-            <li key={story.index}>
-              <Button
-                variant="secondary"
-                className="w-full justify-start text-left"
-                disabled={offline}
-                aria-current={!finished && story.index === storyIndex ? 'true' : undefined}
-                onClick={() => {
-                  goTo(story.index);
-                }}
-              >
-                <span className="min-w-0 break-words">
-                  {texts.storyItem(story.index + 1, story.themeText)}
-                </span>
-              </Button>
+        <ul className="flex flex-col gap-3">
+          {themeGroups(presentation.reachedStories).map((group) => (
+            <li key={group.themeIndex} className="flex flex-col gap-2">
+              {individual && (
+                <p className="font-display text-xl tracking-wide break-words">
+                  {texts.storyItem(group.themeIndex + 1, group.themeText)}
+                </p>
+              )}
+              <ul className="flex flex-col gap-2">
+                {group.stories.map((story) => (
+                  <li key={story.index}>
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-start text-left"
+                      disabled={offline}
+                      aria-current={!finished && story.index === storyIndex ? 'true' : undefined}
+                      onClick={() => {
+                        goTo(story.index);
+                      }}
+                    >
+                      <span className="min-w-0 break-words">
+                        {story.artist
+                          ? texts.versionItem(story.artist.nickname)
+                          : texts.storyItem(story.index + 1, story.themeText)}
+                      </span>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))}
         </ul>

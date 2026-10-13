@@ -323,14 +323,17 @@ export const strings = {
       finished: 'Fim das histórias!',
       finishedWaiting: 'O anfitrião vai levar todo mundo de volta ao lobby.',
       newMatch: 'Nova partida',
-      /** Announced to screen readers at every step (interface.md §6). */
+      /** R68: where the presentation is, in the individual mode. */
+      versionOf: (theme: number, themes: number, version: number, versions: number) =>
+        `Tema ${String(theme)} de ${String(themes)} · versão ${String(version)} de ${String(versions)}`,
+      versionBy: (nickname: string) => `Versão de ${nickname}`,
+      versionIntro: (version: number, versions: number, nickname: string) =>
+        `Versão ${String(version)} de ${String(versions)} · desenhada por ${nickname}`,
+      /** Announced to screen readers at every step (interface.md §6); `where` is the label above. */
       announce: {
-        theme: (story: number, total: number) =>
-          `História ${String(story)} de ${String(total)}: tema`,
-        panel: (story: number, total: number, panel: number) =>
-          `História ${String(story)} de ${String(total)}: quadro ${String(panel)}`,
-        full: (story: number, total: number) =>
-          `História ${String(story)} de ${String(total)}: HQ completa`,
+        theme: (where: string) => `${where}: tema`,
+        panel: (where: string, panel: number) => `${where}: quadro ${String(panel)}`,
+        full: (where: string) => `${where}: HQ completa`,
         finished: 'Fim das histórias',
       },
       controls: 'Controles da apresentação',
@@ -341,6 +344,11 @@ export const strings = {
       stories: 'Histórias',
       storiesTitle: 'Histórias já apresentadas',
       storyItem: (story: number, theme: string) => `${String(story)}. ${theme}`,
+      nextVersion: 'Próxima versão',
+      nextTheme: 'Próximo tema',
+      themes: 'Temas',
+      themesTitle: 'Temas já apresentados',
+      versionItem: (nickname: string) => `Versão de ${nickname}`,
       end: 'Encerrar',
       endTitle: 'Encerrar a apresentação?',
       endBody: 'Todos voltam ao lobby, e as histórias que faltam não serão mostradas.',

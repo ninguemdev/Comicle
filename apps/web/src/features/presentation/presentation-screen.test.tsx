@@ -77,9 +77,22 @@ function presentation(
       revealedPanels: PANELS.slice(0, revealed),
     },
     reachedStories: [
-      { index: 0, themeText: 'Um gato prefeito', author: artist('Ana') },
-      { index: 1, themeText: 'A pizzaria da Lua', author: artist('Bia') },
+      {
+        index: 0,
+        themeIndex: 0,
+        themeText: 'Um gato prefeito',
+        author: artist('Ana'),
+        artist: null,
+      },
+      {
+        index: 1,
+        themeIndex: 1,
+        themeText: 'A pizzaria da Lua',
+        author: artist('Bia'),
+        artist: null,
+      },
     ],
+    version: null,
     ...overrides,
   };
 }
@@ -335,6 +348,99 @@ describe('PresentationScreen: controles', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Encerrar' }));
 
     expect(actions.endPresentation).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PresentationScreen: modo individual (R68)', () => {
+  /** Theme 1 of 2 ("Um gato prefeito", by Ana), version 2 of 2, drawn by Bia. */
+  function individual(
+    step: PresentationStep,
+    revealed = 0,
+    overrides: Partial<PresentationView> = {},
+  ) {
+    return presentation(step, revealed, {
+      storyIndex: 1,
+      storyCount: 4,
+      version: { themeIndex: 0, themeCount: 2, index: 1, count: 2, artist: artist('Bia') },
+      reachedStories: [
+        {
+          index: 0,
+          themeIndex: 0,
+          themeText: 'Um gato prefeito',
+          author: artist('Ana'),
+          artist: artist('Caio'),
+        },
+        {
+          index: 1,
+          themeIndex: 0,
+          themeText: 'Um gato prefeito',
+          author: artist('Ana'),
+          artist: artist('Bia'),
+        },
+        {
+          index: 2,
+          themeIndex: 1,
+          themeText: 'A pizzaria da Lua',
+          author: artist('Bia'),
+          artist: artist('Ana'),
+        },
+      ],
+      ...overrides,
+    });
+  }
+
+  it('R68: a abertura da versão mostra o tema, o autor e quem desenhou', () => {
+    renderScreen(individual({ kind: 'theme' }));
+
+    expect(screen.getByRole('heading', { name: 'Tema 1 de 2 · versão 2 de 2' })).toBeTruthy();
+    expect(screen.getByText('Um gato prefeito')).toBeTruthy();
+    expect(screen.getByText('Tema de Ana')).toBeTruthy();
+    expect(screen.getByText('Versão 2 de 2 · desenhada por Bia')).toBeTruthy();
+  });
+
+  it('R68: a HQ completa diz de quem é a versão', () => {
+    renderScreen(individual({ kind: 'full' }, 3));
+
+    expect(screen.getByText('Versão de Bia')).toBeTruthy();
+  });
+
+  it('R68: o anfitrião tem Próxima versão e Próximo tema', () => {
+    const actions = renderScreen(individual({ kind: 'panel', position: 0 }, 1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima versão' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Próximo tema' }));
+    expect(actions.navigatePresentation.mock.calls).toEqual([
+      [{ action: 'nextStory' }],
+      [{ action: 'nextTheme' }],
+    ]);
+  });
+
+  it('R68: o menu Temas agrupa as versões sob cada tema e vai à escolhida', () => {
+    const actions = renderScreen(individual({ kind: 'theme' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Temas' }));
+    const dialog = screen.getByRole('dialog', { name: 'Temas já apresentados' });
+    expect(within(dialog).getByText('1. Um gato prefeito')).toBeTruthy();
+    expect(within(dialog).getByText('2. A pizzaria da Lua')).toBeTruthy();
+    expect(
+      within(dialog)
+        .getAllByRole('button')
+        .map((button) => button.textContent)
+        .filter((text) => text.startsWith('Versão')),
+    ).toEqual(['Versão de Caio', 'Versão de Bia', 'Versão de Ana']);
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Versão de Ana' }));
+    expect(actions.navigatePresentation).toHaveBeenCalledWith({
+      action: 'goToStory',
+      storyIndex: 2,
+    });
+  });
+
+  it('no modo colaborativo não há Próximo tema', () => {
+    renderScreen(presentation({ kind: 'theme' }));
+
+    expect(screen.queryByRole('button', { name: 'Próximo tema' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Próxima história' })).toBeTruthy();
   });
 });
 

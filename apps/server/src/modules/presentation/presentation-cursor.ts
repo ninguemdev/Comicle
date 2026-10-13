@@ -123,6 +123,29 @@ function nextStory(cursor: PresentationCursor, panelCounts: readonly number[]): 
     : { ...revealed, status: 'finished' };
 }
 
+/**
+ * R68: to the opening of the next theme's first version; the current story and every version left
+ * behind count as fully revealed (R53), as with `nextStory`. The last theme ends the presentation.
+ */
+function nextTheme(
+  cursor: PresentationCursor,
+  panelCounts: readonly number[],
+  themeOf: readonly number[],
+): PresentationCursor {
+  const theme = themeOf[cursor.storyIndex];
+  let target = cursor.storyIndex + 1;
+  while (target < panelCounts.length && themeOf[target] === theme) {
+    target++;
+  }
+  let revealed = cursor;
+  for (let story = cursor.storyIndex; story < target && story < panelCounts.length; story++) {
+    revealed = showStep(revealed, story, FULL, panelCounts);
+  }
+  return target < panelCounts.length
+    ? showStep(revealed, target, THEME, panelCounts)
+    : { ...revealed, status: 'finished' };
+}
+
 function goToStory(
   cursor: PresentationCursor,
   storyIndex: number,
@@ -135,13 +158,15 @@ function goToStory(
 }
 
 /**
- * R52: the host's navigation; `panelCounts[i]` is the panel count of story `i`. Actions the
- * table leaves without effect (D29) return the cursor unchanged.
+ * R52, R68: the host's navigation; `panelCounts[i]` is the panel count of story `i` and
+ * `themeOf[i]` the theme it tells (by default, its own: one story per theme, collaborative mode).
+ * Actions the table leaves without effect (D29) return the cursor unchanged.
  */
 export function navigate(
   cursor: PresentationCursor,
   action: PresentationAction,
   panelCounts: readonly number[],
+  themeOf: readonly number[] = panelCounts.map((_, index) => index),
 ): PresentationCursor {
   if (action.action === 'goToStory') {
     return goToStory(cursor, action.storyIndex, panelCounts);
@@ -161,6 +186,8 @@ export function navigate(
       return showStep(cursor, cursor.storyIndex, FULL, panelCounts);
     case 'nextStory':
       return nextStory(cursor, panelCounts);
+    case 'nextTheme':
+      return nextTheme(cursor, panelCounts, themeOf);
     default:
       return action satisfies never;
   }

@@ -5,6 +5,7 @@ import { useOnline, useRoomStore, type PresentationAction } from '../../stores/r
 import { strings } from '../../strings/pt-BR';
 import { useActionError } from '../match/use-action-error';
 import { HostControls } from './host-controls';
+import { presentationPosition } from './presentation-label';
 import { PresentationStage } from './presentation-stage';
 import { usePresentationShortcuts } from './use-presentation-shortcuts';
 
@@ -57,7 +58,7 @@ export function PresentationScreen({
     <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-4">
       <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-3xl tracking-wide">
-          {texts.storyOf(presentation.storyIndex + 1, presentation.storyCount)}
+          {presentationPosition(presentation)}
         </h1>
         {!isHost && <p className="font-bold text-muted">{texts.hostLeading}</p>}
       </header>

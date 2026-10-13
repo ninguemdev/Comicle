@@ -72,7 +72,7 @@ type Ack<T> =
 | `round:ready` | `{ roundIndex }` | `{}` | participante, `round_reading` | R36, R37 |
 | `panel:autosave` | `{ roundIndex, panelIndex, png: Uint8Array }` | `{}` | participante, `round_drawing` (ou `round_reading` depois do próprio `round:ready`) | R38, R39 |
 | `panel:submit` | `{ roundIndex, panelIndex, reason: 'done' \| 'timeout', png: Uint8Array \| null }` | `{}` | participante, `round_drawing` ou `round_closing` (ou `round_reading` depois do próprio `round:ready`) | R38, R40–R44 |
-| `presentation:navigate` | `{ action: 'next' \| 'prev' \| 'showFull' \| 'nextStory' } \| { action: 'goToStory', storyIndex }` | `{}` | anfitrião, `presentation` | R52, R53 |
+| `presentation:navigate` | `{ action: 'next' \| 'prev' \| 'showFull' \| 'nextStory' \| 'nextTheme' } \| { action: 'goToStory', storyIndex }` | `{}` | anfitrião, `presentation` | R52, R53, R68 |
 | `presentation:end` | `{}` | `{}` | anfitrião, `presentation` | R56 |
 
 `PlayerProfile = { nickname: string; avatar: AvatarConfig }` (R1, R2).
@@ -206,7 +206,16 @@ type PresentationView = {
     panelCount: number;
     revealedPanels: PanelRef[];            // só os revelados (R53, R54)
   };
-  reachedStories: { index: number; themeText: string; author: ArtistRef }[];
+  version: {                             // modo individual (R68); null no colaborativo
+    themeIndex: number; themeCount: number;
+    index: number; count: number;        // versão dentro do tema, base 0
+    artist: ArtistRef;
+  } | null;
+  reachedStories: {
+    index: number; themeIndex: number;   // themeIndex agrupa as versões de um tema
+    themeText: string; author: ArtistRef;
+    artist: ArtistRef | null;            // quem desenhou a versão; null no colaborativo
+  }[];
 };
 ```
 
@@ -218,6 +227,7 @@ Regras de projeção (R58), testadas em `build-player-view.test.ts`:
 - Temas de outros participantes nunca aparecem fora da apresentação.
 - `presentation.story.revealedPanels` contém exatamente os quadros com posição `< revealedCount`.
 - `reachedStories` lista só histórias com índice `≤ maxStoryReached`.
+- `version` e `reachedStories[].artist` só existem no modo individual e só revelam o artista de versões já alcançadas (R68).
 
 ---
 
