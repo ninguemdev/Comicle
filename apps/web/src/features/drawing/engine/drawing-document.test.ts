@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DrawingDocument, UNDO_LIMIT, type NewStroke } from './drawing-document';
 
 function stroke(x: number, tool: NewStroke['tool'] = 'brush'): NewStroke {
-  return { tool, color: '#000000', size: 8, points: [{ x, y: x }] };
+  return { tool, color: '#000000', size: 8, opacity: 1, points: [{ x, y: x }] };
 }
 
 /** Runs `step` until it returns false; how many times it succeeded. */

@@ -20,9 +20,18 @@ function paintBackground(ctx: PaintContext): void {
   ctx.fillRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT);
 }
 
-/** One stroke; also the stroke in progress, painted over the committed drawing. */
+/**
+ * One stroke; also the stroke in progress, painted over the committed drawing. The whole stroke
+ * is one path painted once, so with opacity it stays even where it crosses itself.
+ */
 export function drawStroke(ctx: PaintContext, stroke: NewStroke): void {
-  const color = stroke.tool === 'eraser' ? BACKGROUND_COLOR : stroke.color;
+  const eraser = stroke.tool === 'eraser';
+  ctx.globalAlpha = eraser ? 1 : stroke.opacity;
+  tracePath(ctx, stroke, eraser ? BACKGROUND_COLOR : stroke.color);
+  ctx.globalAlpha = 1;
+}
+
+function tracePath(ctx: PaintContext, stroke: NewStroke, color: string): void {
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
   ctx.lineWidth = stroke.size;

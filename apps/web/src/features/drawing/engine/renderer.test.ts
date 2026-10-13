@@ -12,6 +12,7 @@ function stroke(x: number, overrides: Partial<NewStroke> = {}): NewStroke {
     tool: 'brush',
     color: '#E53935',
     size: 8,
+    opacity: 1,
     points: [
       { x, y: 0 },
       { x, y: 10 },
@@ -50,6 +51,19 @@ describe('renderer', () => {
       'stroke #FFFFFF w8',
     ]);
     expect([ctx.lineCap, ctx.lineJoin]).toEqual(['round', 'round']);
+  });
+
+  it('pinta o traço inteiro de uma vez com a opacidade dele; a borracha é sempre opaca', () => {
+    const ctx = new RecordingContext();
+    drawStroke(ctx, stroke(5, { opacity: 0.5 }));
+    drawStroke(ctx, stroke(6, { tool: 'eraser', opacity: 0.5 }));
+
+    // One path, one stroke() call: a translucent stroke does not darken where it crosses itself.
+    expect(ctx.calls.filter((call) => call.startsWith('stroke'))).toEqual([
+      'stroke #E53935 w8 a0.5',
+      'stroke #FFFFFF w8',
+    ]);
+    expect(ctx.globalAlpha).toBe(1);
   });
 
   it('um toque só vira um pingo do tamanho do pincel', () => {

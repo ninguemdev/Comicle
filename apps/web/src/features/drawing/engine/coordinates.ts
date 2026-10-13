@@ -37,6 +37,14 @@ export function bufferSize(css: Size, devicePixelRatio: number): Size {
   };
 }
 
+/** Below this, the brush cursor would vanish under the pointer on a small screen. */
+export const CURSOR_MIN_DIAMETER = 4;
+
+/** CSS diameter of the brush cursor: the stroke width as drawn on a canvas `cssWidth` wide. */
+export function cursorDiameter(size: number, cssWidth: number): number {
+  return Math.max(CURSOR_MIN_DIAMETER, (size * cssWidth) / PANEL_WIDTH);
+}
+
 function clamp(value: number, max: number): number {
   return Math.min(Math.max(value, 0), max);
 }

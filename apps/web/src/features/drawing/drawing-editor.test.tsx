@@ -60,19 +60,54 @@ describe('DrawingEditor', () => {
     expect(pressed('Pincel (B)')).toBe(true);
   });
 
-  it('[ e ] trocam a espessura, sem passar dos limites', () => {
+  it('a barra de espessura e [ e ] trocam a espessura, sem passar dos limites', () => {
     setup();
-    expect(pressed('Espessura 8')).toBe(true);
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: 'Espessura ([ e ])' });
+    expect(slider.value).toBe('8');
+    expect(slider.getAttribute('aria-valuetext')).toBe('8 px');
 
     key({ key: ']' });
-    expect(pressed('Espessura 16')).toBe(true);
-    key({ key: ']' });
-    key({ key: ']' });
-    expect(pressed('Espessura 32')).toBe(true);
+    expect(slider.value).toBe('10');
+    fireEvent.change(slider, { target: { value: '60' } });
+    expect(slider.value).toBe('60');
     for (let i = 0; i < 5; i++) {
+      key({ key: ']' });
+    }
+    expect(slider.value).toBe('64');
+    for (let i = 0; i < 30; i++) {
       key({ key: '[' });
     }
-    expect(pressed('Espessura 3')).toBe(true);
+    expect(slider.value).toBe('2');
+  });
+
+  it('a barra de opacidade vai de 10% a 100%', () => {
+    setup();
+    const slider = screen.getByRole<HTMLInputElement>('slider', { name: 'Opacidade' });
+    expect(slider.value).toBe('100');
+
+    fireEvent.change(slider, { target: { value: '45' } });
+    expect(slider.value).toBe('45');
+    expect(slider.getAttribute('aria-valuetext')).toBe('45%');
+    expect(slider.getAttribute('min')).toBe('10');
+  });
+
+  it('o mouse sobre o canvas mostra a bolinha do traço; o toque e o balde, não', () => {
+    const { container } = setup();
+    const canvas = screen.getByRole('img', { name: 'Área de desenho' });
+    const cursor = container.querySelector<HTMLElement>('canvas + [aria-hidden="true"]');
+    const visible = () => cursor?.classList.contains('block') ?? false;
+
+    fireEvent.pointerEnter(canvas, { pointerId: 1, pointerType: 'touch' });
+    expect(visible()).toBe(false);
+    fireEvent.pointerMove(canvas, { pointerId: 2, pointerType: 'mouse', clientX: 7, clientY: 9 });
+    expect(visible()).toBe(true);
+    expect([cursor?.style.left, cursor?.style.top]).toEqual(['7px', '9px']);
+
+    key({ key: 'g' });
+    expect(visible()).toBe(false);
+    key({ key: 'b' });
+    fireEvent.pointerLeave(canvas, { pointerId: 2, pointerType: 'mouse' });
+    expect(visible()).toBe(false);
   });
 
   it('Ctrl/⌘+Z desfaz e Ctrl/⌘+Shift+Z refaz, avisando cada mudança', () => {

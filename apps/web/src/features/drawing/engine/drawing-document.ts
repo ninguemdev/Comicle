@@ -20,6 +20,8 @@ export interface StrokeOperation {
   readonly tool: StrokeTool;
   readonly color: string;
   readonly size: number;
+  /** 0–1 for the whole stroke; the eraser ignores it and always paints the opaque background. */
+  readonly opacity: number;
   readonly points: readonly Point[];
 }
 

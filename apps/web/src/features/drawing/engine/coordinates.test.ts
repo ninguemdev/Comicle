@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { bufferSize, fitPanel, toLogical } from './coordinates';
+import {
+  bufferSize,
+  CURSOR_MIN_DIAMETER,
+  cursorDiameter,
+  fitPanel,
+  toLogical,
+} from './coordinates';
 
 describe('coordinates', () => {
   it.each([
@@ -55,5 +61,12 @@ describe('coordinates', () => {
     expect(toLogical(-30, 900, rect)).toEqual({ x: 0, y: 768 });
     expect(toLogical(5000, -1, rect)).toEqual({ x: 1024, y: 0 });
     expect(toLogical(10, 10, { ...rect, width: 0 })).toEqual({ x: 0, y: 0 });
+  });
+
+  it('o cursor tem o diâmetro do traço na escala da tela, sem sumir nos tamanhos pequenos', () => {
+    expect(cursorDiameter(32, 1024)).toBe(32);
+    expect(cursorDiameter(32, 512)).toBe(16);
+    expect(cursorDiameter(64, 1536)).toBe(96);
+    expect(cursorDiameter(2, 360)).toBe(CURSOR_MIN_DIAMETER);
   });
 });

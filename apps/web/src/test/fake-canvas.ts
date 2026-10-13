@@ -15,6 +15,7 @@ export class RecordingContext implements PaintContext {
   lineWidth = 1;
   lineCap: CanvasLineCap = 'butt';
   lineJoin: CanvasLineJoin = 'miter';
+  globalAlpha = 1;
   readonly calls: string[] = [];
   /** Every image drawn, in order. */
   readonly images: CanvasImageSource[] = [];
@@ -40,11 +41,18 @@ export class RecordingContext implements PaintContext {
   }
 
   fill(): void {
-    this.calls.push(`fill ${styleName(this.fillStyle)}`);
+    this.calls.push(`fill ${styleName(this.fillStyle)}${this.alphaSuffix()}`);
   }
 
   stroke(): void {
-    this.calls.push(`stroke ${styleName(this.strokeStyle)} w${String(this.lineWidth)}`);
+    this.calls.push(
+      `stroke ${styleName(this.strokeStyle)} w${String(this.lineWidth)}${this.alphaSuffix()}`,
+    );
+  }
+
+  /** Only translucent painting is marked, so opaque calls read as before. */
+  private alphaSuffix(): string {
+    return this.globalAlpha === 1 ? '' : ` a${String(this.globalAlpha)}`;
   }
 
   fillRect(x: number, y: number, width: number, height: number): void {

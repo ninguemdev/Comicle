@@ -11,7 +11,17 @@ import {
   UndoIcon,
 } from '../../ui/icons';
 import type { DrawingTool } from './engine/drawing-document';
-import { BRUSH_SIZES, DRAWING_COLORS, type BrushSize, type DrawingColorId } from './engine/palette';
+import {
+  BACKGROUND_COLOR,
+  BRUSH_OPACITY_MAX,
+  BRUSH_OPACITY_MIN,
+  BRUSH_SIZE_MAX,
+  BRUSH_SIZE_MIN,
+  clampBrushOpacity,
+  clampBrushSize,
+  DRAWING_COLORS,
+  type DrawingColorId,
+} from './engine/palette';
 
 const texts = strings.drawing;
 
@@ -19,22 +29,31 @@ const COLOR_IDS = Object.keys(DRAWING_COLORS).filter(
   (id): id is DrawingColorId => id in DRAWING_COLORS,
 );
 
-/** The largest dot shown for a brush size, so 32 still fits in its button. */
-const MAX_SIZE_PREVIEW = 24;
+/** The largest preview dot, so thick brushes still fit in the toolbar. */
+const MAX_SIZE_PREVIEW = 32;
+
+const PERCENT = 100;
+const OPACITY_STEP_PERCENT = 5;
+
+function toPercent(opacity: number): number {
+  return Math.round(opacity * PERCENT);
+}
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 
 export interface ToolbarProps {
   tool: DrawingTool;
   color: string;
-  size: BrushSize;
+  size: number;
+  opacity: number;
   canUndo: boolean;
   canRedo: boolean;
   canClear: boolean;
   disabled: boolean;
   onTool: (tool: DrawingTool) => void;
   onColor: (color: string) => void;
-  onSize: (size: BrushSize) => void;
+  onSize: (size: number) => void;
+  onOpacity: (opacity: number) => void;
   onUndo: () => void;
   onRedo: () => void;
   /** Asks to clear; the editor confirms first. */
@@ -72,6 +91,50 @@ function ToolButton({
   );
 }
 
+/** A horizontal range: further right is more. */
+function Slider({
+  label,
+  valueText,
+  min,
+  max,
+  step,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  valueText: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  disabled: boolean;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <label className="flex flex-col text-xs font-bold">
+      <span aria-hidden="true" className="flex justify-between">
+        <span>{label}</span>
+        <span className="font-normal">{valueText}</span>
+      </span>
+      <input
+        type="range"
+        aria-label={label}
+        aria-valuetext={valueText}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => {
+          onChange(Number(event.target.value));
+        }}
+        className="h-8 w-full cursor-pointer accent-pop-blue disabled:cursor-not-allowed disabled:opacity-40"
+      />
+    </label>
+  );
+}
+
 function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div
@@ -85,12 +148,14 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Brush, eraser, bucket, colors, sizes and history (interface.md §4). Desktop: a column left of the
+ * Brush, eraser, bucket, colors, width and opacity sliders, and history (interface.md §4). Desktop: a column left of the
  * canvas; phone in portrait: a row below it, colors in a popover; phone in landscape: a column.
  */
 export function Toolbar(props: ToolbarProps) {
-  const { tool, color, size, disabled } = props;
+  const { tool, color, size, opacity, disabled } = props;
   const [colorsOpen, setColorsOpen] = useState(false);
+  const preview = Math.min(size, MAX_SIZE_PREVIEW);
+  const opacityPercent = toPercent(opacity);
 
   function pickColor(next: string): void {
     props.onColor(next);
@@ -191,28 +256,43 @@ export function Toolbar(props: ToolbarProps) {
         </div>
       </div>
 
-      <Group label={texts.sizes}>
-        {BRUSH_SIZES.map((brushSize) => {
-          const preview = Math.min(brushSize, MAX_SIZE_PREVIEW);
-          return (
-            <ToolButton
-              key={brushSize}
-              label={texts.size(brushSize)}
-              pressed={size === brushSize}
-              disabled={disabled}
-              onClick={() => {
-                props.onSize(brushSize);
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className="rounded-full bg-current"
-                style={{ width: preview, height: preview }}
-              />
-            </ToolButton>
-          );
-        })}
-      </Group>
+      <div role="group" aria-label={texts.brushSettings} className="flex w-36 flex-col gap-1">
+        <div aria-hidden="true" className="flex h-9 items-center justify-center">
+          <span
+            className="rounded-full border border-ink/30"
+            style={{
+              width: preview,
+              height: preview,
+              backgroundColor: tool === 'eraser' ? BACKGROUND_COLOR : color,
+              opacity: tool === 'eraser' ? 1 : opacity,
+            }}
+          />
+        </div>
+        <Slider
+          label={texts.size}
+          valueText={texts.sizeValue(size)}
+          min={BRUSH_SIZE_MIN}
+          max={BRUSH_SIZE_MAX}
+          step={1}
+          value={size}
+          disabled={disabled}
+          onChange={(next) => {
+            props.onSize(clampBrushSize(next));
+          }}
+        />
+        <Slider
+          label={texts.opacity}
+          valueText={texts.opacityValue(opacityPercent)}
+          min={toPercent(BRUSH_OPACITY_MIN)}
+          max={toPercent(BRUSH_OPACITY_MAX)}
+          step={OPACITY_STEP_PERCENT}
+          value={opacityPercent}
+          disabled={disabled}
+          onChange={(next) => {
+            props.onOpacity(clampBrushOpacity(next / PERCENT));
+          }}
+        />
+      </div>
 
       <Group label={texts.history}>
         <ToolButton label={texts.undo} disabled={disabled || !props.canUndo} onClick={props.onUndo}>

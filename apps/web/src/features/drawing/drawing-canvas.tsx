@@ -2,7 +2,7 @@ import { PANEL_HEIGHT, PANEL_WIDTH } from '@comicle/shared';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
 import { strings } from '../../strings/pt-BR';
-import { bufferSize, fitPanel, toLogical, type Size } from './engine/coordinates';
+import { bufferSize, cursorDiameter, fitPanel, toLogical, type Size } from './engine/coordinates';
 import type {
   DrawingDocument,
   DrawingTool,
@@ -18,6 +18,7 @@ export interface BrushSettings {
   tool: DrawingTool;
   color: string;
   size: number;
+  opacity: number;
 }
 
 export interface DrawingCanvasProps {
@@ -70,6 +71,9 @@ export function DrawingCanvas({
   const policy = useRef(new PointerPolicy());
   const live = useRef<NewStroke | null>(null);
   const frameRequest = useRef<number | null>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  /** A mouse or pen over the canvas: touch has nothing hovering to show. */
+  const [hovering, setHovering] = useState(false);
 
   function paint(): void {
     frameRequest.current = null;
@@ -158,7 +162,7 @@ export function DrawingCanvas({
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
     const at = toLogical(event.clientX, event.clientY, rect);
-    const { tool, color, size } = brush;
+    const { tool, color, size, opacity } = brush;
     if (tool === 'fill') {
       // One click is the whole action: nothing follows the pointer.
       policy.current.reset();
@@ -166,11 +170,25 @@ export function DrawingCanvas({
       return;
     }
     event.currentTarget.setPointerCapture(event.pointerId);
-    live.current = { tool, color, size, points: [at] };
+    live.current = { tool, color, size, opacity, points: [at] };
     schedulePaint();
   }
 
+  /** Places the brush cursor under a hovering mouse or pen. */
+  function trackCursor(event: ReactPointerEvent<HTMLCanvasElement>): void {
+    const hovers = event.pointerType !== 'touch';
+    setHovering(hovers);
+    const cursor = cursorRef.current;
+    if (!hovers || !cursor) {
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    cursor.style.left = `${String(event.clientX - rect.left)}px`;
+    cursor.style.top = `${String(event.clientY - rect.top)}px`;
+  }
+
   function handlePointerMove(event: ReactPointerEvent<HTMLCanvasElement>): void {
+    trackCursor(event);
     const stroke = live.current;
     if (!stroke || !policy.current.owns(event)) {
       return;
@@ -192,22 +210,41 @@ export function DrawingCanvas({
     onStroke(stroke);
   }
 
+  // The circle stands for the stroke; the bucket paints an area, so it keeps the crosshair.
+  const showCursor = hovering && !disabled && brush.tool !== 'fill';
+  const diameter = cursorDiameter(brush.size, cssSize.width);
+
   return (
     <div ref={frameRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={strings.drawing.canvas}
-        aria-disabled={disabled}
-        style={{ width: cssSize.width, height: cssSize.height }}
-        className={`touch-none rounded-md border-comic shadow-pop select-none ${
-          disabled ? 'cursor-not-allowed' : 'cursor-crosshair'
-        }`}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      />
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label={strings.drawing.canvas}
+          aria-disabled={disabled}
+          style={{ width: cssSize.width, height: cssSize.height }}
+          className={`block touch-none rounded-md border-comic shadow-pop select-none ${
+            disabled ? 'cursor-not-allowed' : showCursor ? 'cursor-none' : 'cursor-crosshair'
+          }`}
+          onPointerDown={handlePointerDown}
+          onPointerEnter={trackCursor}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={() => {
+            setHovering(false);
+          }}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+        />
+        <div
+          ref={cursorRef}
+          aria-hidden="true"
+          // A black ring inside a white one shows over any color.
+          className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-black shadow-[0_0_0_1px_white] ${
+            showCursor ? 'block' : 'hidden'
+          }`}
+          style={{ width: diameter, height: diameter }}
+        />
+      </div>
     </div>
   );
 }
