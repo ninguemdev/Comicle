@@ -118,6 +118,7 @@ Regras visuais de `ComicPage`:
 |---|---|---|
 | Pincel | traço redondo | `B` |
 | Borracha | pinta branco do fundo (o PNG final é opaco) | `E` |
+| Balde de tinta | pinta a área em volta do clique que tem quase a mesma cor (tolerância de 48 por canal), mais 1 px de borda para cobrir a suavização dos traços; usa a cor escolhida, que não troca a ferramenta | `G` |
 | Cores | 16 cores fixas (abaixo) + seletor nativo para cor livre | — |
 | Espessura | 4 tamanhos: 3, 8, 16, 32 px lógicos | `[` e `]` |
 | Desfazer / Refazer | até 100 passos | `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` |
@@ -128,9 +129,9 @@ Paleta: `#000000 #FFFFFF #7F7F7F #C3C3C3 #E53935 #FB8C00 #FDD835 #43A047 #00ACC1
 
 ### Modelo
 
-- `DrawingDocument`: lista de operações (`stroke` com cor, tamanho, ferramenta e pontos; `clear`), `baseImage` opcional (rascunho restaurado, R48) e pilha de refazer.
+- `DrawingDocument`: lista de operações (`stroke` com cor, tamanho, ferramenta e pontos; `fill` com cor e ponto; `clear`), `baseImage` opcional (rascunho restaurado, R48) e pilha de refazer.
 - Renderização incremental: o traço em andamento é desenhado direto; desfazer re-renderiza a partir de um snapshot em cache a cada 20 operações.
-- `exportPng(): Promise<Uint8Array | null>` — `null` quando não há nada visível (R40): nenhum traço de pincel depois do último `clear` e nenhuma `baseImage` que um `clear` não tenha coberto. A borracha sozinha não conta como desenho.
+- `exportPng(): Promise<Uint8Array | null>` — `null` quando não há nada visível (R40): nenhum traço de pincel ou balde (fora o balde branco) depois do último `clear` e nenhuma `baseImage` que um `clear` não tenha coberto. A borracha sozinha não conta como desenho.
 - API pública: `DrawingEditor { baseImageUrl?, disabled, onChange(revision), ref.exportPng() }`. Em desenvolvimento, `/dev/editor` mostra o editor isolado.
 - O documento é descartado ao concluir; não é guardado no navegador.
 

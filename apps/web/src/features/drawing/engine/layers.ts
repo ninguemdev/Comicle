@@ -20,7 +20,13 @@ export interface PaintContext {
   stroke(): void;
   fillRect(x: number, y: number, width: number, height: number): void;
   drawImage(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void;
+  /** The bucket reads and writes pixels (interface.md §4). */
+  getImageData(sx: number, sy: number, sw: number, sh: number): ImageData;
+  putImageData(imageData: ImageData, dx: number, dy: number): void;
 }
+
+/** The bucket reads the layer back: a CPU-side canvas makes that cheap. */
+const CONTEXT_OPTIONS: CanvasRenderingContext2DSettings = { willReadFrequently: true };
 
 export interface Layer {
   readonly ctx: PaintContext;
@@ -42,7 +48,7 @@ function offscreenLayer(): Layer | null {
     return null;
   }
   const canvas = new OffscreenCanvas(PANEL_WIDTH, PANEL_HEIGHT);
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', CONTEXT_OPTIONS);
   if (ctx === null) {
     return null;
   }
@@ -53,7 +59,7 @@ function elementLayer(): Layer | null {
   const canvas = document.createElement('canvas');
   canvas.width = PANEL_WIDTH;
   canvas.height = PANEL_HEIGHT;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', CONTEXT_OPTIONS);
   if (ctx === null) {
     return null;
   }

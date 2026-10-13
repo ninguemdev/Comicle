@@ -76,6 +76,30 @@ describe('renderer', () => {
     expect(strokesPainted(ctx)).toBe(2);
   });
 
+  it('o balde lê os pixels do quadro inteiro e grava a área pintada por cima do que veio antes', () => {
+    const doc = docWith(1);
+    doc.addFill({ color: '#E53935', at: { x: 500, y: 300 } });
+    const ctx = new RecordingContext();
+
+    renderDocument(ctx, doc);
+
+    expect(ctx.calls.slice(-2)).toEqual([
+      'getImageData 0,0,1024,768',
+      'putImageData 229,57,53 at 0,0',
+    ]);
+    expect(strokesPainted(ctx)).toBe(1);
+  });
+
+  it('o balde na cor que já está lá não regrava os pixels', () => {
+    const doc = new DrawingDocument();
+    doc.addFill({ color: '#FFFFFF', at: { x: 1, y: 1 } });
+    const ctx = new RecordingContext();
+
+    renderDocument(ctx, doc);
+
+    expect(ctx.calls).toEqual([BACKGROUND, 'getImageData 0,0,1024,768']);
+  });
+
   describe('snapshots', () => {
     function setup(count: number) {
       const layers: ReturnType<typeof recordingLayer>[] = [];
