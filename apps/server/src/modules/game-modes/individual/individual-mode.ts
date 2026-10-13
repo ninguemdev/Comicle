@@ -39,7 +39,7 @@ function totalRounds(_settings: MatchSettings, participantCount: number): number
   return Math.max(1, participantCount - 1);
 }
 
-/** R64: every round starts straight at drawing; there is nothing earlier to read. */
+/** R65: every round starts straight at drawing; there is nothing earlier to read. */
 function hasReadingPhase(): boolean {
   return false;
 }

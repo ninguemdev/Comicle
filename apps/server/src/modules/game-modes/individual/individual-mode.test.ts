@@ -62,7 +62,7 @@ describe('individualMode', () => {
     expect(individualMode.totalRounds(settings, 12)).toBe(11);
   });
 
-  it('R64: nenhuma rodada tem leitura', () => {
+  it('R65: nenhuma rodada tem leitura', () => {
     for (let round = 0; round < MAX_PLAYERS; round += 1) {
       expect(individualMode.hasReadingPhase(round)).toBe(false);
     }

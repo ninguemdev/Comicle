@@ -2,7 +2,7 @@ export type GameModeId = 'collaborative' | 'individual';
 
 export type PanelCountSetting = { kind: 'per_player' } | { kind: 'fixed'; value: number };
 
-/** R18: settings that only the individual mode reads (R62–R64). */
+/** R18: settings that only the individual mode reads (R62, R65). */
 export interface IndividualSettings {
   /** Panels of every story, drawn by a single player. */
   panelsPerStory: number;
