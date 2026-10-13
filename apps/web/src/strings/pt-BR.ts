@@ -241,6 +241,8 @@ export const strings = {
     announce: (phase: string, round: number | null, total: number) =>
       round === null ? phase : `${phase}: rodada ${String(round)} de ${String(total)}`,
     panelOf: (position: number, total: number) => `Quadro ${String(position)} de ${String(total)}`,
+    storyOf: (position: number, total: number) =>
+      `História ${String(position)} de ${String(total)}`,
     abort: 'Encerrar partida',
     abortTitle: 'Encerrar a partida?',
     abortBody: 'Todos voltam ao lobby e tudo o que foi feito nesta partida é apagado.',
@@ -288,6 +290,20 @@ export const strings = {
       confirm: 'Concluir',
       keepDrawing: 'Continuar desenhando',
       collecting: 'Tempo esgotado! Enviando o seu quadro…',
+      story: {
+        submit: 'Enviar história',
+        confirmTitle: 'Enviar a história agora?',
+        confirmBody:
+          'Ainda falta mais da metade do tempo. Depois de enviar, não dá para voltar a nenhum quadro, e os quadros em branco vão em branco.',
+        confirm: 'Enviar',
+        collecting: 'Tempo esgotado! Enviando a sua história…',
+        panels: 'Quadros da história',
+        panel: (number: number, total: number) => `Quadro ${String(number)} de ${String(total)}`,
+        previous: 'Quadro anterior',
+        next: 'Próximo quadro',
+        previousArrow: '◀',
+        nextArrow: '▶',
+      },
     },
     waiting: {
       received: 'Recebido!',

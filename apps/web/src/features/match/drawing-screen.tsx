@@ -1,5 +1,5 @@
-import type { MatchView, PanelRef, PlayerView } from '@comicle/shared';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { drawingSecondsFor, type MatchView, type PanelRef, type PlayerView } from '@comicle/shared';
+import { useEffect, useEffectEvent, useState } from 'react';
 
 import { useOnline, useRoomStore } from '../../stores/room-store';
 import { strings } from '../../strings/pt-BR';
@@ -8,12 +8,16 @@ import { Dialog } from '../../ui/dialog';
 import { secondsLeft, Timer } from '../../ui/timer';
 import { ComicPage } from '../comic/comic-page';
 import { PanelFrame } from '../comic/panel-frame';
-import { DrawingEditor, type DrawingEditorHandle } from '../drawing/drawing-editor';
+import { DrawingEditor } from '../drawing/drawing-editor';
+import { DrawingDocument } from '../drawing/engine/drawing-document';
+import { exportPng } from '../drawing/engine/export';
+import { loadImage } from '../drawing/load-image';
 import { AbortMatchButton } from './abort-match-button';
 import { roundLabel } from './match-header';
+import { StoryPanelStrip } from './story-panel-strip';
 import { useActionError } from './use-action-error';
 import { useAutosave } from './use-autosave';
-import { useMyDraft } from './use-my-draft';
+import { useMyDrafts } from './use-my-draft';
 import { usePanelSubmission } from './use-panel-submission';
 
 const texts = strings.match.drawing;
@@ -64,19 +68,23 @@ export interface DrawingScreenProps {
   previousPanels: readonly PanelRef[];
   /**
    * R38: the drawing deadline, which may start during the others' reading (R36); while the
-   * panel is still on its way in the closing (R42), the end of the closing window.
+   * panels are still on their way in the closing (R42), the end of the closing window.
    */
   deadlineAt: number | null;
-  hasDraft: boolean;
-  /** `round_closing` while this player's panel is still on its way (R42). */
+  /** R66: panels the player draws this round; more than one in the individual mode. */
+  panelCount: number;
+  /** R48: panels with a draft to restore. */
+  draftPanels: readonly number[];
+  /** `round_closing` while this player's panels are still on their way (R42). */
   closing: boolean;
-  /** The panel is in: the match screen may move on. */
+  /** The panels are in: the match screen may move on. */
   onSent: (roundIndex: number) => void;
 }
 
 /**
- * R38–R42, R48: the editor as large as the screen allows, the theme as a one-line reference,
- * autosave while drawing and the panel handed in exactly once.
+ * R38–R42, R48, R65, R66: the editor as large as the screen allows, the theme as a one-line
+ * reference, autosave while drawing and every panel handed in exactly once. With several panels
+ * (individual mode), a numbered strip moves between them; each keeps its own drawing and history.
  */
 export function DrawingScreen({
   view,
@@ -84,40 +92,84 @@ export function DrawingScreen({
   theme,
   previousPanels,
   deadlineAt,
-  hasDraft,
+  panelCount,
+  draftPanels,
   closing,
   onSent,
 }: DrawingScreenProps) {
   const actions = useRoomStore((state) => state.actions);
   const online = useOnline();
   const offsetMs = useRoomStore((state) => state.clockOffsetMs);
-  const editor = useRef<DrawingEditorHandle>(null);
-  const [revision, setRevision] = useState(0);
+  const [documents] = useState(() =>
+    Array.from({ length: Math.max(1, panelCount) }, () => new DrawingDocument()),
+  );
+  const [current, setCurrent] = useState(0);
+  /** Bumped on every change to a drawing, so the strip and the buttons follow. */
+  const [, setChanges] = useState(0);
   const [themeOpen, setThemeOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   /** The reference panel shown large, if any. */
   const [enlarged, setEnlarged] = useState<PanelRef | null>(null);
-  const baseImageUrl = useMyDraft(view.room.code, hasDraft);
+  const [restored] = useState(() => new Set<number>());
+  const drafts = useMyDrafts(view.room.code, draftPanels);
   const { report, toast } = useActionError();
   const { roundIndex } = match;
+  const story = documents.length > 1;
+  const doneTexts = story ? texts.story : texts;
+  const document = documents[current];
 
   const submission = usePanelSubmission({
-    editor,
+    panelCount: documents.length,
+    exportPanel: (panelIndex) => {
+      const panel = documents[panelIndex];
+      return panel ? exportPng(panel) : Promise.resolve(null);
+    },
     roundIndex,
     deadlineAt,
     offsetMs,
-    send: (round, reason, png) => actions.submitPanel(round, reason, png),
+    send: (round, panelIndex, reason, png) => actions.submitPanel(round, panelIndex, reason, png),
     onSent,
     onError: report,
   });
   const disabled = closing || submission.status !== 'idle';
 
-  useAutosave({
-    editor,
-    revision,
+  const { markSaved } = useAutosave({
+    documents,
     enabled: !disabled,
-    save: (png) => actions.autosavePanel(roundIndex, png),
+    exportPanel: (panel) => exportPng(panel),
+    save: (panelIndex, png) => actions.autosavePanel(roundIndex, panelIndex, png),
   });
+
+  // R48: each restored draft becomes the base layer of its panel, already saved on the server.
+  const onDraftLoaded = useEffectEvent((panelIndex: number, image: HTMLImageElement) => {
+    const panel = documents[panelIndex];
+    if (panel) {
+      panel.setBaseImage(image);
+      markSaved(panelIndex, panel.revision);
+      setChanges((count) => count + 1);
+    }
+  });
+  useEffect(() => {
+    let active = true;
+    for (const [panelIndex, url] of drafts) {
+      if (restored.has(panelIndex)) {
+        continue;
+      }
+      restored.add(panelIndex);
+      loadImage(url)
+        .then((image) => {
+          if (active) {
+            onDraftLoaded(panelIndex, image);
+          }
+        })
+        .catch(() => {
+          // An unreadable draft is not worth blocking the round: that panel starts blank.
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [drafts, restored]);
 
   /** R40: confirmation only while more than half of the time is left. */
   function requestDone(): void {
@@ -126,18 +178,26 @@ export function DrawingScreen({
       return;
     }
     const left = deadlineAt === null ? 0 : secondsLeft(deadlineAt, offsetMs);
-    if (left > view.room.settings.drawingSeconds / HALF) {
+    if (left > drawingSecondsFor(view.room.settings) / HALF) {
       setConfirming(true);
     } else {
       submission.done();
     }
   }
 
-  // Ctrl/⌘+Enter concludes (interface.md §4; the editor itself never hands anything in, D25).
+  // Ctrl/⌘+Enter concludes (interface.md §4; the editor itself never hands anything in, D25);
+  // Alt+←/→ move between the panels of the story (R65).
   const onShortcut = useEffectEvent((event: KeyboardEvent) => {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !confirming && !enlarged) {
+    if (confirming || enlarged) {
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
       requestDone();
+    } else if (story && event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+      event.preventDefault();
+      const step = event.key === 'ArrowLeft' ? -1 : 1;
+      setCurrent((index) => Math.min(Math.max(index + step, 0), documents.length - 1));
     }
   });
   useEffect(() => {
@@ -150,7 +210,9 @@ export function DrawingScreen({
   return (
     <div className="full-screen z-30 flex flex-col gap-2 bg-paper p-2 sm:p-3">
       <header className="flex flex-wrap items-center gap-2">
-        <span className="font-display text-2xl tracking-wide">{roundLabel(match)}</span>
+        <span className="font-display text-2xl tracking-wide">
+          {roundLabel(match, view.room.settings.mode)}
+        </span>
         <button
           type="button"
           aria-expanded={themeOpen}
@@ -167,22 +229,23 @@ export function DrawingScreen({
         </button>
         {deadlineAt !== null && <Timer deadlineAt={deadlineAt} offsetMs={offsetMs} />}
         <Button onClick={requestDone} disabled={disabled || !online}>
-          {submission.status === 'idle' ? texts.submit : texts.submitting}
+          {submission.status === 'idle' ? doneTexts.submit : texts.submitting}
         </Button>
         {view.me.isHost && <AbortMatchButton />}
       </header>
       {closing && (
         <p role="status" className="rounded-lg border-comic bg-pop-yellow px-3 py-1 font-bold">
-          {texts.collecting}
+          {doneTexts.collecting}
         </p>
       )}
       <div className="flex min-h-0 flex-1 flex-col gap-2 landscape:flex-row md:flex-row">
         <div className="min-h-0 min-w-0 flex-1">
           <DrawingEditor
-            ref={editor}
+            document={document}
             disabled={disabled}
-            baseImageUrl={baseImageUrl}
-            onChange={setRevision}
+            onChange={() => {
+              setChanges((count) => count + 1);
+            }}
           />
         </div>
         {previousPanels.length > 0 && (
@@ -191,6 +254,7 @@ export function DrawingScreen({
           </div>
         )}
       </div>
+      {story && <StoryPanelStrip documents={documents} current={current} onSelect={setCurrent} />}
       <Dialog
         open={enlarged !== null}
         wide
@@ -207,7 +271,7 @@ export function DrawingScreen({
       </Dialog>
       <Dialog
         open={confirming}
-        title={texts.confirmTitle}
+        title={doneTexts.confirmTitle}
         onClose={() => {
           setConfirming(false);
         }}
@@ -227,12 +291,12 @@ export function DrawingScreen({
                 submission.done();
               }}
             >
-              {texts.confirm}
+              {doneTexts.confirm}
             </Button>
           </>
         }
       >
-        <p>{texts.confirmBody}</p>
+        <p>{doneTexts.confirmBody}</p>
       </Dialog>
       {toast}
     </div>

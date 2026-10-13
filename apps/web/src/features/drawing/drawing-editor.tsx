@@ -29,6 +29,11 @@ export interface DrawingEditorHandle {
 }
 
 export interface DrawingEditorProps {
+  /**
+   * The drawing to edit, kept by the caller: one per panel of a story (R65), each with its own
+   * history. Without it, the editor keeps its own.
+   */
+  document?: DrawingDocument | undefined;
   /** R48: the restored draft, drawn under the new strokes and never undone. */
   baseImageUrl?: string | undefined;
   disabled: boolean;
@@ -41,8 +46,15 @@ export interface DrawingEditorProps {
  * The drawing editor (interface.md §4), isolated from the match: it takes props and hands back
  * a PNG through `ref.exportPng()`. Autosave, submission and the timer belong to the caller.
  */
-export function DrawingEditor({ baseImageUrl, disabled, onChange, ref }: DrawingEditorProps) {
-  const [doc] = useState(() => new DrawingDocument());
+export function DrawingEditor({
+  document,
+  baseImageUrl,
+  disabled,
+  onChange,
+  ref,
+}: DrawingEditorProps) {
+  const [own] = useState(() => new DrawingDocument());
+  const doc = document ?? own;
   const [revision, setRevision] = useState(doc.revision);
   const [tool, setTool] = useState<DrawingTool>('brush');
   const [color, setColor] = useState(DEFAULT_COLOR);
