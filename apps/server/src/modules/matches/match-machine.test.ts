@@ -21,6 +21,7 @@ const settings: MatchSettings = {
   mode: 'collaborative',
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
+  showPreviousPanels: false,
 };
 const players = ['ana', 'bia', 'caio'];
 const everyone: ReadonlySet<string> = new Set(players);

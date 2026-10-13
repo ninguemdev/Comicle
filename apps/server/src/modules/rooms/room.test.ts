@@ -51,6 +51,7 @@ describe('Room', () => {
       mode: 'collaborative',
       panelCount: { kind: 'per_player' },
       drawingSeconds: 90,
+      showPreviousPanels: false,
     });
     expect(defaultMatchSettings()).toEqual(room.settings);
   });

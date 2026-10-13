@@ -44,7 +44,12 @@ export function lobbyView({
       code: ROOM_CODE,
       status,
       hostPlayerId: 'p1',
-      settings: { mode: 'collaborative', panelCount: { kind: 'per_player' }, drawingSeconds: 90 },
+      settings: {
+        mode: 'collaborative',
+        panelCount: { kind: 'per_player' },
+        drawingSeconds: 90,
+        showPreviousPanels: false,
+      },
       members,
     },
     me: { playerId: me, isHost: me === 'p1', role: 'member' },

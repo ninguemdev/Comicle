@@ -20,7 +20,7 @@ Base: `/api`. JSON, exceto imagens. Autenticação por `Authorization: Bearer <t
 | `POST /api/guest-sessions` | — | `201 { token, expiresAt }` | `expiresAt` em ms epoch do servidor (renovado a cada uso, R3); rate limit de 10/min por IP → `429 RATE_LIMITED` |
 | `GET /api/guest-sessions/me` | Bearer | `200 { guestId }` ou `401 UNAUTHORIZED` | Usado no boot do cliente para validar o token salvo; também renova a sessão |
 | `GET /api/rooms/:code` | — | `200 { code, status, memberCount, joinable }` ou `404 ROOM_NOT_FOUND` | Pré-checagem antes de entrar; o código é normalizado (R6) e um código mal formado responde como inexistente. `joinable` = sala não cheia (R9); a rota é anônima, então reconexão e expulsão (R12) só se resolvem no `room:join`. Rate limit de 30/min por IP (proteção contra varredura de códigos) |
-| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R54, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
+| `GET /api/panels/:panelId` | Bearer | `200 image/png` · `403 FORBIDDEN` · `404 PANEL_NOT_FOUND` | Consulta `PanelAccessPolicy` (R36, R38, R54, R59); `Cache-Control: private, no-store`. 404 para ID que não está em nenhuma partida em andamento e para quadro `empty` (sem imagem); 403 quando o quadro existe e o jogador não pode vê-lo agora |
 | `GET /api/rooms/:code/my-draft` | Bearer | `200 image/png` ou `204` · `403 NOT_IN_ROOM` · `404 ROOM_NOT_FOUND` | Último autosave do próprio jogador na rodada atual, em `round_drawing` ou `round_closing` (R48); `204` sem rascunho ou fora dessas fases. `Cache-Control: private, no-store` |
 | `GET /healthz` | — | `200 { status: 'ok' }` · `503 { error: { code: 'INTERNAL' } }` | Também verifica o banco (`select 1`); 503 quando ele não responde |
 
@@ -181,7 +181,8 @@ type PlayerTask =
   | { kind: 'read_story'; status: 'reading'; theme: string; previousPanels: PanelRef[] }
   | { kind: 'draw_panel'; status: 'drawing' | 'submitted'; theme: string;
       panelPosition: number; hasDraft: boolean;
-      deadlineAt: number }  // prazo comum do desenho (R38); na leitura, o mais tarde possível
+      deadlineAt: number;   // prazo comum do desenho (R38); na leitura, o mais tarde possível
+      previousPanels: PanelRef[] }  // só com showPreviousPanels e até a entrega (R38); senão []
   | { kind: 'wait' }        // round_closing, ou nada a fazer
   | { kind: 'spectate' }    // espectadores durante a criação
   | { kind: 'watch' };      // todos durante a apresentação
@@ -208,6 +209,7 @@ type PresentationView = {
 
 Regras de projeção (R58), testadas em `build-player-view.test.ts`:
 
+- `draw_panel.previousPanels` é vazio, exceto com `settings.showPreviousPanels` para quem ainda não entregou: aí traz os quadros anteriores da própria história (R38).
 - `read_story` só existe até o `round:ready`; depois dele, a tarefa é `draw_panel`, mesmo na `round_reading` (R36, R38).
 - `draw_panel` nunca inclui quadros.
 - Temas de outros participantes nunca aparecem fora da apresentação.

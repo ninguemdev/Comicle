@@ -139,6 +139,10 @@ export const strings = {
       panels: (count: number) => `${String(count)} quadros`,
       drawingSeconds: 'Tempo por quadrinho',
       duration: formatDuration,
+      showPreviousPanels: 'Mostrar quadros anteriores ao desenhar',
+      showPreviousPanelsHint: '(miniaturas ao lado do desenho; sem elas, vale a memória)',
+      yes: 'Sim',
+      no: 'Não',
       mode: 'Modo',
       collaborative: 'Colaborativo',
       individual: 'Individual',
@@ -233,6 +237,7 @@ export const strings = {
       hideTheme: 'Recolher o tema',
       submit: 'Concluir',
       submitting: 'Enviando…',
+      previousPanels: 'Quadros anteriores',
       confirmTitle: 'Concluir agora?',
       confirmBody:
         'Ainda falta mais da metade do tempo. Depois de concluir, não dá para voltar ao quadro.',

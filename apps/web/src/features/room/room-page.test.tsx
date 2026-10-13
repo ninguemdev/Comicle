@@ -1,5 +1,5 @@
 import { fail, type ErrorCode } from '@comicle/shared';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -86,12 +86,34 @@ describe('sala no cliente', () => {
       mode: 'collaborative',
       panelCount: { kind: 'per_player' },
       drawingSeconds: 60,
+      showPreviousPanels: false,
     });
     expect(actions.updateSettings).toHaveBeenNthCalledWith(2, {
       mode: 'collaborative',
       panelCount: { kind: 'fixed', value: 4 },
       drawingSeconds: 90,
+      showPreviousPanels: false,
     });
+  });
+
+  it('R11, R18: o anfitrião liga Mostrar quadros anteriores; os demais veem o valor', () => {
+    const actions = setUpStores(lobbyView());
+    renderAt();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Mostrar quadros anteriores/ }));
+    expect(actions.updateSettings).toHaveBeenCalledWith({
+      mode: 'collaborative',
+      panelCount: { kind: 'per_player' },
+      drawingSeconds: 90,
+      showPreviousPanels: true,
+    });
+    cleanup();
+
+    setUpStores(lobbyView({ me: 'p2' }));
+    renderAt();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(screen.getByText('Mostrar quadros anteriores ao desenhar')).toBeInstanceOf(HTMLElement);
+    expect(screen.getByText('Não')).toBeInstanceOf(HTMLElement);
   });
 
   it('R22: iniciar fica desabilitado com o motivo enquanto falta jogador conectado', () => {

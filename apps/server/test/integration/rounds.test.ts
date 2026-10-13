@@ -1,5 +1,6 @@
 import {
   defaultAvatar,
+  DRAWING_SECONDS_DEFAULT,
   type MatchAbortReason,
   type PlayerProfile,
   type PlayerTask,
@@ -29,6 +30,13 @@ interface Player {
 
 const timing = fastGameTiming;
 const DRAWING_MS = timing.drawingMs(defaultMatchSettings());
+/** R19, as the lobby sends them. */
+const SETTINGS = {
+  mode: 'collaborative',
+  panelCount: { kind: 'per_player' },
+  drawingSeconds: DRAWING_SECONDS_DEFAULT,
+  showPreviousPanels: false,
+} as const;
 
 const inPhase = (phase: string, roundIndex?: number) => (view: PlayerView) =>
   view.match?.phase === phase && (roundIndex === undefined || view.match.roundIndex === roundIndex);
@@ -99,10 +107,14 @@ describe('rodadas (integração)', () => {
   }
 
   /** Room of Ana, Bia and Caio already drawing round 0. */
-  async function drawingRound0(): Promise<{ code: string; players: [Player, Player, Player] }> {
+  async function drawingRound0(
+    showPreviousPanels = false,
+  ): Promise<{ code: string; players: [Player, Player, Player] }> {
     const { code, players } = await room('Bia', 'Caio');
     const [ana, bia, caio] = players;
     if (!ana || !bia || !caio) throw new Error('jogadores');
+    const settings = { ...SETTINGS, showPreviousPanels };
+    expect((await ana.client.emitWithAck('room:updateSettings', { settings })).ok).toBe(true);
     expect((await ana.client.emitWithAck('match:start', {})).ok).toBe(true);
     for (const player of players) {
       await player.views.waitFor(inPhase('theme_writing'));
@@ -274,6 +286,31 @@ describe('rodadas (integração)', () => {
       status: 'submitted',
       deadlineAt: deadline,
     });
+  });
+
+  it('R38, R59: com showPreviousPanels, quem desenha vê os quadros anteriores até entregar', async () => {
+    await start();
+    const { players } = await drawingRound0(true);
+    const [ana, bia] = players;
+    for (const player of players) {
+      await done(player, 0);
+    }
+    await ana.views.waitFor(inPhase('round_reading', 1));
+
+    expect(await ready(ana, 1)).toEqual({ ok: true, data: {} });
+    const drawing = await ana.views.waitFor((v) => taskState(v) === 'draw_panel:drawing');
+    const task = taskOf(drawing);
+    const reference = task?.kind === 'draw_panel' ? task.previousPanels : [];
+    expect(reference).toHaveLength(1);
+    const panelId = reference[0]?.panelId ?? '';
+    expect((await get(`/api/panels/${panelId}`, ana.token)).status).toBe(200);
+    // Someone else's reference stays private.
+    expect((await get(`/api/panels/${panelId}`, bia.token)).status).toBe(403);
+
+    expect(await done(ana, 1, 4)).toEqual({ ok: true, data: {} });
+    const handedIn = await ana.views.waitFor((v) => taskState(v) === 'draw_panel:submitted');
+    expect(JSON.stringify(handedIn)).not.toContain(panelId);
+    expect((await get(`/api/panels/${panelId}`, ana.token)).status).toBe(403);
   });
 
   it('R41, R42: um desconectado sem concluir faz o desenho esperar o prazo; o fechamento recolhe o resto', async () => {

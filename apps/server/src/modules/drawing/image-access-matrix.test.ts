@@ -4,6 +4,7 @@ import {
   assignedStoryIndex,
   generateMatch,
   panelIdOf,
+  seesReference,
 } from '../../../test/support/generated-matches';
 import { SeededRng } from '../../platform/random';
 import type { Match } from '../matches/match';
@@ -14,14 +15,24 @@ import { canAccessPanel } from './panel-access-policy';
 
 const MATCHES = 30;
 
-/** The rules, straight: own reading before confirming (R36, R47), revealed panels (R54). */
+/** Whether `panelId` is one of the earlier panels of the story `viewer` got this round. */
+function inAssignedStory(match: Match, viewer: string, panelId: string): boolean {
+  const story = assignedStoryIndex(match, viewer);
+  const panels = story === undefined ? [] : (match.stories[story]?.panels ?? []);
+  return panels.some((panel) => panel.id === panelId);
+}
+
+/**
+ * The rules, straight: own reading before confirming (R36, R47), own drawing with
+ * `showPreviousPanels` (R38), revealed panels (R54).
+ */
 function mayAccess(match: Match, viewer: string, panelId: string): boolean {
   switch (match.phase) {
-    case 'round_reading': {
-      if (match.round?.ready.has(viewer)) return false;
-      const story = assignedStoryIndex(match, viewer);
-      const panels = story === undefined ? [] : (match.stories[story]?.panels ?? []);
-      return panels.some((panel) => panel.id === panelId);
+    case 'round_reading':
+    case 'round_drawing':
+    case 'round_closing': {
+      const reading = match.phase === 'round_reading' && !match.round?.ready.has(viewer);
+      return (reading || seesReference(match, viewer)) && inAssignedStory(match, viewer, panelId);
     }
     case 'presentation': {
       const cursor = match.presentation;
@@ -37,8 +48,6 @@ function mayAccess(match: Match, viewer: string, panelId: string): boolean {
       );
     }
     case 'theme_writing':
-    case 'round_drawing':
-    case 'round_closing':
       return false;
     default:
       return match.phase satisfies never;
@@ -46,7 +55,7 @@ function mayAccess(match: Match, viewer: string, panelId: string): boolean {
 }
 
 describe('matriz de acesso às imagens (R59)', () => {
-  it(`R36, R54, R59: em ${String(MATCHES)} partidas geradas, todo quadro × todo jogador × todo momento`, () => {
+  it(`R36, R38, R54, R59: em ${String(MATCHES)} partidas geradas, todo quadro × todo jogador × todo momento`, () => {
     let checked = 0;
     let granted = 0;
     for (let seed = 1; seed <= MATCHES; seed++) {

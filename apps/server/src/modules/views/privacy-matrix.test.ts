@@ -6,6 +6,7 @@ import {
   FALLBACK_THEMES,
   generateMatch,
   panelIdOf,
+  seesReference,
   themeOf,
 } from '../../../test/support/generated-matches';
 import { inMatch, testMember, testRoom } from '../../../test/support/room-builders';
@@ -62,13 +63,18 @@ function allowed(match: Match, viewer: string, seated: boolean) {
     case 'round_reading':
       if (assigned) {
         themes.add(assigned.themeText);
-        if (!match.round?.ready.has(viewer)) {
+        if (!match.round?.ready.has(viewer) || seesReference(match, viewer)) {
           panels = new Set(assigned.panels.map((panel) => panel.id));
         }
       }
       break;
     case 'round_drawing':
-      if (assigned) themes.add(assigned.themeText);
+      if (assigned) {
+        themes.add(assigned.themeText);
+        if (seesReference(match, viewer)) {
+          panels = new Set(assigned.panels.map((panel) => panel.id));
+        }
+      }
       break;
     case 'round_closing':
       break;

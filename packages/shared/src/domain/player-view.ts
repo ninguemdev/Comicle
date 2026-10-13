@@ -54,6 +54,11 @@ export type PlayerTask =
        * the latest possible one and moves earlier if the reading ends early.
        */
       deadlineAt: number;
+      /**
+       * R38: the earlier panels of the story, only with `showPreviousPanels` and while the
+       * player is still drawing; empty otherwise.
+       */
+      previousPanels: PanelRef[];
     }
   /** round_closing, or nothing to do. */
   | { kind: 'wait' }

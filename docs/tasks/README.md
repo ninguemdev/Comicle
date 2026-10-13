@@ -36,7 +36,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T28 | [HQ baixada com quadros colados](./T28-hq-baixada-colada.md) | T25 | ⬜ |
 | T29 | [Opção "autor desenha o último quadro"](./T29-autor-desenha-ultimo.md) | T27 | ⬜ |
 | T30 | [Desenhar logo depois de confirmar a leitura](./T30-desenhar-ao-confirmar.md) | T12 | ✅ |
-| T31 | [Quadros anteriores em miniatura ao desenhar](./T31-miniaturas-ao-desenhar.md) | T30 | ⬜ |
+| T31 | [Quadros anteriores em miniatura ao desenhar](./T31-miniaturas-ao-desenhar.md) | T30 | ✅ |
 
 Podem andar em paralelo, se houver mais de uma pessoa ou sessão: T06/T07/T13/T14 (cliente) com T03–T05/T08/T10–T12 (servidor).
 

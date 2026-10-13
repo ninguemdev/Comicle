@@ -14,6 +14,37 @@ export function readablePanels(match: Match, playerId: string): readonly PanelMe
   return assignedStory(match, playerId)?.panels ?? [];
 }
 
+/** Whether the player is drawing this round's panel right now (R38), whatever the phase. */
+function isDrawing(match: Match, playerId: string): boolean {
+  const { round } = match;
+  if (round === null || round.finals.has(playerId)) {
+    return false;
+  }
+  switch (match.phase) {
+    case 'round_reading':
+      return round.ready.has(playerId);
+    case 'round_drawing':
+    case 'round_closing':
+      return true;
+    case 'theme_writing':
+    case 'presentation':
+      return false;
+    default:
+      return match.phase satisfies never;
+  }
+}
+
+/**
+ * R38: with `showPreviousPanels`, the artist keeps seeing the earlier panels of the story they
+ * draw, as a reference, until they hand the panel in; without it, nothing (R36).
+ */
+export function referencePanels(match: Match, playerId: string): readonly PanelMeta[] {
+  if (!match.settings.showPreviousPanels || !isDrawing(match, playerId)) {
+    return [];
+  }
+  return assignedStory(match, playerId)?.panels ?? [];
+}
+
 /** R53, R54: the revealed panels of the story being presented, the same for every member. */
 export function presentedPanels(match: Match): readonly PanelMeta[] {
   const cursor = match.presentation;
@@ -39,17 +70,22 @@ function isPresented(match: Match, panelId: string): boolean {
   );
 }
 
-/** R59: outside the player's own reading and the presentation, no panel is accessible. */
+/**
+ * R59: outside the player's own reading, their own drawing with `showPreviousPanels` and the
+ * presentation, no panel is accessible.
+ */
 export function canAccessPanel(match: Match | null, playerId: string, panelId: string): boolean {
   if (match === null) {
     return false;
   }
   switch (match.phase) {
     case 'round_reading':
-      return readablePanels(match, playerId).some((panel) => panel.id === panelId);
-    case 'theme_writing':
     case 'round_drawing':
     case 'round_closing':
+      return [...readablePanels(match, playerId), ...referencePanels(match, playerId)].some(
+        (panel) => panel.id === panelId,
+      );
+    case 'theme_writing':
       return false;
     case 'presentation':
       return isPresented(match, panelId);

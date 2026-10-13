@@ -1,4 +1,4 @@
-import type { MatchView, PlayerView } from '@comicle/shared';
+import type { MatchView, PanelRef, PlayerView } from '@comicle/shared';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { useOnline, useRoomStore } from '../../stores/room-store';
@@ -6,6 +6,7 @@ import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { Dialog } from '../../ui/dialog';
 import { secondsLeft, Timer } from '../../ui/timer';
+import { PanelFrame } from '../comic/panel-frame';
 import { DrawingEditor, type DrawingEditorHandle } from '../drawing/drawing-editor';
 import { AbortMatchButton } from './abort-match-button';
 import { roundLabel } from './match-header';
@@ -17,10 +18,34 @@ import { usePanelSubmission } from './use-panel-submission';
 const texts = strings.match.drawing;
 const HALF = 2;
 
+/** Width of a reference thumbnail, in CSS px: as small as the presentation strip. */
+const REFERENCE_WIDTH = 96;
+
+/**
+ * R38 with `showPreviousPanels`: the story's earlier panels, small, just to check them. A column
+ * right of the editor; a strip above it on a phone held upright.
+ */
+function ReferencePanels({ panels }: { panels: readonly PanelRef[] }) {
+  return (
+    <ul
+      aria-label={texts.previousPanels}
+      className="flex shrink-0 gap-2 overflow-x-auto p-1 landscape:flex-col landscape:overflow-x-visible landscape:overflow-y-auto md:flex-col md:overflow-x-visible md:overflow-y-auto"
+    >
+      {panels.map((panel) => (
+        <li key={panel.panelId}>
+          <PanelFrame panel={panel} width={REFERENCE_WIDTH} compact />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export interface DrawingScreenProps {
   view: PlayerView;
   match: MatchView;
   theme: string;
+  /** R38: earlier panels to show as a reference; empty without `showPreviousPanels`. */
+  previousPanels: readonly PanelRef[];
   /**
    * R38: the drawing deadline, which may start during the others' reading (R36); while the
    * panel is still on its way in the closing (R42), the end of the closing window.
@@ -41,6 +66,7 @@ export function DrawingScreen({
   view,
   match,
   theme,
+  previousPanels,
   deadlineAt,
   hasDraft,
   closing,
@@ -132,13 +158,20 @@ export function DrawingScreen({
           {texts.collecting}
         </p>
       )}
-      <div className="min-h-0 flex-1">
-        <DrawingEditor
-          ref={editor}
-          disabled={disabled}
-          baseImageUrl={baseImageUrl}
-          onChange={setRevision}
-        />
+      <div className="flex min-h-0 flex-1 flex-col gap-2 landscape:flex-row md:flex-row">
+        <div className="min-h-0 min-w-0 flex-1">
+          <DrawingEditor
+            ref={editor}
+            disabled={disabled}
+            baseImageUrl={baseImageUrl}
+            onChange={setRevision}
+          />
+        </div>
+        {previousPanels.length > 0 && (
+          <div className="order-first landscape:order-last md:order-last">
+            <ReferencePanels panels={previousPanels} />
+          </div>
+        )}
       </div>
       <Dialog
         open={confirming}

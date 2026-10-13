@@ -13,6 +13,7 @@ const settings: MatchSettings = {
   mode: 'collaborative',
   panelCount: { kind: 'per_player' },
   drawingSeconds: DRAWING_SECONDS_DEFAULT,
+  showPreviousPanels: false,
 };
 
 describe('game timing', () => {

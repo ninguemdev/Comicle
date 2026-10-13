@@ -14,23 +14,24 @@ Pedido do criador do projeto: uma opção da partida que mostra, à direita do e
 ## Decisões do criador
 - É uma **configuração da partida** (`showPreviousPanels`), desligada por padrão: desligada, o jogo de memória continua como hoje.
 - Ligada, aparecem **todos** os quadros anteriores da história recebida, pequenos, numa coluna à direita do canvas.
+- As miniaturas **não ampliam** ao clicar.
 
 ## Entregáveis
-- [ ] `MatchSettings.showPreviousPanels: boolean` (tipo, schema, padrão, persistência).
-- [ ] `PanelAccessPolicy` e `buildPlayerView`: com a opção ligada, o artista da rodada vê os quadros anteriores da história que está desenhando também no desenho (e no fechamento).
-- [ ] Editor: coluna de miniaturas à direita no desktop; no mobile, faixa compacta que não tira espaço do canvas.
-- [ ] Interruptor no lobby.
-- [ ] `especificacao-produto.md` (com aprovação explícita do pedido), R18, R36, R38, R58, R59, protocolo, `interface.md`, decisão D-nova.
+- [x] `MatchSettings.showPreviousPanels: boolean` (tipo, schema, padrão, persistência).
+- [x] `PanelAccessPolicy` e `buildPlayerView`: com a opção ligada, o artista da rodada vê os quadros anteriores da história que está desenhando também no desenho (e no fechamento).
+- [x] Editor: coluna de miniaturas à direita no desktop; no mobile, faixa compacta que não tira espaço do canvas.
+- [x] Interruptor no lobby.
+- [x] `especificacao-produto.md` (com aprovação explícita do pedido), R18, R36, R38, R58, R59, protocolo, `interface.md`, decisão D43.
 
 ## Critérios de aceite
-- [ ] Opção ligada: o artista vê as miniaturas do começo ao fim do desenho, inclusive depois de recarregar a página.
-- [ ] Opção desligada: nenhuma imagem é autorizada depois do `round:ready` (R36 inalterada).
+- [x] Opção ligada: o artista vê as miniaturas do começo ao fim do desenho, inclusive depois de recarregar a página.
+- [x] Opção desligada: nenhuma imagem é autorizada depois do `round:ready` (R36 inalterada).
 
 ## Testes obrigatórios
-- [ ] R59: política de acesso nas duas opções, para cada fase.
-- [ ] R58: projeção do desenho nas duas opções.
-- [ ] Editor: coluna de miniaturas aparece só com a opção ligada.
-- [ ] E2E: partida com a opção ligada mostra as miniaturas na segunda rodada.
+- [x] R59: política de acesso nas duas opções, para cada fase.
+- [x] R58: projeção do desenho nas duas opções.
+- [x] Editor: coluna de miniaturas aparece só com a opção ligada.
+- [x] E2E: partida com a opção ligada mostra as miniaturas na segunda rodada.
 
 ## Notas
 Task grande: usar o modo de planejamento e apresentar o plano antes de editar.

@@ -11,7 +11,7 @@ import {
   type PresentationView,
 } from '@comicle/shared';
 
-import { presentedPanels, readablePanels } from '../drawing/panel-access-policy';
+import { presentedPanels, readablePanels, referencePanels } from '../drawing/panel-access-policy';
 import {
   assignedStory,
   isParticipant,
@@ -113,8 +113,14 @@ function presentationView(room: Room, match: Match): PresentationView | null {
   };
 }
 
-/** R38: only the theme of the story being drawn; never its panels. */
-function drawTask(match: Match, round: RoundState, playerId: string, theme: string): PlayerTask {
+/** R38: the theme of the story being drawn; its panels only with `showPreviousPanels`. */
+function drawTask(
+  room: Room,
+  match: Match,
+  round: RoundState,
+  playerId: string,
+  theme: string,
+): PlayerTask {
   return {
     kind: 'draw_panel',
     status: round.finals.has(playerId) ? 'submitted' : 'drawing',
@@ -123,6 +129,7 @@ function drawTask(match: Match, round: RoundState, playerId: string, theme: stri
     // R48: whether `GET /api/rooms/:code/my-draft` has something to restore.
     hasDraft: round.drafts.has(playerId),
     deadlineAt: round.drawingDeadlineAt,
+    previousPanels: referencePanels(match, playerId).map((panel) => panelRef(room, match, panel)),
   };
 }
 
@@ -145,7 +152,7 @@ function participantTask(room: Room, match: Match, playerId: string): PlayerTask
       }
       // R36: the panels only until the player confirms; then straight to drawing.
       return match.round.ready.has(playerId)
-        ? drawTask(match, match.round, playerId, story.themeText)
+        ? drawTask(room, match, match.round, playerId, story.themeText)
         : {
             kind: 'read_story',
             status: 'reading',
@@ -158,7 +165,7 @@ function participantTask(room: Room, match: Match, playerId: string): PlayerTask
     case 'round_drawing': {
       const story = assignedStory(match, playerId);
       return story && match.round !== null
-        ? drawTask(match, match.round, playerId, story.themeText)
+        ? drawTask(room, match, match.round, playerId, story.themeText)
         : { kind: 'wait' };
     }
     case 'round_closing':
