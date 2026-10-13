@@ -45,7 +45,7 @@ Sons e o modo Quadrinhos Individuais ([D47](../decisoes.md)). Os sons vêm prime
 
 | # | Task | Depende de | Status |
 |---|---|---|---|
-| T33 | [Motor de som e volume](./T33-motor-de-som.md) | T21 | 🟨 |
+| T33 | [Motor de som e volume](./T33-motor-de-som.md) | T21 | ✅ |
 | T34 | [Sons nos eventos do jogo](./T34-sons-na-partida.md) | T33 | ⬜ |
 | T35 | [Modo individual: regras e contratos](./T35-individual-regras-e-contratos.md) | T12, T16 | ⬜ |
 | T36 | [Modo individual: rodadas no servidor](./T36-individual-rodadas-no-servidor.md) | T35 | ⬜ |

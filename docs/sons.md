@@ -45,7 +45,7 @@ As receitas vivem em `apps/web/src/features/sound/sound-catalog.ts` como dados p
 
 ## 5. Navegador
 
-- Os navegadores só liberam áudio depois de um gesto do usuário. O `AudioContext` é criado no primeiro `pointerdown` ou `keydown` da página; até lá, os sons são ignorados (não ficam em fila).
+- Os navegadores só liberam áudio depois de um gesto do usuário. O `AudioContext` é criado no primeiro gesto da página (`pointerdown`, `pointerup`, `touchend`, `keydown` ou `click`: num toque de celular, só o dedo subindo conta como gesto); gestos seguintes acordam o contexto se o navegador o suspendeu. Até o primeiro gesto, os sons são ignorados (não ficam em fila).
 - Sem Web Audio (navegador antigo, testes), o motor vira um no-op silencioso: o jogo funciona igual.
 - A aba em segundo plano não acumula sons: o navegador suspende o contexto e o que seria tocado é descartado.
 
