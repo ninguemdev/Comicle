@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { defaultAvatar, type PanelRef } from '@comicle/shared';
+
 import {
   COMIC_EXPORT,
+  comicCredits,
   comicFileName,
   exportColumns,
   exportContentWidth,
@@ -47,28 +50,68 @@ describe('planComicExport', () => {
     expect([1, 2, 3, 4, 5, 8].map(exportColumns)).toEqual([1, 2, 3, 2, 3, 3]);
   });
 
-  it('centraliza a linha incompleta e deixa todos os quadros do mesmo tamanho', () => {
-    const { panelWidth, gutter, margin } = COMIC_EXPORT;
-    const plan = planComicExport(5, 2);
+  it('cola os quadros: vizinhos dividem a borda, sem calha entre linhas nem colunas', () => {
+    const { panelWidth, panelHeight, margin } = COMIC_EXPORT;
+    const plan = planComicExport(6, 1, 1);
 
-    expect(plan.width).toBe(exportContentWidth(5) + 2 * margin);
+    expect(plan.width).toBe(exportContentWidth(6) + 2 * margin);
+    expect(exportContentWidth(6)).toBe(3 * panelWidth);
+    const xs = plan.panels.map((panel) => panel.x);
+    const ys = plan.panels.map((panel) => panel.y);
+    expect(xs).toEqual([0, 1, 2, 0, 1, 2].map((column) => margin + column * panelWidth));
+    expect((ys[3] ?? 0) - (ys[0] ?? 0)).toBe(panelHeight);
+  });
+
+  it('centraliza a linha incompleta, com os quadros ainda colados', () => {
+    const { panelWidth, margin } = COMIC_EXPORT;
+    const plan = planComicExport(5, 2, 1);
+
     const firstRow = plan.panels.slice(0, 3);
     const secondRow = plan.panels.slice(3);
     expect(new Set(firstRow.map((panel) => panel.y)).size).toBe(1);
-    expect(secondRow).toHaveLength(2);
-    // Two panels centered under three: half a panel (plus half a gutter) in from the margin.
-    expect(secondRow[0]?.x).toBe(margin + (panelWidth + gutter) / 2);
+    expect(secondRow.map((panel) => panel.x)).toEqual([
+      margin + panelWidth / 2,
+      margin + panelWidth / 2 + panelWidth,
+    ]);
+  });
+
+  it('os créditos ficam abaixo dos quadros, antes do rodapé', () => {
+    const { panelHeight, creditsGap, creditLine } = COMIC_EXPORT;
+    const plan = planComicExport(4, 1, 2);
+    const lastRowTop = plan.panels[3]?.y ?? 0;
+
+    expect(plan.creditTops).toEqual([
+      lastRowTop + panelHeight + creditsGap,
+      lastRowTop + panelHeight + creditsGap + creditLine,
+    ]);
+    expect(plan.footerTop).toBe((plan.creditTops[1] ?? 0) + creditLine);
+    expect(plan.height).toBeGreaterThan(plan.footerTop);
   });
 
   it('o tema empurra os quadros para baixo, e a página cresce com eles', () => {
-    const oneLine = planComicExport(3, 1);
-    const threeLines = planComicExport(3, 3);
+    const oneLine = planComicExport(3, 1, 1);
+    const threeLines = planComicExport(3, 3, 1);
     const extra = 2 * COMIC_EXPORT.themeLine;
 
     expect(threeLines.themeTops).toHaveLength(3);
     expect((threeLines.panels[0]?.y ?? 0) - (oneLine.panels[0]?.y ?? 0)).toBe(extra);
     expect(threeLines.height - oneLine.height).toBe(extra);
     expect(threeLines.footerTop).toBeLessThan(threeLines.height);
+  });
+});
+
+describe('comicCredits', () => {
+  it('R55: lista o número e o artista de cada quadro, em ordem de leitura', () => {
+    const panel = (position: number, nickname: string): PanelRef => ({
+      panelId: `p${String(position)}`,
+      position,
+      artist: { playerId: nickname, nickname, avatar: defaultAvatar() },
+      status: 'complete',
+    });
+
+    expect(comicCredits([panel(1, 'Caio'), panel(0, 'Bia'), panel(2, 'Ana')])).toBe(
+      'Quadros: 1 Bia · 2 Caio · 3 Ana',
+    );
   });
 });
 

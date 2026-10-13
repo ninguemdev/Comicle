@@ -297,6 +297,7 @@ export const strings = {
     loadFailed: 'Não deu para carregar este quadro.',
     /** Bottom line of the downloaded page (Baixar HQ). */
     exportFooter: 'Feito no Comicle',
+    exportCredits: (artists: readonly string[]) => `Quadros: ${artists.join(' · ')}`,
   },
   devComic: {
     title: 'Páginas de HQ',

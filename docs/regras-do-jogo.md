@@ -16,7 +16,7 @@ Este documento transforma a [especificação de produto](./especificacao-produto
 | `MAX_PLAYERS` | 12 | Membros por sala (participantes + espectadores) |
 | `FIXED_PANEL_COUNT_MIN` / `_MAX` | 2 / 12 | Faixa da quantidade fixa de quadros |
 | `FIXED_PANEL_COUNT_DEFAULT` | 4 | Valor inicial quando o anfitrião escolhe "fixa" |
-| `DRAWING_SECONDS_OPTIONS` | 30, 45, 60, 90, 120, 180, 240, 300 | Tempo por quadrinho |
+| `DRAWING_SECONDS_OPTIONS` | 30, 45, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600 | Tempo por quadrinho (até 10 min) |
 | `DRAWING_SECONDS_DEFAULT` | 90 | |
 | `THEME_WRITING_SECONDS` | 90 | Duração da etapa de temas |
 | `THEME_MIN_LENGTH` / `THEME_MAX_LENGTH` | 3 / 140 | Caracteres do tema (após normalização) |

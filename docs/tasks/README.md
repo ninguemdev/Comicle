@@ -32,8 +32,8 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T24 | [Balde de tinta](./T24-balde-de-tinta.md) | T13 | ✅ |
 | T25 | [Baixar a HQ na apresentação](./T25-baixar-hq.md) | T17 | ✅ |
 | T26 | [Pincel ajustável](./T26-pincel-ajustavel.md) | T13 | ✅ |
-| T27 | [Tempo de desenho até 10 minutos](./T27-tempo-desenho-10min.md) | T11 | ⬜ |
-| T28 | [HQ baixada com quadros colados](./T28-hq-baixada-colada.md) | T25 | ⬜ |
+| T27 | [Tempo de desenho até 10 minutos](./T27-tempo-desenho-10min.md) | T11 | ✅ |
+| T28 | [HQ baixada com quadros colados](./T28-hq-baixada-colada.md) | T25 | ✅ |
 | T29 | [Opção "autor desenha o último quadro"](./T29-autor-desenha-ultimo.md) | T27 | ⬜ |
 | T30 | [Desenhar logo depois de confirmar a leitura](./T30-desenhar-ao-confirmar.md) | T12 | ✅ |
 | T31 | [Quadros anteriores em miniatura ao desenhar](./T31-miniaturas-ao-desenhar.md) | T30 | ✅ |

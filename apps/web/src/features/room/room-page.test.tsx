@@ -51,6 +51,7 @@ describe('sala no cliente', () => {
     expect(screen.getByRole('combobox', { name: 'Tempo por quadrinho' })).toBeInstanceOf(
       HTMLSelectElement,
     );
+    expect(screen.getByRole('option', { name: '10 min' })).toBeInstanceOf(HTMLOptionElement);
     expect(screen.getByRole('radio', { name: 'Fixa' })).toBeInstanceOf(HTMLInputElement);
     expect(screen.getByRole('radio', { name: /Individual/ })).toHaveProperty('disabled', true);
     expect(screen.getByRole('button', { name: 'Expulsar Bia' })).toBeInstanceOf(HTMLButtonElement);
