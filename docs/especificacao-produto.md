@@ -309,7 +309,7 @@ O objetivo é permitir que pequenas alterações de memória, interpretações i
 
 O desenho não acontece com os quadros anteriores permanentemente visíveis.
 
-A exceção é uma configuração opcional da partida, **Mostrar quadros anteriores ao desenhar**: ligada pelo anfitrião, quem desenha vê os quadros anteriores da história em miniatura, ao lado do desenho, até entregar o quadro. As miniaturas são pequenas, sem ampliação: servem para conferir o desenho anterior, não para copiá-lo. Desligada (o padrão), vale o jogo de memória descrito acima.
+A exceção é uma configuração opcional da partida, **Mostrar quadros anteriores ao desenhar**: ligada pelo anfitrião, quem desenha vê os quadros anteriores da história em miniatura, ao lado do desenho, até entregar o quadro. As miniaturas são pequenas, para conferir o desenho anterior; clicar numa delas mostra o quadro grande, até o jogador fechá-lo e voltar ao desenho. Desligada (o padrão), vale o jogo de memória descrito acima.
 
 ### Tempo e preparação
 
