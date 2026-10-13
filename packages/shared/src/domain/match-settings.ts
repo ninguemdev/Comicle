@@ -27,3 +27,15 @@ export interface MatchSettings {
   authorDrawsLast: boolean;
   individual: IndividualSettings;
 }
+
+/** R38, R65: time to draw each panel in the collaborative mode, or the whole story in the individual one. */
+export function drawingSecondsFor(settings: MatchSettings): number {
+  switch (settings.mode) {
+    case 'collaborative':
+      return settings.drawingSeconds;
+    case 'individual':
+      return settings.individual.storySeconds;
+    default:
+      return settings.mode satisfies never;
+  }
+}

@@ -176,9 +176,19 @@ export const strings = {
       yes: 'Sim',
       no: 'Não',
       mode: 'Modo',
-      collaborative: 'Colaborativo',
-      individual: 'Individual',
-      soon: 'Em breve',
+      modes: {
+        collaborative: {
+          name: 'Colaborativo',
+          hint: '(cada um desenha um quadro das histórias de todos)',
+        },
+        individual: {
+          name: 'Individual',
+          hint: '(cada um desenha sozinho a história inteira dos outros)',
+        },
+      },
+      panelsPerStory: 'Quadros por história',
+      storySeconds: 'Tempo da história',
+      storySecondsHint: '(para desenhar todos os quadros, não cada um)',
     },
     problems: {
       notFound: {

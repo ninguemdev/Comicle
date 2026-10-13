@@ -8,6 +8,7 @@ import {
   ROOM_MAX_AGE_MS,
   ROUND_CLOSING_MS,
   THEME_WRITING_SECONDS,
+  drawingSecondsFor,
   type MatchSettings,
 } from '@comicle/shared';
 
@@ -35,18 +36,6 @@ export function readingSeconds(roundIndex: number): number {
   );
 }
 
-/** R38, R65: per panel in the collaborative mode; for the whole story in the individual one. */
-export function drawingSeconds(settings: MatchSettings): number {
-  switch (settings.mode) {
-    case 'collaborative':
-      return settings.drawingSeconds;
-    case 'individual':
-      return settings.individual.storySeconds;
-    default:
-      return settings.mode satisfies never;
-  }
-}
-
 const roomTiming = {
   hostTransferGraceMs: HOST_TRANSFER_GRACE_MS,
   lobbyDisconnectRemoveMs: LOBBY_DISCONNECT_REMOVE_MS,
@@ -58,7 +47,7 @@ const roomTiming = {
 export const defaultGameTiming: GameTimingConfig = {
   themeWritingMs: THEME_WRITING_SECONDS * MS_PER_SECOND,
   readingMs: (roundIndex) => readingSeconds(roundIndex) * MS_PER_SECOND,
-  drawingMs: (settings) => drawingSeconds(settings) * MS_PER_SECOND,
+  drawingMs: (settings) => drawingSecondsFor(settings) * MS_PER_SECOND,
   roundClosingMs: ROUND_CLOSING_MS,
   ...roomTiming,
 };

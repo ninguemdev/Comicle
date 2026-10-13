@@ -53,7 +53,7 @@ describe('sala no cliente', () => {
     );
     expect(screen.getByRole('option', { name: '10 min' })).toBeInstanceOf(HTMLOptionElement);
     expect(screen.getByRole('radio', { name: 'Fixa' })).toBeInstanceOf(HTMLInputElement);
-    expect(screen.getByRole('radio', { name: /Individual/ })).toHaveProperty('disabled', true);
+    expect(screen.getByRole('radio', { name: /Individual/ })).toHaveProperty('disabled', false);
     expect(screen.getByRole('button', { name: 'Expulsar Bia' })).toBeInstanceOf(HTMLButtonElement);
     expect(screen.queryByRole('button', { name: 'Expulsar Ana' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Iniciar partida' })).toBeInstanceOf(
@@ -340,5 +340,55 @@ describe('sala no cliente', () => {
       ROOM_CODE,
       expect.objectContaining({ nickname: 'Bia' }),
     );
+  });
+
+  it('R21: o anfitrião escolhe o modo individual; as opções do colaborativo somem', () => {
+    const actions = setUpStores(lobbyView());
+    renderAt();
+
+    fireEvent.click(screen.getByRole('radio', { name: /Individual/ }));
+    expect(actions.updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'individual' }),
+    );
+    cleanup();
+
+    const base = lobbyView();
+    const individualActions = setUpStores({
+      ...base,
+      room: { ...base.room, settings: { ...base.room.settings, mode: 'individual' } },
+    });
+    renderAt();
+    expect(screen.queryByRole('combobox', { name: 'Tempo por quadrinho' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'Fixa' })).toBeNull();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Quadros por história' }), {
+      target: { value: '6' },
+    });
+    expect(individualActions.updateSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        mode: 'individual',
+        individual: { panelsPerStory: 6, storySeconds: 300 },
+      }),
+    );
+    fireEvent.change(screen.getByRole('combobox', { name: 'Tempo da história' }), {
+      target: { value: '600' },
+    });
+    expect(individualActions.updateSettings).toHaveBeenLastCalledWith(
+      expect.objectContaining({ individual: { panelsPerStory: 4, storySeconds: 600 } }),
+    );
+  });
+
+  it('R21: quem não é anfitrião vê o resumo do modo individual', () => {
+    const base = lobbyView({ me: 'p2' });
+    setUpStores({
+      ...base,
+      room: { ...base.room, settings: { ...base.room.settings, mode: 'individual' } },
+    });
+    renderAt();
+
+    expect(screen.getByText('Individual')).toBeInstanceOf(HTMLElement);
+    expect(screen.getByText('4 quadros')).toBeInstanceOf(HTMLElement);
+    expect(screen.getByText('5 min')).toBeInstanceOf(HTMLElement);
+    expect(screen.queryByText('Tempo por quadrinho')).toBeNull();
   });
 });
