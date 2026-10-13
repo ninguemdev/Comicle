@@ -29,6 +29,7 @@ Legenda: ⬜ pendente · 🟨 em andamento · ✅ concluída
 | T21 | [Acessibilidade e polimento](./T21-acessibilidade-polimento.md) | T17 | ✅ |
 | T22 | [Produção e deploy](./T22-producao-deploy.md) | T19 | ✅ |
 | T23 | [Publicação em dionel.site/comicle (EC2)](./T23-publicacao-ec2.md) | T22 | ✅ |
+| T24 | [Balde de tinta](./T24-balde-de-tinta.md) | T13 | ✅ |
 
 Podem andar em paralelo, se houver mais de uma pessoa ou sessão: T06/T07/T13/T14 (cliente) com T03–T05/T08/T10–T12 (servidor).
 
