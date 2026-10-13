@@ -221,3 +221,64 @@ describe('cursor da apresentação', () => {
     expect(isPanelRevealed(back, 1, 1)).toBe(true);
   });
 });
+
+describe('cursor da apresentação no modo individual (R68)', () => {
+  // 3 themes with 2 versions each, 2 panels per version: stories 0–1 tell theme 0, and so on.
+  const VERSIONS = [2, 2, 2, 2, 2, 2];
+  const THEME_OF = [0, 0, 1, 1, 2, 2];
+  const NEXT_THEME: PresentationAction = { action: 'nextTheme' };
+
+  function runIndividual(actions: PresentationAction[], from = initialPresentationCursor(6)) {
+    return actions.reduce((cursor, action) => navigate(cursor, action, VERSIONS, THEME_OF), from);
+  }
+
+  it('R68: next percorre cada versão de um tema e só depois passa ao tema seguinte', () => {
+    const steps: string[] = [];
+    let cursor = initialPresentationCursor(6);
+    while (cursor.status !== 'finished' && steps.length < 30) {
+      steps.push(where(cursor));
+      cursor = navigate(cursor, NEXT, VERSIONS, THEME_OF);
+    }
+    expect(steps.slice(0, 9)).toEqual([
+      '0:theme',
+      '0:panel(0)',
+      '0:panel(1)',
+      '0:full',
+      '1:theme',
+      '1:panel(0)',
+      '1:panel(1)',
+      '1:full',
+      '2:theme',
+    ]);
+    expect(steps).toHaveLength(6 * 4);
+  });
+
+  it('R53, R68: nextTheme pula as versões que faltam do tema, que contam como reveladas', () => {
+    const cursor = runIndividual([NEXT, NEXT_THEME]);
+    expect(cursor).toMatchObject({
+      status: 'showing',
+      storyIndex: 2,
+      step: { kind: 'theme' },
+      maxStoryReached: 2,
+      revealedCount: [2, 2, 0, 0, 0, 0],
+    });
+    expect(isPanelRevealed(cursor, 1, 1)).toBe(true);
+    expect(isPanelRevealed(cursor, 2, 0)).toBe(false);
+
+    // From the second version of a theme, straight to the next theme too.
+    expect(runIndividual([NEXT_THEME, NEXT_STORY, NEXT_THEME])).toMatchObject({
+      storyIndex: 4,
+      step: { kind: 'theme' },
+    });
+  });
+
+  it('R68: nextTheme no último tema encerra; em finished, não muda nada', () => {
+    const finished = runIndividual([NEXT_THEME, NEXT_THEME, NEXT_THEME]);
+    expect(finished).toMatchObject({ status: 'finished', revealedCount: [2, 2, 2, 2, 2, 2] });
+    expect(runIndividual([NEXT_THEME], finished)).toEqual(finished);
+  });
+
+  it('R52: sem temas informados, nextTheme equivale a nextStory (modo colaborativo)', () => {
+    expect(run([NEXT, { action: 'nextTheme' }])).toEqual(run([NEXT, NEXT_STORY]));
+  });
+});

@@ -64,7 +64,7 @@ export const panelSubmitPayloadSchema = z.object({
 });
 
 export const presentationNavigatePayloadSchema = z.union([
-  z.object({ action: z.enum(['next', 'prev', 'showFull', 'nextStory']) }),
+  z.object({ action: z.enum(['next', 'prev', 'showFull', 'nextStory', 'nextTheme']) }),
   z.object({ action: z.literal('goToStory'), storyIndex: z.int().nonnegative() }),
 ]);
 

@@ -163,6 +163,27 @@ describe('modo individual (integração)', () => {
       expect(own[0]?.artistPlayerId).not.toBe(authorOf.get(themeOf.get(story.id) ?? ''));
     }
     expect(ana.views.latest?.match?.presentation?.storyCount).toBe(6);
+
+    // R68: the presentation goes by theme; each version says who drew it.
+    const opening = ana.views.latest?.match?.presentation;
+    expect(opening?.version).toMatchObject({ themeIndex: 0, themeCount: 3, index: 0, count: 2 });
+    expect(opening?.version?.artist.playerId).not.toBe(opening?.story.theme.author.playerId);
+    expect(opening?.reachedStories).toEqual([
+      expect.objectContaining({ index: 0, themeIndex: 0, artist: opening?.version?.artist }),
+    ]);
+
+    const ack = await ana.client.emitWithAck('presentation:navigate', { action: 'nextTheme' });
+    expect(ack).toEqual({ ok: true, data: {} });
+    for (const player of players) {
+      const view = await player.views.waitFor(
+        (v) => v.match?.presentation?.version?.themeIndex === 1,
+      );
+      expect(view.match?.presentation).toMatchObject({
+        storyIndex: 2,
+        step: { kind: 'theme' },
+        version: { themeIndex: 1, index: 0 },
+      });
+    }
   });
 
   it('R48, R66, R67: rascunho por quadro; quem volta recupera todos e não depois de entregar', async () => {

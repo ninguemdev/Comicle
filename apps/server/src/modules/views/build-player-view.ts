@@ -8,10 +8,12 @@ import {
   type PanelRef,
   type PlayerTask,
   type PlayerView,
+  type PresentationVersion,
   type PresentationView,
 } from '@comicle/shared';
 
 import { presentedPanels, readablePanels, referencePanels } from '../drawing/panel-access-policy';
+import { getGameMode } from '../game-modes/registry';
 import {
   assignedStory,
   draftPanels,
@@ -22,6 +24,7 @@ import {
   type Match,
   type PanelMeta,
   type RoundState,
+  type StoryState,
 } from '../matches/match';
 import { isConnected, type Member, type Room } from '../rooms/room';
 
@@ -87,6 +90,44 @@ function panelRef(room: Room, match: Match, panel: PanelMeta): PanelRef {
   };
 }
 
+/** R68: the theme each story tells, by story index (its own in the collaborative mode). */
+function themeIndexes(match: Match): number[] {
+  const mode = getGameMode(match.settings.mode);
+  return match.stories.map((_, index) => mode.themeOfStory(index, match.seats.length));
+}
+
+/** R64: in the individual mode every panel of a version is by the same artist. */
+function versionArtist(room: Room, match: Match, story: StoryState): ArtistRef | null {
+  const artistId = story.panels[0]?.artistPlayerId;
+  if (match.settings.mode !== 'individual' || artistId === undefined) {
+    return null;
+  }
+  return artistRef(room, artistId, seatOf(match, artistId)?.nickname ?? '');
+}
+
+/** R68: which version of which theme the story is, in the individual mode. */
+function presentationVersion(
+  room: Room,
+  match: Match,
+  themes: readonly number[],
+  storyIndex: number,
+): PresentationVersion | null {
+  const story = match.stories[storyIndex];
+  const themeIndex = themes[storyIndex];
+  const artist = story && versionArtist(room, match, story);
+  if (!artist || themeIndex === undefined) {
+    return null;
+  }
+  const versions = themes.flatMap((theme, index) => (theme === themeIndex ? [index] : []));
+  return {
+    themeIndex,
+    themeCount: match.seats.length,
+    index: versions.indexOf(storyIndex),
+    count: versions.length,
+    artist,
+  };
+}
+
 /** R50–R55: the same for every member; only what the cursor already revealed. */
 function presentationView(room: Room, match: Match): PresentationView | null {
   const cursor = match.presentation;
@@ -94,6 +135,7 @@ function presentationView(room: Room, match: Match): PresentationView | null {
   if (match.phase !== 'presentation' || !cursor || !story) {
     return null;
   }
+  const themes = themeIndexes(match);
   return {
     status: cursor.status,
     storyIndex: cursor.storyIndex,
@@ -108,10 +150,13 @@ function presentationView(room: Room, match: Match): PresentationView | null {
       panelCount: story.panels.length,
       revealedPanels: presentedPanels(match).map((panel) => panelRef(room, match, panel)),
     },
+    version: presentationVersion(room, match, themes, cursor.storyIndex),
     reachedStories: match.stories.slice(0, cursor.maxStoryReached + 1).map((reached, index) => ({
       index,
+      themeIndex: themes[index] ?? index,
       themeText: reached.themeText,
       author: artistRef(room, reached.authorPlayerId, reached.authorNickname),
+      artist: versionArtist(room, match, reached),
     })),
   };
 }

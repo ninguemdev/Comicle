@@ -81,6 +81,8 @@ describe('clientEventSchemas', () => {
     const schema = clientEventSchemas['presentation:navigate'];
 
     expect(schema.safeParse({ action: 'next' }).success).toBe(true);
+    // R68: the individual mode jumps to the next theme.
+    expect(schema.safeParse({ action: 'nextTheme' }).success).toBe(true);
     expect(schema.safeParse({ action: 'goToStory', storyIndex: 2 }).success).toBe(true);
     expect(schema.safeParse({ action: 'goToStory' }).success).toBe(false);
     expect(schema.safeParse({ action: 'jump' }).success).toBe(false);
