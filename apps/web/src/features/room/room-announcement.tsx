@@ -1,6 +1,7 @@
 import type { MatchView, PlayerView, PresentationView } from '@comicle/shared';
 
 import { strings } from '../../strings/pt-BR';
+import { presentationPosition } from '../presentation/presentation-label';
 
 const texts = strings.match;
 
@@ -17,16 +18,15 @@ function presentationAnnouncement(presentation: PresentationView): string {
   if (presentation.status === 'finished') {
     return announce.finished;
   }
-  const story = presentation.storyIndex + 1;
-  const total = presentation.storyCount;
+  const where = presentationPosition(presentation);
   const { step } = presentation;
   switch (step.kind) {
     case 'theme':
-      return announce.theme(story, total);
+      return announce.theme(where);
     case 'panel':
-      return announce.panel(story, total, step.position + 1);
+      return announce.panel(where, step.position + 1);
     case 'full':
-      return announce.full(story, total);
+      return announce.full(where);
     default:
       return step satisfies never;
   }

@@ -19,6 +19,7 @@ function presentation(
     maxStoryReached: 1,
     story: { theme: { text: 'Um gato prefeito', author }, panelCount: 3, revealedPanels: [] },
     reachedStories: [],
+    version: null,
   };
 }
 
@@ -53,6 +54,15 @@ describe('roomAnnouncement', () => {
     expect(roomAnnouncement(presentationView(presentation({ kind: 'full' }, 'finished')))).toBe(
       'Fim das histórias',
     );
+  });
+
+  it('R68: no modo individual, anuncia o tema e a versão', () => {
+    const version = { themeIndex: 1, themeCount: 3, index: 0, count: 2, artist: author };
+    expect(
+      roomAnnouncement(
+        presentationView({ ...presentation({ kind: 'panel', position: 1 }), version }),
+      ),
+    ).toBe('Tema 2 de 3 · versão 1 de 2: quadro 2');
   });
 
   it('anuncia a volta ao lobby', () => {
