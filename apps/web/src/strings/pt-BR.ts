@@ -385,6 +385,7 @@ export const strings = {
     brush: 'Pincel (B)',
     eraser: 'Borracha (E)',
     fill: 'Balde de tinta (G)',
+    eyedropper: 'Conta-gotas (I)',
     colors: 'Cores',
     showColors: 'Escolher cor',
     customColor: 'Cor livre',

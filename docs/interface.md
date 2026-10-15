@@ -118,10 +118,11 @@ Regras visuais de `ComicPage`:
 | Pincel | traço redondo | `B` |
 | Borracha | pinta branco do fundo (o PNG final é opaco) | `E` |
 | Balde de tinta | pinta a área em volta do clique que tem quase a mesma cor (tolerância de 48 por canal), mais 1 px de borda para cobrir a suavização dos traços; usa a cor escolhida, que não troca a ferramenta | `G` |
+| Conta-gotas | um clique no canvas pega a cor do desenho naquele ponto (sem o traço em andamento) e volta para o pincel, ou para o balde se ele estava escolhido antes; não entra no histórico | `I` |
 | Cores | 16 cores fixas (abaixo) + seletor nativo para cor livre | — |
 | Espessura | barra horizontal de 2 a 64 px lógicos (padrão 8; mais à direita, mais grosso), com prévia do traço; os atalhos andam cerca de um quarto da espessura, ao menos 1 px | `[` e `]` |
 | Opacidade | barra de 10 % a 100 % (padrão 100 %) para o pincel; o traço inteiro é um caminho pintado de uma vez, então não escurece onde cruza a si mesmo. Borracha e balde são sempre opacos | — |
-| Cursor | sobre o canvas, com mouse ou caneta, uma bolinha do diâmetro do traço na escala da tela (no mínimo 4 px), com anel preto e branco; o balde mantém a mira, e o toque não mostra cursor | — |
+| Cursor | sobre o canvas, com mouse ou caneta, uma bolinha do diâmetro do traço na escala da tela (no mínimo 4 px), com um anel escuro entre dois brancos, visível sobre qualquer cor e nos dois temas; o balde e o conta-gotas mantêm a mira, e o toque não mostra cursor | — |
 | Desfazer / Refazer | até 100 passos | `Ctrl/⌘+Z`, `Ctrl/⌘+Shift+Z` |
 | Limpar | entra no histórico (pode ser desfeito); pede confirmação | — |
 | Concluir | envia o quadro (R40); pede confirmação se faltar mais de metade do tempo. No modo individual, **Enviar história** envia todos os quadros (R66), com a mesma regra sobre o tempo da história. Fica na tela de desenho, não no editor | `Ctrl/⌘+Enter` |
