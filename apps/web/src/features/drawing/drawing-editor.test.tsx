@@ -132,6 +132,36 @@ describe('DrawingEditor', () => {
     expect(onChange).toHaveBeenCalledTimes(3);
   });
 
+  it('Ctrl+Z e os atalhos continuam valendo com uma barra em foco, depois de arrastá-la', () => {
+    setup();
+    draw();
+    const slider = screen.getByRole('slider', { name: 'Espessura ([ e ])' });
+    slider.focus();
+
+    fireEvent.keyDown(slider, { key: 'z', ctrlKey: true });
+    expect(enabled('Desfazer (Ctrl+Z)')).toBe(false);
+    fireEvent.keyDown(slider, { key: 'e' });
+    expect(pressed('Borracha (E)')).toBe(true);
+  });
+
+  it('I escolhe o conta-gotas, que mantém a mira e não entra no desenho', () => {
+    const { container, onChange } = setup();
+    const canvas = screen.getByRole('img', { name: 'Área de desenho' });
+    const cursor = container.querySelector<HTMLElement>('canvas + [aria-hidden="true"]');
+
+    key({ key: 'i' });
+    expect(pressed('Conta-gotas (I)')).toBe(true);
+    fireEvent.pointerMove(canvas, { pointerId: 1, pointerType: 'mouse', clientX: 4, clientY: 4 });
+    expect(cursor?.classList.contains('block')).toBe(false);
+    fireEvent.pointerDown(canvas, { pointerId: 1, pointerType: 'mouse', button: 0 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, pointerType: 'mouse' });
+    expect(onChange).not.toHaveBeenCalled();
+
+    // A color from the palette is for painting, as after the eraser.
+    fireEvent.click(screen.getByRole('button', { name: 'Verde' }));
+    expect(pressed('Pincel (B)')).toBe(true);
+  });
+
   it('limpar pede confirmação e pode ser desfeito', () => {
     const { onChange } = setup();
     expect(enabled('Limpar')).toBe(false);
