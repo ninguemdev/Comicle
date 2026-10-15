@@ -6,6 +6,7 @@ import {
   BrushIcon,
   BucketIcon,
   EraserIcon,
+  EyedropperIcon,
   PaletteIcon,
   RedoIcon,
   TrashIcon,
@@ -153,7 +154,7 @@ function Group({ label, children }: { label: string; children: ReactNode }) {
 }
 
 /**
- * Brush, eraser, bucket, colors, width and opacity sliders, and history (interface.md §4). Desktop: a column left of the
+ * Brush, eraser, bucket, eyedropper, colors, width and opacity sliders, and history (interface.md §4). Desktop: a column left of the
  * canvas; phone in portrait: a row below it, colors in a popover; phone in landscape: a column.
  */
 export function Toolbar(props: ToolbarProps) {
@@ -203,6 +204,16 @@ export function Toolbar(props: ToolbarProps) {
           }}
         >
           <BucketIcon />
+        </ToolButton>
+        <ToolButton
+          label={texts.eyedropper}
+          pressed={tool === 'eyedropper'}
+          disabled={disabled}
+          onClick={() => {
+            props.onTool('eyedropper');
+          }}
+        >
+          <EyedropperIcon />
         </ToolButton>
       </Group>
 

@@ -10,6 +10,7 @@ import type {
   NewStroke,
   Point,
 } from './engine/drawing-document';
+import { pickedColor, pixelUnder } from './engine/eyedropper';
 import { createPanelLayer, type Layer } from './engine/layers';
 import { PointerPolicy } from './engine/pointer-policy';
 import { drawStroke, renderDocument, SnapshotCache } from './engine/renderer';
@@ -31,6 +32,8 @@ export interface DrawingCanvasProps {
   onStroke: (stroke: NewStroke) => void;
   /** A click with the bucket, in logical coordinates. */
   onFill: (fill: NewFill) => void;
+  /** A click with the eyedropper: the color under it, as `#RRGGBB`. */
+  onPick: (color: string) => void;
 }
 
 /** A canvas without 2D support (jsdom, very old browsers) leaves the editor inert, not broken. */
@@ -62,6 +65,7 @@ export function DrawingCanvas({
   disabled,
   onStroke,
   onFill,
+  onPick,
 }: DrawingCanvasProps) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -186,6 +190,16 @@ export function DrawingCanvas({
       onFill({ color, at });
       return;
     }
+    if (tool === 'eyedropper') {
+      policy.current.reset();
+      // The committed drawing at logical size: what the panel will be, without the live stroke.
+      const layer = committed.current?.layer;
+      if (layer) {
+        const pixel = pixelUnder(at);
+        onPick(pickedColor(layer.ctx.getImageData(pixel.x, pixel.y, 1, 1).data));
+      }
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     live.current = { tool, color, size, opacity, points: [at] };
     schedulePaint();
@@ -227,8 +241,9 @@ export function DrawingCanvas({
     onStroke(stroke);
   }
 
-  // The circle stands for the stroke; the bucket paints an area, so it keeps the crosshair.
-  const showCursor = hovering && !disabled && brush.tool !== 'fill';
+  // The circle stands for the stroke; the bucket and the eyedropper act on one point, so they
+  // keep the crosshair.
+  const showCursor = hovering && !disabled && (brush.tool === 'brush' || brush.tool === 'eraser');
   const diameter = cursorDiameter(brush.size, cssSize.width);
 
   return (
@@ -255,8 +270,9 @@ export function DrawingCanvas({
         <div
           ref={cursorRef}
           aria-hidden="true"
-          // A black ring inside a white one shows over any color.
-          className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-black shadow-[0_0_0_1px_white] ${
+          // A dark ring between two white ones shows over any color. `night` is the token that
+          // never inverts: the theme drops Tailwind's own colors, and `ink` turns light in dark mode.
+          className={`pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-full border border-night shadow-[0_0_0_1px_white,inset_0_0_0_1px_white] ${
             showCursor ? 'block' : 'hidden'
           }`}
           style={{ width: diameter, height: diameter }}

@@ -59,6 +59,8 @@ export function DrawingEditor({
   // the caller may also change (a draft restored into it, R48).
   const [, setRevision] = useState(doc.revision);
   const [tool, setTool] = useState<DrawingTool>('brush');
+  /** The tool the eyedropper hands back to once it has picked a color. */
+  const [afterPick, setAfterPick] = useState<'brush' | 'fill'>('brush');
   const [color, setColor] = useState(DEFAULT_COLOR);
   const [size, setSize] = useState(DEFAULT_BRUSH_SIZE);
   const [opacity, setOpacity] = useState(DEFAULT_BRUSH_OPACITY);
@@ -102,6 +104,19 @@ export function DrawingEditor({
     changed();
   }
 
+  function selectTool(next: DrawingTool): void {
+    if (next === 'eyedropper' && tool !== 'eyedropper') {
+      // A picked color is for painting: the bucket gets it back, anything else the brush.
+      setAfterPick(tool === 'fill' ? 'fill' : 'brush');
+    }
+    setTool(next);
+  }
+
+  function pickColor(picked: string): void {
+    setColor(picked);
+    setTool(afterPick);
+  }
+
   function undo(): void {
     if (doc.undo()) {
       changed();
@@ -122,7 +137,7 @@ export function DrawingEditor({
   }
 
   useDrawingShortcuts(!disabled && !confirmingClear, {
-    selectTool: setTool,
+    selectTool,
     stepSize: (direction) => {
       setSize((current) => stepBrushSize(current, direction));
     },
@@ -142,11 +157,14 @@ export function DrawingEditor({
         canRedo={doc.canRedo}
         canClear={!doc.isEmpty}
         disabled={disabled}
-        onTool={setTool}
+        onTool={selectTool}
         onColor={(next) => {
           setColor(next);
-          // A color is for painting: it leaves the eraser, but the bucket keeps it.
-          setTool((current) => (current === 'eraser' ? 'brush' : current));
+          // A color is for painting: it leaves the eraser and the eyedropper, but the bucket
+          // keeps it.
+          setTool((current) =>
+            current === 'eraser' || current === 'eyedropper' ? 'brush' : current,
+          );
         }}
         onSize={setSize}
         onOpacity={setOpacity}
@@ -163,6 +181,7 @@ export function DrawingEditor({
         disabled={disabled}
         onStroke={addStroke}
         onFill={addFill}
+        onPick={pickColor}
       />
       <Dialog
         open={confirmingClear}

@@ -78,6 +78,16 @@ export function BucketIcon({ className = 'size-6' }: IconProps) {
   );
 }
 
+export function EyedropperIcon({ className = 'size-6' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>
+      <path d="M11 6l7 7" />
+      <path d="M14.5 9.5l3.5-3.5a2.1 2.1 0 0 0-3-3L11.5 6.5" />
+      <path d="M13 8l-8.5 8.5L4 20l3.5-.5L16 11" />
+    </svg>
+  );
+}
+
 export function UndoIcon({ className = 'size-6' }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...STROKE_PROPS}>

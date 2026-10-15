@@ -6,8 +6,8 @@ import { BACKGROUND_COLOR } from './palette';
 /** Tools that paint along the pointer. */
 export type StrokeTool = 'brush' | 'eraser';
 
-/** The bucket fills the area around one click instead. */
-export type DrawingTool = StrokeTool | 'fill';
+/** The bucket fills the area around one click instead; the eyedropper only reads a color. */
+export type DrawingTool = StrokeTool | 'fill' | 'eyedropper';
 
 /** A point in the logical space of the panel (PANEL_WIDTH × PANEL_HEIGHT). */
 export interface Point {

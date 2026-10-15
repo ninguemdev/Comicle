@@ -14,7 +14,12 @@ export interface DrawingShortcutActions {
   redo: () => void;
 }
 
-const TOOL_KEYS: Readonly<Record<string, DrawingTool>> = { b: 'brush', e: 'eraser', g: 'fill' };
+const TOOL_KEYS: Readonly<Record<string, DrawingTool>> = {
+  b: 'brush',
+  e: 'eraser',
+  g: 'fill',
+  i: 'eyedropper',
+};
 const SIZE_KEYS: Readonly<Record<string, -1 | 1>> = { '[': -1, ']': 1 };
 
 /** The action a key press asks for, or null when the editor should let it through. */
