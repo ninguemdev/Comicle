@@ -49,6 +49,21 @@ describe('TimerScheduler', () => {
     expect(second).toHaveBeenCalledOnce();
   });
 
+  it('setTimeout adiantado em relação ao relógio espera o resto em vez de disparar cedo', () => {
+    // The event loop's cached time lags the clock: the timer wakes up 3 ms before `at`.
+    let lag = 0;
+    const clock = { now: () => Date.now() - lag };
+    const scheduler = new TimerScheduler(clock, vi.fn());
+    const task = vi.fn();
+    scheduler.schedule('phase', 12_000, task);
+    lag = 3;
+
+    vi.advanceTimersByTime(2000);
+    expect(task).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(3);
+    expect(task).toHaveBeenCalledOnce();
+  });
+
   it('instante no passado dispara logo', () => {
     const { scheduler } = setup();
     const task = vi.fn();
