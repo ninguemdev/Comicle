@@ -22,12 +22,7 @@ export class TimerScheduler implements Scheduler {
 
   schedule(key: string, at: number, task: ScheduledTask): void {
     this.cancel(key);
-    const delay = Math.max(0, at - this.clock.now());
-    const timer = setTimeout(() => {
-      this.timers.delete(key);
-      this.run(key, task);
-    }, delay);
-    this.timers.set(key, timer);
+    this.arm(key, at, task);
   }
 
   cancel(key: string): void {
@@ -40,6 +35,26 @@ export class TimerScheduler implements Scheduler {
     for (const key of [...this.timers.keys()]) {
       this.cancel(key);
     }
+  }
+
+  /**
+   * Node measures `setTimeout` from the event loop's cached time, which can lag `clock.now()`,
+   * so a timer may fire a few ms before `at`. Tasks rely on `now >= at` (a phase deadline that
+   * looks early is ignored as stale), so an early wake-up waits for the rest instead of running.
+   */
+  private arm(key: string, at: number, task: ScheduledTask): void {
+    const timer = setTimeout(
+      () => {
+        if (this.clock.now() < at) {
+          this.arm(key, at, task);
+          return;
+        }
+        this.timers.delete(key);
+        this.run(key, task);
+      },
+      Math.max(0, at - this.clock.now()),
+    );
+    this.timers.set(key, timer);
   }
 
   private run(key: string, task: ScheduledTask): void {
