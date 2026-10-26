@@ -6,4 +6,5 @@ export const SERVER_URL = `http://localhost:${String(E2E_SERVER_PORT)}`;
 /** What the browsers open: the production build, proxying `/api` and `/socket.io` to the server. */
 export const BASE_URL = `http://localhost:${String(E2E_WEB_PORT)}`;
 
-export const E2E_DATABASE_URL = 'postgres://comicle:comicle@localhost:5432/comicle_test';
+export const E2E_DATABASE_URL =
+  process.env['E2E_DATABASE_URL'] ?? 'postgres://comicle:comicle@localhost:5432/comicle_test';

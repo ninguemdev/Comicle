@@ -15,9 +15,12 @@ Ordem de desenho (de baixo para cima):
 | 3 | Olhos | `eyes` | sim |
 | 4 | Boca | `mouth` | sim |
 | 5 | Acessório facial | `faceAccessory` | não (no máximo um) |
-| 6 | Chapéu | `hat` | não |
+| 6 | Cabelo | `hair` | não |
+| 7 | Chapéu | `hat` | não |
 
 Opcional não selecionado = `null` (R2).
+
+O formato, a posição e o tamanho da cabeça não são editáveis. Novos personagens usam a cabeça redonda; perfis anteriores conservam o formato escolhido. O contrato aceita `hair` e `layout` ausentes para ler perfis antigos.
 
 ---
 
@@ -50,6 +53,7 @@ Regras:
 
 - `id` é único globalmente, em `kebab-case`, prefixado pela categoria em `kebab-case` (`hat-cowboy`, `face-accessory-glasses`); a pasta da arte usa o mesmo prefixo (`face-accessory/`). **Nunca reutilize nem renomeie um `id` publicado** — perfis salvos dependem dele. Para aposentar uma arte, adicione `"retired": true`: ela some da lista de escolha, mas continua renderizando para quem já a usa.
 - `file` é relativo a `apps/web/public/avatars/`.
+- `pivot` é o centro dos pixels visíveis da arte, em coordenadas de 0 a 1; o cálculo de escala usa esse ponto.
 - O padrão de cada categoria obrigatória é a primeira opção não aposentada; o de cada opcional é `null`.
 - `catalog.ts` valida o JSON com Zod ao carregar e exporta tipos e helpers (`isValidAvatar`, `defaultAvatar`, `randomAvatar(rng)`, `sanitizeAvatar`, `activeOptions`, `findAvatarOption`, `avatarCategorySlug`). O `Rng` é a interface de `@comicle/shared` (D18).
 
@@ -87,7 +91,7 @@ Os números vêm de `apps/web/scripts/avatars/layout.ts`, que o gabarito usa. O 
 
 ## 5. Artes atuais
 
-As 50 opções do catálogo usam as **artes de rabisco**: PNG de 1024 × 1024 com transparência, traço de marcador irregular e cores chapadas, todas no enquadramento padrão (centro do rosto em 512, 560 no PNG) ([D28](./decisoes.md)). A lista, com rótulos e ordem, está no [guia de artes §10](./avatares-guia-de-artes.md#10-artes-atuais).
+As 50 opções anteriores do catálogo usam as **artes de rabisco**: PNG de 1024 × 1024 com transparência, traço de marcador irregular e cores chapadas, todas no enquadramento padrão (centro do rosto em 512, 560 no PNG) ([D28](./decisoes.md)). A nova arte de cabelo veio do PENSHOW sob licença MIT, com procedência em [`licenses/penshow-hair.md`](../licenses/penshow-hair.md). A lista das artes anteriores, com rótulos e ordem, está no [guia de artes §10](./avatares-guia-de-artes.md#10-artes-atuais).
 
 - `pnpm avatars:generate` só reescreve o gabarito (`_template.svg` e `_template.png`); nenhuma arte é gerada por código.
 - As artes geradas por código da D20 saíram junto com o motor de esboço que as desenhava.
@@ -96,6 +100,6 @@ As 50 opções do catálogo usam as **artes de rabisco**: PNG de 1024 × 1024 co
 
 ## 6. Renderização
 
-`AvatarRenderer({ avatar, size, label })` empilha as camadas como `<img>` absolutamente posicionadas dentro de um contêiner quadrado, na ordem da §1, com `alt` vazio nas camadas. Com `label`, o contêiner é `role="img"` com `aria-label` (ex.: "Avatar de Ana" no `PlayerChip`); sem `label`, é decorativo (`aria-hidden`), como nas miniaturas do editor, que já ficam dentro de um botão com rótulo. Opcional em `null` e `id` desconhecido não desenham camada. Tamanhos usados: 32 (listas), 64 (cartões e miniaturas), 160 (lobby/apresentação), 256 (editor).
+`AvatarRenderer({ avatar, size, label })` empilha as camadas como `<img>` absolutamente posicionadas dentro de um contêiner quadrado recortado, na ordem da §1, com `alt` vazio nas camadas. A geometria proporcional vem de `packages/shared/src/avatar/layout.ts` em todos os tamanhos. Com `label`, o contêiner é `role="img"` com `aria-label` (ex.: "Avatar de Ana" no `PlayerChip`); sem `label`, é decorativo (`aria-hidden`), como nas miniaturas do editor, que já ficam dentro de um botão com rótulo. Opcional em `null` e `id` desconhecido não desenham camada. Tamanhos usados: 32 (listas), 64 (cartões e miniaturas), 160 (lobby/apresentação), 256 (editor). A exportação PNG da HQ usa nomes nos créditos e não desenha personagens.
 
-O editor (`AvatarEditor`) mostra a prévia em 256, uma aba por categoria (setas, Home e End trocam de aba), uma miniatura por opção com o avatar atual já aplicado, "Nenhum" nas opcionais e o botão **Aleatório**. Os painéis inativos ficam montados e escondidos, para todas as miniaturas já estarem carregadas ao trocar de aba.
+O editor (`AvatarEditor`) mostra a prévia em 256, uma aba por peça editável (setas, Home e End trocam de aba), uma miniatura por opção com o avatar atual já aplicado, "Nenhum" nas opcionais, controles acessíveis de posição horizontal, vertical e tamanho, arraste por ponteiro e restauração da peça selecionada. O botão **Aleatório** preserva nome e cabeça. Os painéis inativos ficam montados e escondidos, para todas as miniaturas já estarem carregadas ao trocar de aba.

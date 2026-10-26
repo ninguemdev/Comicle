@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { isValidOptionId } from '../avatar/catalog';
+import { avatarLayoutSchema } from '../avatar/layout';
 import type { AvatarCategory, AvatarConfig } from '../domain/avatar';
 import { nicknameSchema } from './text';
 
@@ -11,17 +12,19 @@ function optionId(category: AvatarCategory) {
 }
 
 /** R2: IDs must exist in the catalog under the right category; optional ones accept `null`. */
-export const avatarConfigSchema = z.object({
+export const avatarConfigSchema = z.strictObject({
   head: optionId('head'),
   eyes: optionId('eyes'),
   mouth: optionId('mouth'),
   cheeks: optionId('cheeks').nullable(),
   hat: optionId('hat').nullable(),
   faceAccessory: optionId('faceAccessory').nullable(),
+  hair: optionId('hair').nullable().optional(),
+  layout: avatarLayoutSchema.optional(),
 }) satisfies z.ZodType<AvatarConfig>;
 
 /** R1, R2. */
-export const playerProfileSchema = z.object({
+export const playerProfileSchema = z.strictObject({
   nickname: nicknameSchema,
   avatar: avatarConfigSchema,
 });

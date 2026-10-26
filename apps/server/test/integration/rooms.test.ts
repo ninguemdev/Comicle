@@ -142,6 +142,29 @@ describe('salas (integração)', () => {
     }
   });
 
+  it('R4, R9: cabelo e layout chegam ao outro jogador e permanecem ao reconectar', async () => {
+    await start();
+    const { host, code } = await createRoom();
+    const bia = await joinNew(code, 'Bia');
+    const avatar = {
+      ...defaultAvatar(),
+      head: 'head-square',
+      hair: 'hair-tousled',
+      layout: { version: 1 as const, parts: { hair: { x: 0.2, y: -0.1, scale: 1.5 } } },
+    };
+    host.profile.avatar = avatar;
+    expect(
+      await host.client.emitWithAck('player:updateProfile', { profile: host.profile }),
+    ).toEqual({ ok: true, data: {} });
+    await bia.views.waitFor((view) => memberOf(view, 'Ana')?.avatar.layout?.parts.hair?.x === 0.2);
+    expect(memberOf(bia.views.latest, 'Ana')?.avatar).toEqual(avatar);
+    await drop(host);
+    const back = await reopen(host);
+    expect(await join(back, code)).toEqual({ ok: true, data: { roomCode: code } });
+    expect(memberOf(back.views.latest, 'Ana')?.avatar).toEqual(avatar);
+    expect(memberOf(bia.views.latest, 'Ana')?.avatar).toEqual(avatar);
+  });
+
   it('R9: o 13º membro recebe ROOM_FULL; membro existente reconecta mesmo com a sala cheia', async () => {
     await start();
     const { host, code } = await createRoom('Ana');

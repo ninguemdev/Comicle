@@ -72,4 +72,36 @@ describe('profile-store', () => {
 
     expect(store.getState().profile).toEqual(PROFILE);
   });
+
+  it('R4: persiste cabelo e layout, recuperando um perfil antigo sem alterar sua cabeça', () => {
+    const avatar = {
+      ...defaultAvatar(),
+      head: 'head-oval',
+      hair: 'hair-tousled',
+      layout: { version: 1 as const, parts: { hair: { x: 0.12, y: -0.05, scale: 1.4 } } },
+    };
+    createProfileStore(storage, lastOptionRng).getState().actions.save({ nickname: 'Ana', avatar });
+    expect(createProfileStore(storage, lastOptionRng).getState().profile.avatar).toEqual(avatar);
+    window.localStorage.setItem(
+      STORAGE_KEYS.profile,
+      JSON.stringify({
+        nickname: 'Bia',
+        avatar: {
+          ...defaultAvatar(),
+          head: 'head-cloud',
+          layout: {
+            version: 1,
+            parts: {
+              eyes: { x: 0.1, y: 0, scale: 1 },
+              mouth: { x: 3, y: 0, scale: 1 },
+            },
+          },
+        },
+      }),
+    );
+    expect(createProfileStore(storage, lastOptionRng).getState().profile.avatar).toMatchObject({
+      head: 'head-cloud',
+      layout: { parts: { eyes: { x: 0.1, y: 0, scale: 1 } } },
+    });
+  });
 });

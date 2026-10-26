@@ -64,4 +64,24 @@ describe('AvatarRenderer', () => {
 
     expect(container.querySelector('img')?.getAttribute('width')).toBe('256');
   });
+
+  it('aplica a mesma geometria em prévias e miniaturas e recorta as camadas', () => {
+    const avatar: AvatarConfig = {
+      ...FULL,
+      hair: 'hair-tousled',
+      layout: { version: 1, parts: { eyes: { x: 0.1, y: -0.1, scale: 1.5 } } },
+    };
+    const { container, rerender } = render(<AvatarRenderer avatar={avatar} size={256} />);
+    const frame = container.querySelector('span');
+    const eyes = container.querySelector<HTMLImageElement>('[data-avatar-part="eyes"]');
+    expect(frame?.className).toContain('overflow-hidden');
+    expect(eyes?.style.width).toBe('150%');
+    expect(
+      container.querySelector<HTMLImageElement>('[data-avatar-part="head"]')?.style.width,
+    ).toBe('100%');
+    expect(Array.from(container.querySelectorAll('img')).at(-2)?.dataset.avatarPart).toBe('hair');
+    const style = eyes?.getAttribute('style');
+    rerender(<AvatarRenderer avatar={avatar} size={32} />);
+    expect(container.querySelector('[data-avatar-part="eyes"]')?.getAttribute('style')).toBe(style);
+  });
 });

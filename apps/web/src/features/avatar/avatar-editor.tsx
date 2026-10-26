@@ -1,10 +1,15 @@
 import {
   activeOptions,
   avatarCatalog,
+  avatarTransform,
+  AVATAR_LAYOUT_LIMITS,
+  EDITABLE_AVATAR_CATEGORIES,
   OPTIONAL_AVATAR_CATEGORIES,
   randomAvatar,
   type AvatarCategory,
   type AvatarConfig,
+  type AvatarTransform,
+  type EditableAvatarCategory,
   type OptionalAvatarCategory,
   type Rng,
 } from '@comicle/shared';
@@ -14,8 +19,7 @@ import { strings } from '../../strings/pt-BR';
 import { Button } from '../../ui/button';
 import { AvatarRenderer } from './avatar-renderer';
 
-/** Tab order follows the product spec (§3.1), not the drawing order. */
-const TABS: readonly AvatarCategory[] = ['head', 'eyes', 'mouth', 'cheeks', 'faceAccessory', 'hat'];
+const TABS = EDITABLE_AVATAR_CATEGORIES;
 
 const optionalCategories: ReadonlySet<AvatarCategory> = new Set(OPTIONAL_AVATAR_CATEGORIES);
 
@@ -23,12 +27,47 @@ function isOptional(category: AvatarCategory): category is OptionalAvatarCategor
   return optionalCategories.has(category);
 }
 
-function withOption(avatar: AvatarConfig, category: AvatarCategory, id: string): AvatarConfig {
-  return { ...avatar, [category]: id };
+function withOption(
+  avatar: AvatarConfig,
+  category: EditableAvatarCategory,
+  id: string | null,
+): AvatarConfig {
+  if (avatar[category] === id) return avatar;
+  if (!avatar.layout) return { ...avatar, [category]: id };
+  const parts = withoutPartTransform(avatar.layout.parts, category);
+  return { ...avatar, [category]: id, layout: { version: 1, parts } };
 }
 
 function withoutOption(avatar: AvatarConfig, category: OptionalAvatarCategory): AvatarConfig {
-  return { ...avatar, [category]: null };
+  return withOption(avatar, category, null);
+}
+
+function withTransform(
+  avatar: AvatarConfig,
+  category: EditableAvatarCategory,
+  transform: AvatarTransform,
+): AvatarConfig {
+  return {
+    ...avatar,
+    layout: { version: 1, parts: { ...avatar.layout?.parts, [category]: transform } },
+  };
+}
+
+function resetTransform(avatar: AvatarConfig, category: EditableAvatarCategory): AvatarConfig {
+  if (!avatar.layout?.parts[category]) return avatar;
+  const parts = withoutPartTransform(avatar.layout.parts, category);
+  return { ...avatar, layout: { version: 1, parts } };
+}
+
+function withoutPartTransform(
+  parts: NonNullable<AvatarConfig['layout']>['parts'],
+  category: EditableAvatarCategory,
+) {
+  return Object.fromEntries(Object.entries(parts).filter(([key]) => key !== category));
+}
+
+function clampOffset(value: number): number {
+  return Math.max(AVATAR_LAYOUT_LIMITS.minOffset, Math.min(AVATAR_LAYOUT_LIMITS.maxOffset, value));
 }
 
 /** Arrow keys move between tabs (WAI-ARIA tabs pattern); `null` for any other key. */
@@ -80,11 +119,21 @@ export interface AvatarEditorProps {
 
 /** Large preview, one tab per category and a thumbnail per option (interface.md §2). */
 export function AvatarEditor({ value, onChange, rng }: AvatarEditorProps) {
-  const [activeTab, setActiveTab] = useState<AvatarCategory>('head');
-  const tabs = useRef(new Map<AvatarCategory, HTMLButtonElement>());
+  const [activeTab, setActiveTab] = useState<EditableAvatarCategory>('eyes');
+  const tabs = useRef(new Map<EditableAvatarCategory, HTMLButtonElement>());
+  const drag = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    width: number;
+    category: EditableAvatarCategory;
+    transform: AvatarTransform;
+  } | null>(null);
+  const transform = avatarTransform(value, activeTab);
+  const hasPart = value[activeTab] != null;
   const idPrefix = useId();
-  const tabId = (category: AvatarCategory) => `${idPrefix}-tab-${category}`;
-  const panelId = (category: AvatarCategory) => `${idPrefix}-panel-${category}`;
+  const tabId = (category: EditableAvatarCategory) => `${idPrefix}-tab-${category}`;
+  const panelId = (category: EditableAvatarCategory) => `${idPrefix}-panel-${category}`;
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const next = tabIndexForKey(event.key, TABS.indexOf(activeTab));
@@ -99,14 +148,54 @@ export function AvatarEditor({ value, onChange, rng }: AvatarEditorProps) {
 
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-      <div className="flex shrink-0 flex-col items-center gap-3">
+      <div className="flex shrink-0 flex-col items-center gap-3 sm:sticky sm:top-4">
         <div className="rounded-xl border-comic bg-paper p-2 shadow-pop">
-          <AvatarRenderer avatar={value} size={256} label={strings.avatar.preview} />
+          <div
+            className="touch-none cursor-grab active:cursor-grabbing"
+            onPointerDown={(event) => {
+              if (!hasPart || !event.isPrimary || event.button !== 0) return;
+              const width = event.currentTarget.getBoundingClientRect().width;
+              if (width === 0) return;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              drag.current = {
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                width,
+                category: activeTab,
+                transform,
+              };
+            }}
+            onPointerMove={(event) => {
+              const start = drag.current;
+              if (!start || start.pointerId !== event.pointerId) return;
+              onChange(
+                withTransform(value, start.category, {
+                  ...start.transform,
+                  x: clampOffset(start.transform.x + (event.clientX - start.x) / start.width),
+                  y: clampOffset(start.transform.y + (event.clientY - start.y) / start.width),
+                }),
+              );
+            }}
+            onPointerUp={() => {
+              drag.current = null;
+            }}
+            onPointerCancel={() => {
+              drag.current = null;
+            }}
+            onLostPointerCapture={() => {
+              drag.current = null;
+            }}
+          >
+            <AvatarRenderer avatar={value} size={256} label={strings.avatar.preview} />
+          </div>
         </div>
+        <p className="max-w-64 text-center text-sm text-muted">{strings.avatar.fixedHead}</p>
+        <p className="max-w-64 text-center text-sm text-muted">{strings.avatar.dragHint}</p>
         <Button
           variant="secondary"
           onClick={() => {
-            onChange(randomAvatar(rng));
+            onChange({ ...randomAvatar(rng), head: value.head });
           }}
         >
           {strings.avatar.random}
@@ -148,6 +237,52 @@ export function AvatarEditor({ value, onChange, rng }: AvatarEditorProps) {
             );
           })}
         </div>
+
+        <fieldset disabled={!hasPart} className="flex flex-col gap-3 rounded-xl border-comic p-3">
+          <legend className="px-1 font-bold">
+            {strings.avatar.adjust(avatarCatalog.categories[activeTab].label)}
+          </legend>
+          {(
+            [
+              ['x', strings.avatar.horizontal, -35, 35],
+              ['y', strings.avatar.vertical, -35, 35],
+              ['scale', strings.avatar.size, 50, 200],
+            ] as const
+          ).map(([key, label, min, max]) => (
+            <label key={key} className="flex flex-col gap-1">
+              <span className="flex justify-between gap-2 font-semibold">
+                {label} <output>{strings.avatar.percent(Math.round(transform[key] * 100))}</output>
+              </span>
+              <input
+                type="range"
+                aria-label={label}
+                aria-valuetext={strings.avatar.percent(Math.round(transform[key] * 100))}
+                min={min}
+                max={max}
+                step={1}
+                value={Math.round(transform[key] * 100)}
+                onChange={(event) => {
+                  onChange(
+                    withTransform(value, activeTab, {
+                      ...transform,
+                      [key]: Number(event.target.value) / 100,
+                    }),
+                  );
+                }}
+              />
+            </label>
+          ))}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              onChange(resetTransform(value, activeTab));
+            }}
+          >
+            {strings.avatar.resetPart}
+          </Button>
+        </fieldset>
+        {!hasPart && <p className="text-sm text-muted">{strings.avatar.choosePart}</p>}
 
         {/* Inactive panels stay mounted (hidden) so every thumbnail is already loaded. */}
         {TABS.map((category) => (
