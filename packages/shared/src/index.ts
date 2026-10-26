@@ -1,5 +1,6 @@
 export * from './ack';
 export * from './avatar/catalog';
+export * from './avatar/layout';
 export * from './constants';
 export * from './domain/ack';
 export * from './domain/avatar';

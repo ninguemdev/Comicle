@@ -1,3 +1,5 @@
+import type { AvatarLayout } from '../avatar/layout';
+
 /** Avatar categories in drawing order, bottom to top (docs/avatares.md §1). */
 export const AVATAR_CATEGORIES = [
   'head',
@@ -5,11 +7,12 @@ export const AVATAR_CATEGORIES = [
   'eyes',
   'mouth',
   'faceAccessory',
+  'hair',
   'hat',
 ] as const;
 
 export const REQUIRED_AVATAR_CATEGORIES = ['head', 'eyes', 'mouth'] as const;
-export const OPTIONAL_AVATAR_CATEGORIES = ['cheeks', 'faceAccessory', 'hat'] as const;
+export const OPTIONAL_AVATAR_CATEGORIES = ['cheeks', 'faceAccessory', 'hair', 'hat'] as const;
 
 export type AvatarCategory = (typeof AVATAR_CATEGORIES)[number];
 export type RequiredAvatarCategory = (typeof REQUIRED_AVATAR_CATEGORIES)[number];
@@ -23,4 +26,7 @@ export interface AvatarConfig {
   cheeks: string | null;
   hat: string | null;
   faceAccessory: string | null;
+  /** Optional while reading profiles saved before the editor gained hair. */
+  hair?: string | null | undefined;
+  layout?: AvatarLayout | undefined;
 }

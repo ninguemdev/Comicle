@@ -73,5 +73,6 @@ export const ZONES: Record<AvatarCategory, Box> = {
   eyes: { left: 144, top: 196, right: 368, bottom: 304 },
   mouth: { left: 166, top: 300, right: 346, bottom: 410 },
   faceAccessory: { left: 86, top: 170, right: 426, bottom: 420 },
+  hair: { left: 80, top: 72, right: 432, bottom: 240 },
   hat: { left: SAFE_MARGIN, top: SAFE_MARGIN, right: ART_SIZE - SAFE_MARGIN, bottom: 220 },
 };

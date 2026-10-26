@@ -94,6 +94,21 @@ describe('buildPlayerView no lobby', () => {
     expect(json).not.toContain('socket-');
   });
 
+  it('R58: inclui cabelo e layout na projeção pública', () => {
+    const state = room();
+    const ana = state.members.get('ana');
+    if (!ana) throw new Error('membro ausente');
+    ana.profile.avatar = {
+      ...defaultAvatar(),
+      hair: 'hair-tousled',
+      layout: {
+        version: 1,
+        parts: { hair: { x: 0.15, y: -0.1, scale: 1.4 } },
+      },
+    };
+    expect(buildPlayerView(state, 'bia', 0).room.members[0]?.avatar).toEqual(ana.profile.avatar);
+  });
+
   it('recusa montar a view de quem não é membro', () => {
     expect(() => buildPlayerView(room(), 'zé', 0)).toThrow();
   });

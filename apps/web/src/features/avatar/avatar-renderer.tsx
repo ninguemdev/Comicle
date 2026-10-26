@@ -25,7 +25,10 @@ export function AvatarRenderer({ avatar, size, label }: AvatarRendererProps) {
   const accessibility =
     label === undefined ? { 'aria-hidden': true } : { role: 'img', 'aria-label': label };
   return (
-    <span className={`relative inline-block shrink-0 ${SIZE_CLASSES[size]}`} {...accessibility}>
+    <span
+      className={`relative inline-block shrink-0 overflow-hidden ${SIZE_CLASSES[size]}`}
+      {...accessibility}
+    >
       {avatarLayers(avatar).map((layer) => (
         <img
           key={layer.category}
@@ -34,7 +37,14 @@ export function AvatarRenderer({ avatar, size, label }: AvatarRendererProps) {
           width={size}
           height={size}
           draggable={false}
-          className="absolute inset-0 size-full select-none"
+          data-avatar-part={layer.category}
+          className="absolute select-none pointer-events-none"
+          style={{
+            left: `${String(layer.rect.x * 100)}%`,
+            top: `${String(layer.rect.y * 100)}%`,
+            width: `${String(layer.rect.width * 100)}%`,
+            height: `${String(layer.rect.height * 100)}%`,
+          }}
         />
       ))}
     </span>

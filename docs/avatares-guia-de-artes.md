@@ -178,6 +178,7 @@ Retângulo que cada camada pode ocupar, **contorno incluído** (esquerda, topo, 
 | Olhos | 144, 196, 368, 304 | 288, 392, 736, 608 |
 | Boca | 166, 300, 346, 410 | 332, 600, 692, 820 |
 | Acessório facial | 86, 170, 426, 420 | 172, 340, 852, 840 |
+| Cabelo | 80, 72, 432, 240 | 160, 144, 864, 480 |
 | Chapéu | 16, 16, 496, 220 | 32, 32, 992, 440 |
 
 ```text
@@ -198,7 +199,7 @@ Retângulo que cada camada pode ocupar, **contorno incluído** (esquerda, topo, 
 
 ## 7. Regras por camada
 
-Ordem de desenho, de baixo para cima: **cabeça → bochechas → olhos → boca → acessório → chapéu**. Cada arte precisa funcionar com **qualquer** combinação das outras.
+Ordem de desenho, de baixo para cima: **cabeça → bochechas → olhos → boca → acessório → cabelo → chapéu**. Cada arte precisa funcionar com **qualquer** combinação das outras. O cabelo ocupa a zona de 80, 72 a 432, 240 na tela SVG de 512 × 512 e pode ser ajustado no editor como as outras peças editáveis.
 
 ### Cabeça · pasta `head/` · obrigatória
 

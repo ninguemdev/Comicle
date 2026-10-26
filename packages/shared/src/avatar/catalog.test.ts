@@ -30,10 +30,12 @@ function sequenceRng(start: number): Rng {
 }
 
 describe('catálogo', () => {
-  it('tem as 6 categorias, cada uma com pelo menos 4 opções', () => {
+  it('mantém as 50 artes antigas e acrescenta cabelo', () => {
     const { categories } = avatarCatalogSchema.parse(catalogJson);
     for (const category of AVATAR_CATEGORIES) {
-      expect(categories[category].options.length, category).toBeGreaterThanOrEqual(4);
+      expect(categories[category].options.length, category).toBeGreaterThanOrEqual(
+        category === 'hair' ? 1 : 4,
+      );
     }
   });
 
@@ -44,6 +46,7 @@ describe('catálogo', () => {
       'eyes',
       'mouth',
       'face-accessory',
+      'hair',
       'hat',
     ]);
   });
@@ -107,6 +110,7 @@ describe('helpers do catálogo', () => {
       cheeks: null,
       hat: null,
       faceAccessory: null,
+      hair: null,
     });
     expect(isValidAvatar(defaultAvatar())).toBe(true);
   });
@@ -114,7 +118,7 @@ describe('helpers do catálogo', () => {
   it('R2: sanitizeAvatar troca só a categoria inválida', () => {
     const saved = { ...avatar, eyes: 'eyes-retirados', hat: 'head-round' };
 
-    expect(sanitizeAvatar(saved)).toEqual({ ...avatar, eyes: 'eyes-dots', hat: null });
+    expect(sanitizeAvatar(saved)).toEqual({ ...avatar, eyes: 'eyes-dots', hat: null, hair: null });
   });
 
   it('R2: sanitizeAvatar devolve o padrão para valores que não são avatar', () => {

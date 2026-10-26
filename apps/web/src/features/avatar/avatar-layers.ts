@@ -1,6 +1,8 @@
 import {
   AVATAR_CATEGORIES,
   findAvatarOption,
+  avatarLayerRect,
+  avatarTransform,
   type AvatarCategory,
   type AvatarConfig,
 } from '@comicle/shared';
@@ -8,6 +10,7 @@ import {
 export interface AvatarLayer {
   category: AvatarCategory;
   src: string;
+  rect: ReturnType<typeof avatarLayerRect>;
 }
 
 /** Public URL of an art; `file` is relative to public/avatars/ (docs/avatares.md §2). */
@@ -19,7 +22,15 @@ export function avatarArtUrl(file: string): string {
 export function avatarLayers(avatar: AvatarConfig): AvatarLayer[] {
   return AVATAR_CATEGORIES.flatMap((category) => {
     const id = avatar[category];
-    const option = id === null ? undefined : findAvatarOption(category, id);
-    return option ? [{ category, src: avatarArtUrl(option.file) }] : [];
+    const option = id == null ? undefined : findAvatarOption(category, id);
+    return option
+      ? [
+          {
+            category,
+            src: avatarArtUrl(option.file),
+            rect: avatarLayerRect(avatarTransform(avatar, category), option.pivot),
+          },
+        ]
+      : [];
   });
 }

@@ -113,6 +113,21 @@ describe('comicCredits', () => {
       'Quadros: 1 Bia · 2 Caio · 3 Ana',
     );
   });
+
+  it('R55: a exportação mantém os créditos com personagens personalizados', () => {
+    const avatar = {
+      ...defaultAvatar(),
+      hair: 'hair-tousled',
+      layout: { version: 1 as const, parts: { hair: { x: 0.2, y: 0, scale: 1.5 } } },
+    };
+    const panel: PanelRef = {
+      panelId: 'p0',
+      position: 0,
+      artist: { playerId: 'ana', nickname: 'Ana', avatar },
+      status: 'complete',
+    };
+    expect(comicCredits([panel])).toBe('Quadros: 1 Ana');
+  });
 });
 
 describe('comicFileName', () => {

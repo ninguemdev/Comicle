@@ -77,6 +77,8 @@ type Ack<T> =
 
 `PlayerProfile = { nickname: string; avatar: AvatarConfig }` (R1, R2).
 
+`AvatarConfig` inclui `head`, `eyes`, `mouth`, `cheeks`, `faceAccessory`, `hat` e, opcionalmente para perfis antigos, `hair` e `layout`. `layout` tem o formato `{ version: 1, parts: { eyes?, mouth?, cheeks?, faceAccessory?, hair?, hat? } }`; cada peça presente contém `{ x, y, scale }`. As posições ficam entre −0,35 e 0,35, e a escala entre 0,5 e 2. Cabeça, categorias extras, campos extras, versões desconhecidas e valores fora desses limites são rejeitados. O mesmo avatar completo aparece em `room:view` para membros e referências de artistas. Clientes antigos com schemas estritos precisam ser atualizados junto com o servidor.
+
 Erros das salas, além da validação do payload (`INVALID_PAYLOAD`) e do rate limit:
 
 - `room:create` e `room:join` com o socket já em outra sala → `INVALID_STATE`. Repetir o `room:join` da sala em que o socket já está é idempotente e atualiza o perfil.
