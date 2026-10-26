@@ -14,21 +14,21 @@ Permitir posição e tamanho independentes das seis peças editáveis do persona
 
 ## Entregáveis
 
-- [ ] Contrato versionado, validação estrita e saneamento local por peça
-- [ ] Cabelo com procedência registrada e pivôs das artes
-- [ ] Editor com ponteiro, controles por teclado, restauração e rascunho
-- [ ] Geometria compartilhada nas prévias, miniaturas e vistas da sala
-- [ ] Documentação de regras, protocolo, dados e interface
+- [x] Contrato versionado, validação estrita e saneamento local por peça
+- [x] Cabelo com procedência registrada e pivôs das artes
+- [x] Editor com ponteiro, controles por teclado, restauração e rascunho
+- [x] Geometria compartilhada nas prévias, miniaturas e vistas da sala
+- [x] Documentação de regras, protocolo, dados e interface
 
 ## Critérios de aceite
 
-- [ ] A cabeça não pode ser editada e formatos legados são preservados
-- [ ] Perfil salvo e `room:view` mantêm cabelo e layout na reconexão
-- [ ] Entrada inválida de layout ou categoria extra é rejeitada
-- [ ] A composição é recortada em todos os tamanhos
+- [x] A cabeça não pode ser editada e formatos legados são preservados
+- [x] Perfil salvo e `room:view` mantêm cabelo e layout na reconexão
+- [x] Entrada inválida de layout ou categoria extra é rejeitada
+- [x] A composição é recortada em todos os tamanhos
 
 ## Testes obrigatórios
 
-- [ ] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`
-- [ ] `pnpm avatars:check && pnpm build`
-- [ ] `pnpm test:db` e Playwright desktop/celular
+- [x] `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`
+- [x] `pnpm avatars:check && pnpm build`
+- [x] `pnpm test:db` e Playwright desktop/celular
